@@ -1,0 +1,53 @@
+{
+  "name": "ghl-embedded-app-starter",
+  "version": "1.0.0",
+  "description": "GHL embedded app starter — iframe postMessage auth handshake + per-sub-account session, ready for feature development",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "lint": "eslint src --ext .js,.jsx",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "npm run lint && npm test && vite build",
+    "test": "node src/pages/dealhub/__tests__/emailThreads.test.mjs && node src/utils/__tests__/noteColour.test.mjs && node src/utils/__tests__/money.test.mjs && node src/pages/dealhub/__tests__/attachmentViewer.test.mjs && node src/pages/shared/__tests__/contactPicker.test.mjs && node src/pages/contacts/__tests__/dndDisplay.test.mjs && node src/pages/contacts/__tests__/emailValidation.test.mjs && node src/pages/contacts/__tests__/customFieldSections.test.mjs && node src/pages/deals/__tests__/dealCustomFields.test.mjs && node src/pages/tabs/__tests__/switcherRow.test.mjs && node src/pages/dealhub/__tests__/mediaSection.test.mjs && node --test src/pages/shared/__tests__/skillChartShape.test.mjs && node --test src/pages/shared/__tests__/ownerFilter.test.mjs && node --test src/pages/dealhub/__tests__/skillMentions.test.mjs && node --test src/pages/shared/__tests__/actionCardStatus.test.mjs && npm run test:portalicons && node --test src/pages/control/__tests__/skillsEditor.test.mjs && node --test src/pages/deals/__tests__/boardFilters.test.mjs && node --test src/pages/deals/__tests__/dealContactLink.test.mjs && node --test src/pages/shared/__tests__/noteSaveEcho.test.mjs && node --test src/pages/dealhub/__tests__/fieldChips.test.mjs && node --test src/pages/dealhub/__tests__/qualificationChip.test.mjs && node --test src/pages/insights/__tests__/insights.test.mjs && node --test src/pages/dealhub/__tests__/enquiryBlock.test.mjs && node --test src/hooks/__tests__/ghlContextSwitch.test.mjs && node src/pages/tabs/__tests__/insightsGroupFilter.test.mjs && node src/pages/tabs/__tests__/dealNotFoundFallback.test.mjs && node src/pages/dealhub/__tests__/addBusiness.test.mjs && node --test src/hooks/__tests__/perTabSession.test.mjs && node --test src/pages/tabs/__tests__/editRecordDestination.test.mjs && node --test src/pages/contacts/__tests__/panelOrder.test.mjs && node --test src/pages/tabs/__tests__/taskDueRange.test.mjs && node --test src/pages/shared/__tests__/businessContactLink.test.mjs && npm run test:asktimeout && npm run test:contactfields && npm run test:dealpill && npm run test:truncate && npm run test:dupcreate && npm run test:syncreq && npm run test:cliptips && npm run test:listsurface && node --test src/pages/dealhub/__tests__/panelHeaders.test.mjs && node --test src/pages/shared/__tests__/copilotSidebar.test.mjs && node --test src/pages/tabs/__tests__/taskCardLinks.test.mjs && node --test src/pages/tabs/__tests__/noteCard.test.mjs && node --test src/pages/tabs/__tests__/contactCard.test.mjs && node --test src/pages/contacts/__tests__/contactList.test.mjs && node --test src/pages/contacts/__tests__/contactRecord.test.mjs && node --test src/pages/shared/__tests__/workFilters.test.mjs && node --test src/pages/dealhub/__tests__/messageComposer.test.mjs",
+    "test:portalicons": "node src/pages/__tests__/portalIcons.test.mjs",
+    "test:asktimeout": "node src/api/__tests__/askTimeout.test.mjs",
+    "test:contactfields": "node src/pages/dealhub/__tests__/contactFields.test.mjs",
+    "test:dealpill": "node src/pages/deals/__tests__/dealPill.test.mjs",
+    "test:truncate": "node src/pages/shared/__tests__/truncate.test.mjs",
+    "test:dupcreate": "node src/pages/dealhub/__tests__/duplicateCreate.test.mjs",
+    "test:syncreq": "node src/api/__tests__/syncRequest.test.mjs",
+    "test:cliptips": "node src/hooks/__tests__/clipTooltips.test.mjs",
+    "test:listsurface": "node src/pages/tabs/__tests__/listSurface.test.mjs"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.0",
+    "@tiptap/extension-color": "^3.31.0",
+    "@tiptap/extension-image": "^3.31.0",
+    "@tiptap/extension-link": "^3.31.0",
+    "@tiptap/extension-text-style": "^3.31.0",
+    "@tiptap/extension-underline": "^3.31.0",
+    "@tiptap/pm": "^3.31.0",
+    "@tiptap/react": "^3.31.0",
+    "@tiptap/starter-kit": "^3.31.0",
+    "antd": "^5.12.0",
+    "axios": "^1.6.0",
+    "dayjs": "^1.11.23",
+    "dompurify": "^3.2.4",
+    "marked": "^18.0.13",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^27.4.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "vite": "^5.0.8"
+  }
+}

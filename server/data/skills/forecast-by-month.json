@@ -1,0 +1,33 @@
+{
+  "name": "forecast_by_month",
+  "description": "Forecast broken down by month: open deals weighted by probability in the month they are expected to close, revenue won in that month, and the two combined as total potential. Use for 'what will we close this month', 'forecast for next quarter', 'how does November look', 'when is our revenue landing', 'monthly forecast'. CRITICAL: one row has period '(no close date)' and is NOT a month — it is the open pipeline no period can hold, because those deals have no expected close date. Never present it as a period, never sort it among the months, and always mention it when summarising: at the coverage seen here it is frequently the largest single row, and a month total read without it describes a fraction of the pipeline. Quote pct_of_open_dated, which rides on every row, as the confidence figure. Won value is bucketed by when the deal was WON, not when it was forecast to close, so a deal won in March that was expected in January counts as March. overdue_deals in a past month are deals whose close date has passed without closing — they inflate a period that has already ended and need rescheduling. For a quarter, total the relevant months; the data is monthly on purpose.",
+  "viewName": "vw_forecast_by_month",
+  "params": [
+    {
+      "name": "from_month",
+      "column": "month",
+      "type": "date",
+      "op": "gte",
+      "description": "Only months on or after this date. Pass the first of the month, e.g. 2026-10-01. Note this excludes the (no close date) row, whose month is empty."
+    },
+    {
+      "name": "to_month",
+      "column": "month",
+      "type": "date",
+      "op": "lte",
+      "description": "Only months on or before this date."
+    },
+    {
+      "name": "min_expected",
+      "column": "expected_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only periods expecting at least this much weighted revenue."
+    }
+  ],
+  "columns": [],
+  "orderBy": "month ASC NULLS LAST",
+  "rowLimit": 40,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

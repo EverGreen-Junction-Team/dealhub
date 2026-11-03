@@ -1,0 +1,26 @@
+{
+  "name": "does_fast_reply_increase_win_rate",
+  "description": "Closed deals bucketed by how long a person took to answer the customer's first message — within 5 minutes, 5-60 minutes, 1-24 hours, 1-3 days, over 3 days, or never replied in writing — with the win rate, won value and median response time for each band. Use for 'does replying quickly win more deals', 'does response time matter', 'how fast do we reply', 'what happens when we reply within 5 minutes', 'are slow replies costing us'. Automated replies do NOT count as a reply here — only a person writing — because an autoresponder fires in seconds and would put every deal in the fastest band. Compare bands rather than quoting one: the finding is in the difference between them. A band with very few deals cannot support a percentage, so say so rather than reporting it as a rate.",
+  "viewName": "vw_response_time_win_rate",
+  "params": [
+    {
+      "name": "response_band",
+      "column": "response_time",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one band, e.g. '5 min' or 'never replied'. Usually omit — the comparison between bands is the point."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only bands with at least this many closed deals. Use to drop bands too small to read a win rate from."
+    }
+  ],
+  "columns": [],
+  "orderBy": "response_time",
+  "rowLimit": 20,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

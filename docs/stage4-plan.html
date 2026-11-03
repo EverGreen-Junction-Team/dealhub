@@ -1,0 +1,1014 @@
+<title>PipelinePulse — Stage 4 · AI Extraction Plan</title>
+<style>
+  :root {
+    --ink: #1A1D24;
+    --ground: #F7F5F0;
+    --muted: #6B6F7A;
+    --subtle: #EFEBE2;
+    --rule: #DAD5CB;
+    --accent: #3E5F8A;
+    --accent-soft: #E8EDF4;
+    --warn: #B8622A;
+    --warn-soft: #F5E9DE;
+    --good: #4A7A5C;
+    --font-serif: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #F0EBDF;
+      --ground: #14161B;
+      --muted: #9B9FAA;
+      --subtle: #1E2129;
+      --rule: #2A2E37;
+      --accent: #7DA0D0;
+      --accent-soft: #1C2735;
+      --warn: #D48557;
+      --warn-soft: #2B1E14;
+      --good: #7DAA8C;
+    }
+  }
+  :root[data-theme="light"] {
+    --ink: #1A1D24;
+    --ground: #F7F5F0;
+    --muted: #6B6F7A;
+    --subtle: #EFEBE2;
+    --rule: #DAD5CB;
+    --accent: #3E5F8A;
+    --accent-soft: #E8EDF4;
+    --warn: #B8622A;
+    --warn-soft: #F5E9DE;
+    --good: #4A7A5C;
+  }
+  :root[data-theme="dark"] {
+    --ink: #F0EBDF;
+    --ground: #14161B;
+    --muted: #9B9FAA;
+    --subtle: #1E2129;
+    --rule: #2A2E37;
+    --accent: #7DA0D0;
+    --accent-soft: #1C2735;
+    --warn: #D48557;
+    --warn-soft: #2B1E14;
+    --good: #7DAA8C;
+  }
+
+  html, body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 72px 32px 96px;
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 48px 20px 64px; }
+    body { font-size: 15px; }
+  }
+
+  /* --- Type scale --- */
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 52px;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 28px;
+    line-height: 1.2;
+    margin: 56px 0 12px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 32px 0 10px;
+  }
+  h4 {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 20px 0 6px;
+  }
+  p { margin: 0 0 14px; max-width: 65ch; }
+  strong { font-weight: 600; color: var(--ink); }
+
+  a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--subtle);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  /* --- Eyebrow / meta --- */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin: 8px 0 40px;
+    max-width: 55ch;
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+
+  /* --- Divider --- */
+  .rule {
+    height: 1px;
+    background: var(--rule);
+    margin: 48px 0;
+    border: 0;
+  }
+
+  /* --- Lists --- */
+  ul, ol { padding-left: 22px; margin: 0 0 14px; }
+  li { margin-bottom: 6px; max-width: 62ch; }
+
+  /* --- Phase blocks --- */
+  .phase {
+    display: grid;
+    grid-template-columns: 68px 1fr;
+    gap: 24px;
+    padding: 28px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .phase:last-of-type { border-bottom: 1px solid var(--rule); }
+  .phase-num {
+    font-family: var(--font-serif);
+    font-size: 44px;
+    line-height: 1;
+    color: var(--accent);
+    font-weight: 400;
+    padding-top: 4px;
+  }
+  .phase-body h4 {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .phase-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .phase-meta .sep {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: var(--muted); opacity: 0.5;
+  }
+  .phase p { margin-bottom: 10px; }
+  .phase ul { margin-top: 8px; }
+  .phase ul li { font-size: 15px; }
+
+  /* --- Field table --- */
+  .fields {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin: 14px 0 20px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--ink);
+    overflow-x: auto;
+  }
+  .fields .field-label {
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    display: block;
+  }
+  .fields .field-label:first-child { margin-top: 0; }
+
+  /* --- Callouts --- */
+  .callout {
+    border-left: 3px solid var(--warn);
+    background: var(--warn-soft);
+    padding: 18px 22px;
+    margin: 28px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout h4 {
+    margin: 0 0 8px;
+    color: var(--warn);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .callout p { margin-bottom: 6px; font-size: 15px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .note {
+    background: var(--subtle);
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .note strong { color: var(--ink); }
+
+  /* --- Timeline table --- */
+  .timeline {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 24px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .timeline th {
+    text-align: left;
+    padding: 10px 14px 10px 0;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+  }
+  .timeline td {
+    padding: 12px 14px 12px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .timeline td:first-child {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--accent);
+    width: 60px;
+  }
+  .timeline td:nth-child(2) {
+    font-weight: 600;
+    width: 30%;
+  }
+  .timeline td:last-child { color: var(--muted); }
+
+  /* --- Footer --- */
+  .footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .footer strong { color: var(--ink); }
+
+  /* --- Small tag pills --- */
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.good { background: rgba(74,122,92,0.12); color: var(--good); }
+
+  ::selection { background: var(--accent); color: var(--ground); }
+
+  /* --- Category cards --- */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin: 20px 0 28px;
+    border-top: 1px solid var(--rule);
+  }
+  .cat {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 22px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .cat-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 6px;
+  }
+  .cat-tag .num {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 34px;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: 0;
+    text-transform: none;
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+  .cat h4 {
+    margin: 0 0 4px;
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+  }
+  .cat .cat-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+  .cat ul { margin: 0; padding-left: 20px; }
+  .cat ul li { font-size: 14.5px; margin-bottom: 3px; }
+
+  /* --- Two-job framing box --- */
+  .jobs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 24px 0 28px;
+  }
+  @media (max-width: 640px) { .jobs { grid-template-columns: 1fr; } }
+  .job {
+    padding: 20px 22px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--subtle);
+  }
+  .job .job-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .job h4 {
+    margin: 0 0 8px;
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .job p { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--ink); }
+</style>
+
+<div class="page">
+
+  <div class="eyebrow">
+    <span class="dot"></span>
+    <span>Stage 4 · Written-channel AI extraction</span>
+    <span class="dot"></span>
+    <span>Clarity &amp; alignment</span>
+  </div>
+
+  <h1>Turning raw conversations into structured deal intelligence.</h1>
+
+  <p class="subtitle">
+    A staged plan that first extracts the facts hiding inside conversations
+    (MEDDIC, buying signals, deal shape) then turns silence and rep behaviour
+    into actionable manager alerts — with human-checkable evidence, versioned
+    prompts, and safe writeback to GHL.
+  </p>
+
+  <hr class="rule">
+
+  <h2>Where we are today</h2>
+
+  <p>
+    Stage 1 through Stage 3 are live in production across all four sub-accounts.
+    The database captures every contact, opportunity, message, task, and note,
+    reconciles daily against GHL, and exposes clean analytics through
+    <code>vw_opportunity_flat</code> and <code>vw_opportunity_messages_json</code>.
+    Attribution between messages and deals is versioned via
+    <code>message_opportunity_map</code>, with 5 confidence-rated rules and
+    supersede-only history.
+  </p>
+
+  <p>
+    <strong>What that gives us for Stage 4:</strong> every message is stored, cleaned,
+    time-anchored, attributed to a deal, and traceable back to the exact GHL webhook
+    that produced it. Stage 4 sits on top of this — we don't need to fetch or clean
+    anything, we just need to <em>read and interpret</em>.
+  </p>
+
+  <h2>What Stage 4 delivers</h2>
+
+  <p>
+    Today, MEDDIC fields on an opportunity are only filled in when a rep manually
+    types them. Most deals sit half-filled, or filled once and never updated. The
+    conversations themselves — SMS, email, webchat, notes — contain the answers,
+    but nobody has time to re-read them.
+  </p>
+
+  <p>
+    Stage 4 builds an extraction layer that reads the approved conversation for each
+    deal and produces:
+  </p>
+
+  <ul>
+    <li><strong>Structured MEDDIC answers</strong> — one AI-derived value per field, per opportunity.</li>
+    <li><strong>Evidence receipts</strong> — the exact verbatim quote from the source message, with sender, date, and channel.</li>
+    <li><strong>Confidence scores</strong> — so low-signal answers are flagged for review, not silently displayed.</li>
+    <li><strong>Version history</strong> — every extraction is an append-only snapshot; prior answers are never overwritten silently.</li>
+    <li><strong>Optional writeback to GHL</strong> — approved values project to <code>opportunity.meddic_1_ai</code> through <code>meddic_10_ai</code>, so reps see them in GHL directly.</li>
+  </ul>
+
+  <p>
+    Every published fact is backed by a quote. If the AI can't find evidence,
+    the field stays empty rather than guessing.
+  </p>
+
+  <h2>Fields we will extract</h2>
+
+  <p>
+    Extraction targets the MEDDIC qualification framework already in use on the
+    <code>opportunities</code> table, plus the rep-authored "Three Whys" and lifecycle signals.
+  </p>
+
+  <div class="fields">
+    <span class="field-label">MEDDIC (10 fields, per opportunity)</span>
+    meddic_1_ai   — Metrics (what business result matters)<br>
+    meddic_2_ai   — Economic buyer (who signs off)<br>
+    meddic_3_ai   — Decision criteria (what they're comparing on)<br>
+    meddic_4_ai   — Decision process (how they buy)<br>
+    meddic_5_ai   — Identified pain (problem being solved)<br>
+    meddic_6_ai   — Champion (internal advocate)<br>
+    meddic_7_ai   — Competition (who else they're talking to)<br>
+    meddic_8_ai   — Timeline (when they need it)<br>
+    meddic_9_ai   — Budget (how much / who controls it)<br>
+    meddic_10_ai  — Paper process (contract path)
+
+    <span class="field-label">Three Whys (rep behaviour reflection)</span>
+    why_want_ai       — Why they want it<br>
+    why_buy_ai        — Why from us<br>
+    why_blocker_ai    — What could stop the deal
+
+    <span class="field-label">Conversation signals</span>
+    top_objection         — Strongest objection raised<br>
+    quote_requested       — Explicit quote / pricing ask?<br>
+    stall_signal          — Signs of hesitation, silence, or delay<br>
+    competitor_mentioned  — Named competitors from the conversation<br>
+    urgency_signal        — Deadline or time-pressure language
+
+    <span class="field-label">Per fact — evidence & audit</span>
+    evidence_quote     — Verbatim source text<br>
+    evidence_message_id — Which message it came from<br>
+    evidence_channel   — SMS / Email / Call transcript / Note<br>
+    confidence         — 0.00 to 1.00<br>
+    extraction_run_id  — Which model + prompt version produced this
+  </div>
+
+  <p>
+    <strong>Rule of the extraction:</strong> if the conversation doesn't contain evidence
+    for a field, the field is left NULL. We never invent facts to fill in gaps.
+  </p>
+
+  <h2>What the AI can tell us</h2>
+
+  <p>
+    There are two distinct jobs an AI layer can do on top of this data,
+    and they matter to different people. Naming them separately keeps the
+    scope honest.
+  </p>
+
+  <div class="jobs">
+    <div class="job">
+      <div class="job-label">Job A</div>
+      <h4>What does the deal say about itself?</h4>
+      <p>
+        Read the conversation, produce structured facts. MEDDIC, Three Whys,
+        buying signals. Improves reporting and gives reps a head-start on
+        qualification. This is what the CSV spec describes.
+      </p>
+    </div>
+    <div class="job">
+      <div class="job-label">Job B</div>
+      <h4>What does the absence of activity tell us?</h4>
+      <p>
+        Detect stalled deals, unanswered customer questions, missed
+        follow-ups, stale qualification, ghosting patterns. Arguably more
+        valuable because it's <em>actionable</em> — it tells a manager who
+        needs to do what, right now.
+      </p>
+    </div>
+  </div>
+
+  <p>
+    Job A improves reporting. Job B changes rep behaviour. Both feed off the
+    same underlying data — messages, notes, tasks, stage history, custom
+    fields — but the questions they answer are different, and so is what
+    they surface.
+  </p>
+
+  <h3>The seven categories in detail</h3>
+
+  <p>
+    Everything AI can meaningfully extract from the data we have today,
+    grouped by what it answers.
+  </p>
+
+  <div class="cat-grid">
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">01</span>Deal facts</div>
+      <div>
+        <h4>What the deal is</h4>
+        <div class="cat-sub">Extracted from message content · MEDDIC / Three Whys territory</div>
+        <ul>
+          <li>What the customer wants — product, size, materials, style, quantity</li>
+          <li>Why they want it — replacement, renovation, new build, aesthetic</li>
+          <li>When they need it — deadline mentions, "before Christmas", "next month"</li>
+          <li>Budget signals — explicit numbers, ranges, price sensitivity language</li>
+          <li>Who's involved — partner, architect, builder, project manager</li>
+          <li>Decision process — "I need to check with my wife", "the architect will decide"</li>
+          <li>Site details — postcode, property type, planning permission, listed status</li>
+          <li>Competitor mentions — other companies contacted, quoted, seen</li>
+          <li>Blockers — planning, funding, timing, existing installer</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">02</span>Temperature</div>
+      <div>
+        <h4>How hot is this deal?</h4>
+        <div class="cat-sub">Tone and pattern of communication, not just facts</div>
+        <ul>
+          <li>Urgency signals — "need this ASAP", "we've been waiting weeks"</li>
+          <li>Enthusiasm — long detailed replies, follow-up questions from customer</li>
+          <li>Cooling — one-word replies, days between responses, no follow-up</li>
+          <li>Frustration — repeat questions, "as I said before", complaint language</li>
+          <li>Buying signals — "how do we proceed", "when can we book"</li>
+          <li>Recurring objections — same concern raised across multiple messages</li>
+          <li>Silence pattern — customer went dark after being engaged</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">03</span>Rep behaviour</div>
+      <div>
+        <h4>What is the rep doing — or not doing?</h4>
+        <div class="cat-sub">Discipline signals · The core of Job B</div>
+        <ul>
+          <li>Days since last outbound — is the rep chasing?</li>
+          <li>Response latency — how long the rep took to reply to inbound</li>
+          <li>Unanswered customer questions — customer asked X, rep never addressed it</li>
+          <li>Missed commitments — rep said "I'll send the quote by Friday" and Friday's passed</li>
+          <li>No qualification captured — Three Whys empty despite clear signals in the conversation</li>
+          <li>Vague replies — rep's language quality flagged where it lacks specifics</li>
+          <li>Task follow-through — task marked complete but no evidence in messages</li>
+          <li>Skipped stage steps — deal at "Quote Sent" but no quote was actually sent</li>
+          <li>Stale MEDDIC — filled 6 weeks ago, customer's situation has moved since</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">04</span>Attribution</div>
+      <div>
+        <h4>Where did this deal come from and how has it evolved?</h4>
+        <div class="cat-sub">Journey and channel patterns</div>
+        <ul>
+          <li>First-touch channel — website / phone / referral</li>
+          <li>Journey pattern — how many messages before serious engagement</li>
+          <li>Conversion moments — which message shifted them from cold to warm</li>
+          <li>Loss moments — which message coincided with them going dark</li>
+          <li>Cross-channel — SMS then email then phone, or all in one channel?</li>
+          <li>Human vs automation — time-to-first-response we already track</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">05</span>Risk &amp; forecast</div>
+      <div>
+        <h4>What is this deal likely to do next?</h4>
+        <div class="cat-sub">Predictive signals about outcome</div>
+        <ul>
+          <li>Stall risk — pattern-matched against how past lost deals looked</li>
+          <li>Ghosting risk — customer inactivity that historically preceded losses</li>
+          <li>Bad-fit signals — postcode outside service area, budget below range, timeline unrealistic</li>
+          <li>Great-fit signals — budget confirmed, timeline set, decision-maker confirmed</li>
+          <li>Win probability — derived score from all above</li>
+          <li>Expected close date — inferred from customer's stated timeline</li>
+          <li>Forecast drift — rep's forecast vs AI-derived timeline</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">06</span>Cross-deal</div>
+      <div>
+        <h4>What patterns emerge across many deals?</h4>
+        <div class="cat-sub">Per-rep, per-product, per-source aggregation</div>
+        <ul>
+          <li>Rep coaching — "this rep has 5 deals with unanswered pricing questions"</li>
+          <li>Product-mix trends — "Crittall Corten enquiries up 40% this quarter"</li>
+          <li>Source quality — "Facebook leads convert at 3× lower rate than Google"</li>
+          <li>Objection frequency — top objections this month</li>
+          <li>Winning language — reply patterns that correlate with wins</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-tag"><span class="num">07</span>Silence</div>
+      <div>
+        <h4>When nothing has happened, what does that tell us?</h4>
+        <div class="cat-sub">Absence-based insights · Highest actionable value</div>
+        <ul>
+          <li>Time since last rep action — X days silent</li>
+          <li>Open deals with zero rep-authored messages — never actually worked</li>
+          <li>Customer questions still unanswered — days after being asked</li>
+          <li>Stage moved without matching outbound — "Quote Sent" but no message exists</li>
+          <li>MEDDIC gaps despite rich conversation — 20 messages of signal, nothing captured</li>
+          <li>Automation-only replies — no human has actually engaged</li>
+          <li>Missed positive-signal follow-ups — customer said "yes, send me the quote" 3 days ago</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <h4>Why this matters for scope</h4>
+    <p>
+      A common mistake with AI extraction projects is to build category 01
+      in isolation and call it done. That gives you a reporting improvement
+      but not a behavioural one. Category 03, 05 and 07 — rep behaviour,
+      risk signals, and silence detection — are what actually change how
+      the sales team operates day to day.
+    </p>
+    <p>
+      The build path below phases these deliberately: Job A first (categories
+      01 – 02) because it's the foundation, Job B second (03, 05, 07) because
+      it depends on the extraction outputs from Job A, then the cross-deal
+      analytics (06) on top.
+    </p>
+  </div>
+
+  <h2>How the pipeline works</h2>
+
+  <p>
+    Each extraction is a controlled operation with a full audit trail — from the
+    input messages to the final answer stored in Supabase and (optionally) written
+    back to GHL.
+  </p>
+
+  <ol>
+    <li>The extraction engine reads the deal's approved conversation from <code>vw_opportunity_messages_json</code>.</li>
+    <li>An LLM (model and prompt version pinned per run) is called with that conversation and a strict output schema.</li>
+    <li>Every returned fact must include a verbatim quote from the source. Facts without evidence are dropped.</li>
+    <li>Results write to three tables: <code>extraction_runs</code> (the run itself), <code>opportunity_extractions</code> (this deal at this point in time), <code>extracted_facts</code> + <code>fact_evidence</code> (the answers and their receipts).</li>
+    <li>If writeback is enabled, approved values project to <code>opportunity.meddic_N_ai</code> in GHL, logged in <code>ghl_writebacks</code> for idempotency.</li>
+  </ol>
+
+  <p>
+    A rep or admin can review any answer, see the quote that produced it, agree or
+    override. Overrides create a new version — the AI's original answer is never
+    lost.
+  </p>
+
+  <h2>Build path</h2>
+
+  <p>
+    Phased deliberately so Job A lands before Job B, and each phase produces
+    something useful on its own. Each phase boundary is a natural checkpoint
+    to review progress and decide whether to proceed.
+  </p>
+
+  <div class="phase">
+    <div class="phase-num">0</div>
+    <div class="phase-body">
+      <h4>Foundations</h4>
+      <div class="phase-meta">
+        <span>Prompt design</span><span class="sep"></span>
+        <span>Evaluation set</span><span class="sep"></span>
+        <span>Field spec locked</span>
+      </div>
+      <p>
+        Draft the extraction prompt for MEDDIC + Three Whys + signals, agree on
+        the exact output schema, and build a small evaluation set of ~30
+        hand-picked deals across the four sub-accounts — deals where the
+        correct answers are known. This is where we lock in what "good"
+        looks like before we spend any model time.
+      </p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">1</div>
+    <div class="phase-body">
+      <h4>Job A · Extraction engine</h4>
+      <div class="phase-meta">
+        <span>Categories 01 – 02</span><span class="sep"></span>
+        <span>Reads conversations</span><span class="sep"></span>
+        <span>Produces facts</span>
+      </div>
+      <p>
+        Ship the tables, wire the LLM call, run extraction manually on the
+        evaluation set, compare AI answers to ground truth, iterate on the
+        prompt until quality clears the bar set in Phase 0. Every fact is
+        evidence-backed. Facts without evidence are dropped.
+      </p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">2</div>
+    <div class="phase-body">
+      <h4>Manual input &amp; refresh</h4>
+      <div class="phase-meta">
+        <span>Web app hook</span><span class="sep"></span>
+        <span>Instant re-extract</span>
+      </div>
+      <p>
+        Sales manager pastes new information into the web app — an email sent
+        outside the system, a call note, a transcript — clicks a button and
+        the MEDDIC fields refresh immediately. Extraction fires on the deal,
+        the new source is included, GHL is mirrored back for rep visibility.
+        No waiting for the nightly sweep. The manager sees an updated answer
+        in seconds.
+      </p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">3</div>
+    <div class="phase-body">
+      <h4>Scheduled runs &amp; cost controls</h4>
+      <div class="phase-meta">
+        <span>Nightly extraction</span><span class="sep"></span>
+        <span>Staleness detection</span>
+      </div>
+      <p>
+        Nightly extraction runs across all open deals whose sources have
+        changed since the last successful run. Staleness is tracked per-deal
+        as two watermarks so the web app can show <em>Current</em>, <em>New
+        info since last read</em>, or <em>Never extracted</em> with no
+        calculation. Hard cost caps prevent accidental overrun.
+      </p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">4</div>
+    <div class="phase-body">
+      <h4>Review &amp; GHL writeback</h4>
+      <div class="phase-meta">
+        <span>Human-in-the-loop</span><span class="sep"></span>
+        <span>Idempotent projection</span>
+      </div>
+      <p>
+        Low-confidence answers stay unapproved until a human confirms.
+        Approved values project to GHL — rep sees AI-derived insight on the
+        opportunity in their existing GHL view, alongside their own values,
+        neither overwriting the other. Every writeback is logged with the
+        source fact, provider response, and retry state.
+      </p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">5</div>
+    <div class="phase-body">
+      <h4>Job B · Rep behaviour &amp; silence signals</h4>
+      <div class="phase-meta">
+        <span>Categories 03 · 05 · 07</span><span class="sep"></span>
+        <span>Actionable alerts</span>
+      </div>
+      <p>
+        Second AI pass on top of the Job A outputs plus what we already track
+        in the analytics view (whys freshness, task discipline, response
+        latency, message counts). Surfaces stalled deals, unanswered
+        customer questions, missed follow-ups, ghosting patterns, stale
+        qualification. Delivered as a manager-facing dashboard — one screen
+        that shows the deals that need attention right now, ranked by risk.
+      </p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-num">6</div>
+    <div class="phase-body">
+      <h4>Cross-deal analytics &amp; coaching signals</h4>
+      <div class="phase-meta">
+        <span>Category 06</span><span class="sep"></span>
+        <span>Aggregate insight</span>
+      </div>
+      <p>
+        Patterns across many deals — per-rep coaching signals, product-mix
+        trends, source quality comparisons, top objections this month,
+        winning language. This is where the coaching plans and battle cards
+        from the CSV blueprint's later stages live.
+      </p>
+    </div>
+  </div>
+
+  <h2>Realistic time expectations</h2>
+
+  <div class="callout">
+    <h4>Honest read on timeline</h4>
+    <p>
+      Stage 4 is not a quick build. It's an evolving system that gets more
+      accurate as we tune the prompt against real data. The first working version
+      lands relatively quickly; the version that reliably matches what a good
+      rep would write takes sustained iteration on top of that.
+    </p>
+    <p>
+      This is normal for LLM systems. What matters is that every intermediate
+      version is safely reviewable — no silent overwrites, no unapproved
+      writeback, no hallucinated facts. We move quickly on infrastructure and
+      slowly on quality until the client is comfortable.
+    </p>
+  </div>
+
+  <table class="timeline">
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>What lands</th>
+        <th>Relative effort</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>0</td>
+        <td>Prompt draft + evaluation set</td>
+        <td>Small · foundation only</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Job A extraction engine + evaluation loop</td>
+        <td>Medium · the core build</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Manual input &amp; refresh flow</td>
+        <td>Small · web app hook</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Scheduled runs + cost controls + staleness UI</td>
+        <td>Small</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Review workflow + GHL writeback</td>
+        <td>Small</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Job B rep behaviour &amp; silence signals</td>
+        <td>Medium · second AI pass</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Cross-deal analytics &amp; coaching signals</td>
+        <td>Medium</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Timelines are deliberately not fixed dates. This kind of build moves at
+    the pace of prompt iteration — the code parts are predictable, the
+    quality parts are not. What each phase delivers is a working baseline;
+    accuracy improves with iteration against real data and there is no
+    honest way to put a date on that.
+  </p>
+  <p>
+    A rough shape: Job A (Phases 0 – 4) is the first major milestone —
+    once it lands, the client sees the AI producing MEDDIC values with
+    evidence, and the manager can refresh a deal from the web app. Job B
+    (Phase 5) is the second major milestone, dependent on Job A being
+    stable. Cross-deal analytics (Phase 6) sits on top of everything and
+    is worth building last, when there's enough data on both jobs to make
+    aggregation meaningful.
+  </p>
+
+  <h2>What we need to lock down</h2>
+
+  <ol>
+    <li>
+      <strong>MEDDIC field definitions in the client's own words.</strong>
+      What does "Metrics" mean for a Crittall deal specifically? What does
+      "Economic buyer" look like for a Bespoke Glazing Design customer?
+      These become the ground truth for the prompt.
+    </li>
+    <li>
+      <strong>Ten to thirty labelled deals as an evaluation set.</strong>
+      Deals where the correct MEDDIC values have been written manually by
+      a strong rep or the sales lead. This is the answer key the AI's
+      outputs are measured against.
+    </li>
+    <li>
+      <strong>Writeback rules.</strong>
+      When AI confidence is 0.9+, write automatically? Always require human
+      approval? Different rules per field? These are policy decisions, not
+      technical ones.
+    </li>
+    <li>
+      <strong>Which sub-account goes live first.</strong>
+      Recommend the sub-account with the fullest dataset and clearest read
+      on ground truth. That's usually the flagship client — for us,
+      Crittall.
+    </li>
+  </ol>
+
+  <h2>What we own on our side</h2>
+
+  <ul>
+    <li>LLM provider selection, key management, rate-limit and retry handling.</li>
+    <li>Prompt versioning and A/B evaluation infrastructure.</li>
+    <li>All 5 new tables + 21 new columns on <code>opportunities</code>.</li>
+    <li>Cost tracking per run, per location, per model version.</li>
+    <li>Complete audit trail — every AI answer traceable to model, prompt, run, and source quotes.</li>
+    <li>Safe GHL writeback (idempotent, retryable, never overwrites rep-authored fields).</li>
+    <li>Regular quality reports through the early iteration window post-launch.</li>
+  </ul>
+
+  <div class="note">
+    <strong>Commercial note.</strong> Stage 4 is a distinct engineering phase beyond the
+    current agreement. Ongoing model API costs are variable — expect roughly
+    <span style="white-space:nowrap;">£20 – £100 / month</span> per active sub-account
+    depending on message volume and how often extraction runs. Scope, price, and
+    payment terms to be confirmed in a separate document before Phase 0 begins.
+  </div>
+
+  <hr class="rule">
+
+  <h2>Next step</h2>
+
+  <p>
+    Once the shape of this plan is agreed, we'd open <strong>Phase 0</strong>
+    — a short foundation phase on prompt design and the evaluation set.
+    That's the smallest viable commitment: if the outputs don't convince
+    us, we stop before writing any pipeline code.
+  </p>
+
+  <p>
+    Everything downstream of Phase 0 is only worth building if Phase 0 proves
+    the LLM can produce answers that match how a strong rep would fill in the
+    same field.
+  </p>
+
+  <div class="footer">
+    <p>
+      <strong>PipelinePulse — Stage 4 planning document</strong><br>
+      Stage 1 – 3 already delivered in production.
+    </p>
+  </div>
+
+</div>

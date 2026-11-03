@@ -1,0 +1,35 @@
+{
+  "name": "deals_gone_stagnant",
+  "description": "Open deals grouped by stage and by how long since anyone last touched them — a message either way, a stage move, a note, a task, or the deal being created. Shows how many are idle under 14 days, 14-29, 30-59 and 60+, the typical idle days per stage, and the total value sitting untouched for 30 days or more. Use for 'which deals have gone quiet', 'what needs chasing', 'where is my pipeline going cold', 'how much value is sitting idle', 'which stage do deals go stale in'. These are OPEN deals a rep can still act on — for deals already lost, use the drop-off or momentum skills.",
+  "viewName": "vw_stagnant_open_deals",
+  "params": [
+    {
+      "name": "stage",
+      "column": "stage",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name, e.g. 'quote'. Omit to see every stage."
+    },
+    {
+      "name": "min_idle_days",
+      "column": "median_idle_days",
+      "type": "number",
+      "op": "gte",
+      "description": "Only stages where the typical deal has been untouched at least this many days. Use for 'where have deals been quiet over a month'."
+    },
+    {
+      "name": "min_open_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages holding at least this many open deals. Useful for ignoring one-off stages."
+    }
+  ],
+  "columns": [],
+  "orderBy": "open_deals DESC",
+  "rowLimit": 50,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

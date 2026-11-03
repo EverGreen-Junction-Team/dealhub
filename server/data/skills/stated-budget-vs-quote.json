@@ -1,0 +1,57 @@
+{
+  "name": "stated_budget_vs_quote",
+  "description": "Every time a customer named a budget figure, with what we quoted that deal and the gap between the two. One row per mention — this is a LIST, deliberately not an average. Use for 'how far off were we on price', 'what budgets do customers state', 'did we quote over their budget', 'show me the price gaps'. READ THE COUNT FIRST: only a small number of deals have a stated figure at all — 14 across both accounts on current data. Call stated_budget_coverage before answering anything about typical gaps, and quote the count alongside any figure. With numbers this small, report the individual rows and let the reader judge; do NOT present a median or an average as 'the typical customer budget', because an average of ten numbers is ten numbers with a line through them. gap_to_quote is quoted_value minus stated_budget, so positive means we quoted ABOVE what they said they had. quoted_value is the deal's value at the time of reading, which may have been revised after the customer named their figure — the gap is indicative, not a snapshot of one moment. Quote the customer's own words from `quote` and name the deal. ALWAYS identify a deal by deal_name, never by opportunity_id. The id is in the data so a row can be looked up, not so it can be shown — an answer that reads \"2lVBs41TxfmKK8U03fIn said the price was too high\" is unusable to a rep, who cannot tell which customer that is without searching for the id. Say the deal name, and the owner when it helps.",
+  "viewName": "vw_stated_budget_vs_quote",
+  "params": [
+    {
+      "name": "deal",
+      "column": "deal_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Only rows on deals whose name contains this text. Prefer this over opportunity_id — a rep knows the name."
+    },
+    {
+      "name": "status",
+      "column": "status",
+      "type": "text",
+      "op": "eq",
+      "description": "won, lost, abandoned or open."
+    },
+    {
+      "name": "min_gap",
+      "column": "gap_to_quote",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals where we quoted at least this much ABOVE the stated budget."
+    },
+    {
+      "name": "min_gap_pct",
+      "column": "gap_pct",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals where the quote exceeded the stated budget by at least this percentage."
+    },
+    {
+      "name": "min_budget",
+      "column": "stated_budget",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals where the customer stated at least this much."
+    },
+    {
+      "name": "opportunity_id",
+      "column": "opportunity_id",
+      "type": "text",
+      "op": "eq",
+      "description": "The budget figures stated on a single deal."
+    }
+  ],
+  "columns": [],
+  "orderBy": "gap_pct DESC NULLS LAST",
+  "rowLimit": 100,
+  "surfaces": [
+    "portfolio",
+    "deal"
+  ],
+  "isEnabled": true
+}

@@ -1,0 +1,11 @@
+{
+  "name": "location_data_coverage",
+  "description": "How complete the location data is: how many deals carry a job postcode, a customer postcode, a city or a street address, how many of those postcodes are complete UK codes rather than partial, and how coverage differs on won deals. Use for 'can we map our customers', 'how good is our address data', 'do we know where our customers are', and ALWAYS as the first step before quoting anything from conversion_by_area or lead_map_area_route — this is the constraint on both. State pct_any_postcode alongside any area breakdown: at 60% coverage, an area map describes three fifths of the business and says nothing about the rest, and the deals missing an address are not a random sample. Job postcode and customer postcode are reported separately because they mean different things — the job is where the work is, the customer record is a billing address, and they diverge for builders, landlords, architects and second homes; pct_job_postcode tells you which field a map is really resting on. valid_uk_full counts complete codes good enough to plot or post, while a partial code still places a deal in an area, so that number being smaller than with_any_postcode is normal and not an error. pct_won_with_postcode is usually higher than overall coverage because an address gets taken once work is booked, so overall coverage understates what is known about customers who actually bought.",
+  "viewName": "vw_location_data_coverage",
+  "params": [],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 10,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

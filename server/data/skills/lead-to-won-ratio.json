@@ -1,0 +1,11 @@
+{
+  "name": "lead_to_won_deal_ratio",
+  "description": "Lead-to-won conversion, given three ways: wins per lead created, wins per deal that finished, and wins per finished deal excluding leads lost before anyone engaged. Also returns lead and win counts, the value won, and the date range covered. Use for 'what is our lead to won ratio', 'what percentage of leads do we win', 'what is our conversion rate', 'how many leads become customers', 'how good is our close rate'. Quote the figure that fits the question and say which one it is — wins per lead counts still-open deals as failures, so it always reads worse. If intake_stages_matched is empty, the junk figure could not be identified and should not be presented as zero.",
+  "viewName": "vw_lead_to_won_ratio",
+  "params": [],
+  "columns": [],
+  "orderBy": "leads DESC",
+  "rowLimit": 10,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

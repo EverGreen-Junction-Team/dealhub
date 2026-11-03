@@ -1,0 +1,42 @@
+{
+  "name": "customer_question_themes",
+  "description": "What customers ASKED about, grouped into themes, with how often a reply followed. One row per theme per deal-status. Use for 'what do customers ask about', 'what questions come up on deals we lost', 'what do won deals ask that lost deals do not', 'are we answering customer questions', 'what are customers confused about'. Filter status to compare won against lost — that contrast is usually the point of the question. IMPORTANT about was_answered: it is DERIVED, not recorded. It means an outbound message existed on the same deal within 30 days after the question was asked. That is evidence a reply was sent, NOT evidence the question was answered well or even addressed; say so rather than reporting unanswered as a service failure. Two different 'no theme' values exist and they mean opposite things: 'Other / uncategorized' is a real bucket misha chose, meaning she read the question and did not classify it; '(no theme mapped)' means the lookup has never seen that label at all. The second should be rare — it covers 596 of 596 labels today — so if it appears at scale the extraction has drifted and the themes are stale. Never merge the two. Quote an actual question when naming a theme, and name the deal it came from.",
+  "viewName": "vw_customer_question_themes",
+  "params": [
+    {
+      "name": "status",
+      "column": "status",
+      "type": "text",
+      "op": "eq",
+      "description": "won, lost, abandoned or open. Compare won against lost to see which questions precede a loss."
+    },
+    {
+      "name": "theme",
+      "column": "theme",
+      "type": "text",
+      "op": "contains",
+      "description": "Only themes matching this text, e.g. 'price', 'lead time', 'install'."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals_asking",
+      "type": "int",
+      "op": "gte",
+      "description": "Only themes asked on at least this many deals. Raise it to find patterns, lower it to see the long tail. There is no safe default — a theme on 3 deals is an anecdote."
+    },
+    {
+      "name": "min_unanswered",
+      "column": "unanswered",
+      "type": "int",
+      "op": "gte",
+      "description": "Only themes with at least this many questions that got no outbound reply within 30 days."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals_asking DESC",
+  "rowLimit": 200,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

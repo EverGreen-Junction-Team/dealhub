@@ -1,0 +1,54 @@
+{
+  "name": "forecast_deals",
+  "description": "Every open deal with its forecast facts: value, the probability actually being used and where it came from, weighted value, expected close month, stage, owner and how long it has been open. Use for 'which deals make up October', 'show me the deals in the forecast', 'biggest deals in the pipeline', 'which deals have no close date', 'what is behind that number', 'which deals are overdue', 'show me the list'. This is the evidence behind every other forecast figure — reach for it whenever someone asks what a total is made of. Filter by close_month for a period, by value for the largest, by no_close_date for the pipeline the forecast cannot see, or by overdue for close dates that have passed. Quote probability_source when the probability looks odd: 'stage' means the figure came from the stage rather than anything set on the deal, and 'none' means nobody set one, so the deal contributes nothing to expected revenue despite its value. Deals with no close date have an empty close_month and belong to no period — they are not late, they are unplaced.",
+  "viewName": "vw_forecast_deals",
+  "params": [
+    {
+      "name": "close_month",
+      "column": "close_month",
+      "type": "date",
+      "op": "eq",
+      "description": "Deals expected to close in this month. Pass the first of the month, e.g. 2026-10-01."
+    },
+    {
+      "name": "min_value",
+      "column": "value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals worth at least this much. Use for 'the biggest deals'."
+    },
+    {
+      "name": "owner",
+      "column": "owner",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep by name."
+    },
+    {
+      "name": "stage",
+      "column": "stage_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Only deals sitting in this stage."
+    },
+    {
+      "name": "min_probability",
+      "column": "probability",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals at or above this win probability. Use for 'what are we most likely to close'."
+    },
+    {
+      "name": "min_days_open",
+      "column": "days_open",
+      "type": "int",
+      "op": "gte",
+      "description": "Only deals open at least this many days."
+    }
+  ],
+  "columns": [],
+  "orderBy": "expected_value DESC",
+  "rowLimit": 150,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

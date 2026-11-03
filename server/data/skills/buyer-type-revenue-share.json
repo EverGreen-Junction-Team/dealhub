@@ -1,0 +1,49 @@
+{
+  "name": "buyer_type_revenue_share",
+  "description": "Each buyer type's share of enquiries set against its share of won revenue, plus how far their deals get through the pipeline: how many reached Quote Sent and Deposit & Sales Contract, deal counts, win rate, won and open value. Use for 'which customers are worth having', 'which buyer type makes us the most money', 'where should we focus', 'which buyers drop off before deposit', 'who commits and who does not', 'buyer type performance'. Two different questions live here and both are worth leading with. For value, the finding is the GAP between lead share and revenue share: revenue_minus_lead_share states it in percentage points, and a buyer type at 40% of leads and 12% of revenue is consuming most of the effort and returning least of the money. For drop-off, pct_quote_to_deposit is the figure — of the deals that got as far as a quote, how many went on to deposit — and it separates a buyer type that never gets quoted (low pct_reach_quote) from one that gets quoted and then will not commit (high pct_reach_quote, low pct_quote_to_deposit). Those are different problems with different fixes. Two things must be said whenever you use this. First, shares are of TYPED deals only — deals with no buyer type are absent from these rows entirely, so quote pct_deals_typed; at 65% typed, every share here describes two thirds of the business. Second, a deal marked with two buyer types is counted under each, so the rows deliberately do not sum to the account: answer 'how many deals' and 'how much did we win' from account_deals, account_won and account_won_value, never by adding the columns. Read open_value beside the revenue share — a buyer type with a big pipeline that has not closed yet looks weak without being weak. Reached-stage counts are furthest-ever-reached, so a deal moved back a stage still counts as having got there. Say the deal count next to any share or rate; min_deals exists to set that floor deliberately, and a small buyer type carrying large deals is a real finding rather than noise. A non-zero malformed_client_type means some deals carry an unexpected data shape and are excluded — mention it rather than ignoring it.",
+  "viewName": "vw_buyer_type_revenue_share",
+  "params": [
+    {
+      "name": "buyer_type",
+      "column": "buyer_type",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one buyer type by name, e.g. homeowner, developer, architect."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only buyer types with at least this many deals. Use to drop those too small to judge — but a small type carrying large deals is worth seeing, so prefer leaving this off when the question is about value."
+    },
+    {
+      "name": "underperforming_by",
+      "column": "revenue_minus_lead_share",
+      "type": "number",
+      "op": "lte",
+      "description": "Only buyer types whose revenue share trails their lead share by at least this many points (pass a negative number, e.g. -10). Use for 'which customers cost us more than they are worth'."
+    },
+    {
+      "name": "min_won_value",
+      "column": "won_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only buyer types that have won at least this much in total."
+    },
+    {
+      "name": "deposit_conversion_below_pct",
+      "column": "pct_quote_to_deposit",
+      "type": "number",
+      "op": "lte",
+      "description": "Only buyer types converting quotes into deposits at or below this rate. Use for \"which buyers drop off at the commitment step\"."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 40,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

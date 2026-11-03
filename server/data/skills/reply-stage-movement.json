@@ -1,0 +1,20 @@
+{
+  "name": "reply_stage_movement",
+  "description": "Rep replies counted by the stage the deal moved to afterwards, with how long the move took. Use for 'do our replies move deals forward', 'how long after a reply does a deal progress', 'which replies lead somewhere'. READ THIS BEFORE DRAWING A CONCLUSION: a stage move after a reply is correlation, not proof the reply caused it. Deals move for many reasons and a rep reply is rarely the only thing happening. Say 'moved after' rather than 'worked' or 'caused'. stage_moved_to = 'None' means no stage change was recorded, which is the normal case for most replies, not a failure. under_15min_suspect counts moves recorded less than 15 minutes after the reply — too fast for a customer to have read and reacted, so almost certainly an automated CRM transition. On current data this is 2 of 791 replies (0.3%), so it is a rare artefact rather than a reason to distrust the view; report it only if it is non-trivial for the rows in question. buyer_type is the deal's PRIMARY type — a deal tagged with several is counted once, under the first.",
+  "viewName": "vw_reply_stage_movement",
+  "params": [
+    { "name": "stage_moved_to", "column": "stage_moved_to", "type": "text", "op": "contains",
+      "description": "Only replies followed by a move to this stage. 'None' for replies with no recorded move." },
+    { "name": "buyer_type", "column": "buyer_type", "type": "text", "op": "eq",
+      "description": "The deal's primary buyer type, lowercase." },
+    { "name": "min_replies", "column": "replies", "type": "int", "op": "gte",
+      "description": "Only rows covering at least this many replies." },
+    { "name": "max_median_days", "column": "median_days_to_move", "type": "number", "op": "lte",
+      "description": "Only rows where the median move happened within this many days." }
+  ],
+  "columns": [],
+  "orderBy": "replies DESC",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

@@ -1,0 +1,33 @@
+{
+  "name": "time_from_enquiry_to_won_by_source",
+  "description": "How many days it takes a won deal to close, by lead source — the typical time, the fastest and slowest, and how many closed the same day. Split two ways: what a REP recorded in the lead source picklist, and what the SYSTEM recorded (website form, webchat, enquiries@ inbox, Crittall email upload, or created by hand). Use for 'how long does it take to win a deal', 'which sources close fastest', 'how long is our sales cycle', 'do website leads close quicker than referrals', 'what is the time from enquiry to sale'. Won deals only — time-to-win has no meaning for a deal that has not been won, so this is not a conversion measure. A wide gap between fastest and slowest means the source brings two different kinds of customer, which is worth saying. CRITICAL: a deal appears once in each split, so never total across both — report one at a time and say which.",
+  "viewName": "vw_source_time_to_win",
+  "params": [
+    {
+      "name": "split",
+      "column": "split",
+      "type": "text",
+      "op": "contains",
+      "description": "Which view of source to report: 'rep' for what a rep entered, 'system' for what the CRM recorded. Almost always worth setting — the two are not comparable."
+    },
+    {
+      "name": "source",
+      "column": "source",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one source, e.g. 'webchat' or 'referral'."
+    },
+    {
+      "name": "min_won",
+      "column": "won",
+      "type": "int",
+      "op": "gte",
+      "description": "Only sources with at least this many wins. Use to drop sources with too few wins to read a median from."
+    }
+  ],
+  "columns": [],
+  "orderBy": "won DESC",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

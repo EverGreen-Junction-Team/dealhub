@@ -1,0 +1,40 @@
+{
+  "name": "rep_field_completeness",
+  "description": "How often four deal fields — deal value, lead source, buyer type and product type — are left empty on each rep's open deals, as counts, percentages and total value at stake. Use for 'who is not filling in the CRM', 'which fields are missing', 'how complete are our deal records', 'is anyone leaving deals blank'. CRITICAL CAVEAT, state it every time: these are NOT the business's mandatory fields. They are four stand-ins chosen until the real mandatory list is supplied, so never call this a compliance score or say a rep is 'x% compliant' — say it is four fields out of the deal record, named. Report the per-field counts beside pct_of_4_filled, because one badly-kept field hides inside a combined number. Prefer the value_missing_* columns when deciding what to act on: a missing buyer type on a large deal costs more than the same gap on a small one, and ranking by money often points somewhere different from ranking by count. Say the open-deal count next to any percentage; min_open_deals exists to set that floor deliberately. Rows are per GHL user account, not per person — someone holding several accounts appears several times and must not be described as several people. unassigned_open_deals counts deals with no owner: they are excluded from the rates because no rep's diligence is in question, but they are the likeliest of all to be empty, so mention them when non-zero. Note is_inactive_user rather than presenting a departed rep as current.",
+  "viewName": "vw_rep_field_completeness",
+  "params": [
+    {
+      "name": "rep",
+      "column": "rep_account",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep account by name."
+    },
+    {
+      "name": "min_open_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only accounts with at least this many open deals. Use to drop accounts too small for a percentage to mean anything — five is a reasonable floor."
+    },
+    {
+      "name": "filled_below_pct",
+      "column": "pct_of_4_filled",
+      "type": "number",
+      "op": "lte",
+      "description": "Only accounts filling at or below this share of the four fields. Use for 'who is leaving deal records empty'."
+    },
+    {
+      "name": "min_value_missing_buyer",
+      "column": "value_missing_buyer",
+      "type": "number",
+      "op": "gte",
+      "description": "Only accounts with at least this much open value missing a buyer type. Use for 'where are the gaps that actually cost us'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "open_deals DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

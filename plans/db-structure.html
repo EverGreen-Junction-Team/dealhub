@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supabase Database — Structure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF8; --ink:#1C2326; --ink-soft:#566066; --steel:#6B7B85; --steel-soft:#A9B4BB;
+    --hair:#E6E3DD; --rust:#B5512E; --rust-soft:#F6EBE6; --green:#3F7A55; --green-soft:#E7F0E9;
+    --amber:#C8821E; --amber-soft:#FAF0DD; --blue:#3E6D96; --blue-soft:#E8EFF5;
+    --plum:#5B4A87; --plum-soft:#EFEAF6;
+    --disp:'Archivo',sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; margin:0;}
+  body{background:#F2F0EC; color:var(--ink); font-family:var(--disp); font-size:14.5px; line-height:1.6;}
+  .wrap{max-width:1060px; margin:0 auto; padding:40px 32px 72px;}
+
+  header.doc{border-bottom:3px solid var(--ink); padding-bottom:22px; margin-bottom:36px;}
+  .brand{display:flex; align-items:center; gap:11px; margin-bottom:16px;}
+  .bars{display:flex; gap:3px; align-items:flex-end; height:24px;}
+  .bars span{width:5px; border-radius:1px; background:var(--rust); height:13px;}
+  .bars span:nth-child(2){height:24px; background:#5C9BD5;}
+  .bars span:nth-child(3){height:18px; background:var(--green);}
+  .brand b{font-size:14px; font-weight:800;}
+  .brand i{font-family:var(--mono); font-size:10px; font-style:normal; color:var(--steel); letter-spacing:.05em;}
+  h1{font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.15; margin-bottom:14px;}
+  .lede{color:var(--ink-soft); margin-top:12px; max-width:820px; font-size:15px; line-height:1.55;}
+  .meta{display:flex; flex-wrap:wrap; gap:14px 24px; margin-top:14px;}
+  .meta .kv{font-family:var(--mono); font-size:11px; color:var(--steel); letter-spacing:.03em;}
+  .meta .kv b{color:var(--ink); font-weight:600; margin-right:6px;}
+
+  h2{font-size:22px; font-weight:800; letter-spacing:-.015em; margin:38px 0 12px; display:flex; align-items:baseline; gap:12px;}
+  h2 .num{font-family:var(--mono); font-size:11px; font-weight:600; color:var(--steel); letter-spacing:.06em; background:var(--paper); border:1px solid var(--hair); padding:3px 8px; border-radius:5px; align-self:center;}
+  h2:first-of-type{margin-top:0;}
+
+  p{margin:0 0 12px;}
+  code{font-family:var(--mono); font-size:12px; background:#F0EDE7; border:1px solid var(--hair); border-radius:4px; padding:1px 6px; color:var(--ink); white-space:nowrap;}
+  strong{color:var(--ink); font-weight:700;}
+
+  /* overview map */
+  .overview{background:var(--paper); border:1px solid var(--hair); border-radius:12px; padding:22px; margin-bottom:24px;}
+  .overview h3{font-family:var(--mono); font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--steel); font-weight:600; margin-bottom:14px;}
+  .obj-map{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  .obj-map > div{background:#FFFFFE; border:1px solid var(--hair); border-radius:8px; padding:12px 14px; border-top:3px solid;}
+  .obj-map .c{border-top-color:var(--blue);}
+  .obj-map .o{border-top-color:var(--rust);}
+  .obj-map .s{border-top-color:var(--green);}
+  .obj-map .m{border-top-color:var(--plum);}
+  .obj-map .name{font-family:var(--mono); font-size:12px; font-weight:700; color:var(--ink); margin-bottom:2px;}
+  .obj-map .role{font-size:11px; color:var(--ink-soft); line-height:1.4;}
+  .obj-map .rel{font-family:var(--mono); font-size:9.5px; color:var(--steel); letter-spacing:.04em; margin-top:6px;}
+
+  .relates{background:#F7F5F1; border:1px dashed var(--steel-soft); border-radius:8px; padding:12px 16px; margin-top:14px; font-family:var(--mono); font-size:11.5px; color:var(--ink); text-align:center; letter-spacing:.02em; line-height:1.8;}
+  .relates span{background:var(--paper); border:1px solid var(--hair); border-radius:4px; padding:3px 8px; color:var(--ink);}
+  .relates .arr{color:var(--steel);}
+
+  /* table cards */
+  .tblcard{background:var(--paper); border:1px solid var(--hair); border-radius:12px; margin-bottom:24px; overflow:hidden;}
+  .tblhead{padding:16px 22px; border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .tblhead .tname{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--ink);}
+  .tblhead .kind{display:inline-block; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:5px;}
+  .kind.core{background:var(--rust-soft); color:var(--rust); border:1px solid #E7CFC5;}
+  .kind.op{background:var(--amber-soft); color:var(--amber); border:1px solid #EBD3A3;}
+  .kind.view{background:var(--plum-soft); color:var(--plum); border:1px solid #D8CDEA;}
+  .tbldesc{color:var(--ink-soft); font-size:13.5px; flex:1 1 100%; margin-top:6px; line-height:1.55;}
+  .tblhead .pk{font-family:var(--mono); font-size:10px; color:var(--steel);}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{font-family:var(--mono); font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--steel); font-weight:600; text-align:left; padding:9px 22px; background:#F7F5F1; border-bottom:1px solid var(--hair);}
+  tbody td{padding:10px 22px; border-bottom:1px solid var(--hair); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:nth-child(even){background:#FDFBF7;}
+  td.cname{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap;}
+  td.ctype{font-family:var(--mono); font-size:11px; color:var(--steel); white-space:nowrap;}
+  td.cdesc{color:var(--ink-soft); font-size:13px; line-height:1.5;}
+  .tag{display:inline-block; font-family:var(--mono); font-size:8.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:1px 5px; border-radius:3px; margin-left:5px; vertical-align:1px;}
+  .tag.pk{background:var(--ink); color:#fff;}
+  .tag.fk{background:var(--blue-soft); color:var(--blue); border:1px solid #C5D6E4;}
+  .tag.uk{background:var(--green-soft); color:var(--green); border:1px solid #B9D4C2;}
+  .tag.idx{background:#EDEFF0; color:#404A50; border:1px solid #D4D9DC;}
+
+  /* callout */
+  .call{border-left:3px solid var(--blue); background:var(--blue-soft); padding:14px 18px; border-radius:0 8px 8px 0; margin:16px 0;}
+  .call.warn{border-left-color:var(--amber); background:var(--amber-soft);}
+  .call.good{border-left-color:var(--green); background:var(--green-soft);}
+  .call .label{display:block; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; margin-bottom:8px; color:var(--blue);}
+  .call.warn .label{color:var(--amber);}
+  .call.good .label{color:var(--green);}
+  .call p:last-child{margin-bottom:0;}
+
+  .keynote{font-family:var(--mono); font-size:10.5px; color:var(--steel); margin-top:22px; line-height:1.7; letter-spacing:.02em;}
+
+  @media (max-width:900px){
+    .obj-map{grid-template-columns:repeat(2,1fr);}
+    thead th, tbody td{padding:8px 14px;}
+    .tblhead{padding:14px 16px;}
+  }
+  @media (max-width:560px){
+    .obj-map{grid-template-columns:1fr;}
+    .wrap{padding:24px 16px 48px;}
+    h1{font-size:24px;}
+  }
+  @media print{
+    body{background:#fff;}
+    .wrap{max-width:none; padding:16px 24px;}
+    .tblcard, .overview, .call{page-break-inside:avoid;}
+    h2{page-break-after:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="brand">
+    <div class="bars" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div><b>Vaultsuite</b>&ensp;<i>reference · supabase database structure</i></div>
+  </div>
+  <h1>Supabase Database — Structure</h1>
+  <p class="lede">Every table in the Supabase project that holds Crittall / BGD / Veritas / Omnia data, what it holds, how it links to the others, and what it feeds. Written for anyone querying the database — Claude, Eduarda, or a future engineer.</p>
+  <div class="meta">
+    <span class="kv"><b>Project ref</b>qxzpncjvnkmxhggeswpu</span>
+    <span class="kv"><b>Region</b>eu-west-2</span>
+    <span class="kv"><b>Author</b>Vaultsuite Team</span>
+    <span class="kv"><b>Updated</b>21 Jul 2026</span>
+  </div>
+</header>
+
+<section class="overview">
+  <h3>The four things we track per deal · plus internal &amp; analytics tables</h3>
+  <div class="obj-map">
+    <div class="c">
+      <div class="name">contacts</div>
+      <div class="role">Who the customer is — name, email, phone, source tags, gclid, custom fields.</div>
+      <div class="rel">1 → many · opportunities, messages</div>
+    </div>
+    <div class="o">
+      <div class="name">opportunities</div>
+      <div class="role">The deal itself — pipeline, stage, value, owner, MEDDIC, product, custom fields.</div>
+      <div class="rel">1 → many · stage_history, messages</div>
+    </div>
+    <div class="s">
+      <div class="name">stage_history</div>
+      <div class="role">One row per stage the deal has been in. Open row has current_stage = true.</div>
+      <div class="rel">1 → many · messages</div>
+    </div>
+    <div class="m">
+      <div class="name">messages</div>
+      <div class="role">Emails, WhatsApp, SMS, calls — cleaned body + provider IDs, linked to contact, opp, stage row.</div>
+      <div class="rel">links back to all three above</div>
+    </div>
+  </div>
+  <div class="relates">
+    <span>contacts</span><span class="arr">→</span><span>opportunities</span><span class="arr">→</span><span>stage_history</span><span class="arr">→</span><span>messages</span>
+    <br><span style="font-size:10px;color:var(--steel);letter-spacing:.03em;">joined on (location_id, contact_id) · (location_id, opportunity_id) · stage_history_id</span>
+  </div>
+</section>
+
+<h2><span class="num">01</span>The four business tables</h2>
+<p>Everything an analytics query hits day-to-day is in these four tables. All four are scoped by <code>location_id</code> (one per GHL sub-account — Crittall, BGD, Veritas, Omnia) with Row-Level Security enforcing tenant isolation.</p>
+
+<!-- ------------------ contacts ------------------ -->
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">contacts</span>
+    <span class="kind core">Core</span>
+    <span class="pk">Primary key: (location_id, contact_id)</span>
+    <p class="tbldesc">One row per person we've ever seen. Populated on first contact and updated whenever GHL sends us contact-level changes. Rich custom-field data lives in the <code>custom_fields</code> JSONB blob; the columns above it are the fields we've promoted for direct querying.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">location_id <span class="tag pk">PK</span></td><td class="ctype">TEXT</td><td class="cdesc">GHL sub-account. One of Crittall / BGD / Veritas / Omnia.</td></tr>
+      <tr><td class="cname">contact_id <span class="tag pk">PK</span></td><td class="ctype">TEXT</td><td class="cdesc">GHL's unique contact ID.</td></tr>
+      <tr><td class="cname">gclid</td><td class="ctype">TEXT</td><td class="cdesc">Google Ads click ID — the token that lets us send Won deals back as offline conversions. Currently thin (~4 populated). Blocker on marketing loop.</td></tr>
+      <tr><td class="cname">gbraid, wbraid</td><td class="ctype">TEXT</td><td class="cdesc">Consent-mode privacy-safe click identifiers (Google's app↔web equivalents of gclid).</td></tr>
+      <tr><td class="cname">gad_source</td><td class="ctype">TEXT</td><td class="cdesc">Which Google surface produced the click (Search, Display, YouTube, …).</td></tr>
+      <tr><td class="cname">utm_source, utm_medium, utm_campaign, utm_content, utm_term</td><td class="ctype">TEXT</td><td class="cdesc">Standard UTM tags captured by the website's hidden form fields.</td></tr>
+      <tr><td class="cname">marketing_consent</td><td class="ctype">BOOLEAN</td><td class="cdesc">Nurture-marketing opt-in state at the moment the contact was created.</td></tr>
+      <tr><td class="cname">custom_fields</td><td class="ctype">JSONB</td><td class="cdesc">Full GHL custom-field dictionary as key→value (friendly keys). Every non-promoted contact custom field is in here.</td></tr>
+      <tr><td class="cname">from_backfill</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE if this row was created by the one-time historical backfill; FALSE if by the live pipeline.</td></tr>
+      <tr><td class="cname">imported_at, updated_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When we first saw the row, and when we last touched it.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ------------------ opportunities ------------------ -->
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">opportunities</span>
+    <span class="kind core">Core</span>
+    <span class="pk">Primary key: (location_id, opportunity_id) · FK → contacts</span>
+    <p class="tbldesc">One row per deal. The "deal card" as it exists in GHL, promoted into columns for querying. MEDDIC fields (1–10) are the rep-entered qualification narrative. The AI extraction (Phase 2) will add paired <code>meddic_N_ai</code> and <code>meddic_N_evidence</code> fields alongside these.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">location_id <span class="tag pk">PK</span></td><td class="ctype">TEXT</td><td class="cdesc">Sub-account this deal belongs to.</td></tr>
+      <tr><td class="cname">opportunity_id <span class="tag pk">PK</span></td><td class="ctype">TEXT</td><td class="cdesc">GHL's unique deal ID.</td></tr>
+      <tr><td class="cname">contact_id <span class="tag fk">FK</span></td><td class="ctype">TEXT</td><td class="cdesc">The person this deal is with. Joins to <code>contacts</code>.</td></tr>
+      <tr><td class="cname">name</td><td class="ctype">TEXT</td><td class="cdesc">Opportunity display name.</td></tr>
+      <tr><td class="cname">pipeline_id, pipeline_name</td><td class="ctype">TEXT</td><td class="cdesc">Which pipeline the deal sits in (one pipeline per sales manager).</td></tr>
+      <tr><td class="cname">current_stage_id, current_stage_name</td><td class="ctype">TEXT</td><td class="cdesc">Live stage — updated on every stage change.</td></tr>
+      <tr><td class="cname">first_stage_id, first_stage_name</td><td class="ctype">TEXT</td><td class="cdesc">Stage the deal was in the first time we saw it. Written once, never overwritten. Answers "where did this deal start?"</td></tr>
+      <tr><td class="cname">status</td><td class="ctype">TEXT</td><td class="cdesc">open / won / lost / abandoned.</td></tr>
+      <tr><td class="cname">monetary_value</td><td class="ctype">NUMERIC(12,2)</td><td class="cdesc">Deal value in £ — entered by the rep at quote time.</td></tr>
+      <tr><td class="cname">assigned_to</td><td class="ctype">TEXT</td><td class="cdesc">GHL user ID of the sales manager who owns the deal.</td></tr>
+      <tr><td class="cname">assigned_to_name</td><td class="ctype">TEXT</td><td class="cdesc">Human-readable name of the owner (resolved by enrichment).</td></tr>
+      <tr><td class="cname">meddic_1 … meddic_10</td><td class="ctype">TEXT</td><td class="cdesc">The ten rep-entered qualification fields (Project Scope, Pain, Main Contact &amp; Fans, Final Approver, Budget, Timeline, Process, Decision Criteria, Deal Lost Reason, Deal Won Reason). Rep-authored — never touched by the AI.</td></tr>
+      <tr><td class="cname">client_type</td><td class="ctype">TEXT</td><td class="cdesc">Homeowner / Architect / Contractor / Developer — persona for analytics.</td></tr>
+      <tr><td class="cname">product_system</td><td class="ctype">TEXT</td><td class="cdesc">Manufacturer / system (Crittall, Cortizo, Genosal, …).</td></tr>
+      <tr><td class="cname">product_type</td><td class="ctype">TEXT</td><td class="cdesc">Product category (Bifold Door, Casement Window, …).</td></tr>
+      <tr><td class="cname">postcode</td><td class="ctype">TEXT</td><td class="cdesc">Job-site postcode (the address the work will happen at — not the contact's address).</td></tr>
+      <tr><td class="cname">first_contact_method</td><td class="ctype">TEXT</td><td class="cdesc">How the customer first got in touch on this deal.</td></tr>
+      <tr><td class="cname">lead_source_opportunity</td><td class="ctype">TEXT</td><td class="cdesc">The marketing source of the deal — the attribution field analytics group by.</td></tr>
+      <tr><td class="cname">inquiry</td><td class="ctype">TEXT</td><td class="cdesc">The customer's original enquiry text, in their own words. Populated by one of four upstream workflow routes.</td></tr>
+      <tr><td class="cname">custom_fields</td><td class="ctype">JSONB</td><td class="cdesc">Full GHL custom-field dictionary for the opportunity.</td></tr>
+      <tr><td class="cname">is_ghost, is_deleted</td><td class="ctype">BOOLEAN</td><td class="cdesc">Junk-exclusion flags. Analytics queries filter both to false.</td></tr>
+      <tr><td class="cname">from_backfill</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE if backfilled; FALSE if from live pipeline.</td></tr>
+      <tr><td class="cname">created_at_ghl</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When the opportunity was created in GHL — the true lead-arrival timestamp.</td></tr>
+      <tr><td class="cname">imported_at, updated_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">Our own tracking timestamps.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ------------------ stage_history ------------------ -->
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">stage_history</span>
+    <span class="kind core">Core</span>
+    <span class="pk">Primary key: id (UUID) · FK → opportunities</span>
+    <p class="tbldesc">One row per stage the deal has been in. When a deal moves stage, the previous row's <code>left_at</code> is stamped, its <code>current_stage</code> flips to false, and a new row is opened with <code>current_stage = true</code>. This is the source of stage-duration analytics and the funnel view.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">id <span class="tag pk">PK</span></td><td class="ctype">UUID</td><td class="cdesc">Row identifier. Referenced by <code>messages.stage_history_id</code>.</td></tr>
+      <tr><td class="cname">location_id <span class="tag fk">FK</span></td><td class="ctype">TEXT</td><td class="cdesc">Sub-account. RLS scope.</td></tr>
+      <tr><td class="cname">opportunity_id <span class="tag fk">FK</span></td><td class="ctype">TEXT</td><td class="cdesc">Deal this stage row belongs to.</td></tr>
+      <tr><td class="cname">contact_id</td><td class="ctype">TEXT</td><td class="cdesc">Customer this stage row belongs to (denormalised for fast joins to messages).</td></tr>
+      <tr><td class="cname">stage_id, stage_name</td><td class="ctype">TEXT</td><td class="cdesc">Which stage this row represents. <code>stage_name</code> is snapshot at the moment — even if the stage is later renamed, historical analytics stay coherent.</td></tr>
+      <tr><td class="cname">pipeline_id, pipeline_name</td><td class="ctype">TEXT</td><td class="cdesc">Which pipeline the deal was in at the time.</td></tr>
+      <tr><td class="cname">entered_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When the deal entered this stage.</td></tr>
+      <tr><td class="cname">left_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When it left. NULL if this is the current open stage row.</td></tr>
+      <tr><td class="cname">in_stage_duration_seconds</td><td class="ctype">INTEGER</td><td class="cdesc">Time spent in this stage. Computed when the row closes.</td></tr>
+      <tr><td class="cname">current_stage</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE for the one open row per deal at any given time.</td></tr>
+      <tr><td class="cname">deleted</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE if the row was closed by an opportunity deletion (not a normal transition).</td></tr>
+      <tr><td class="cname">ghost_opportunity</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE if this row was synthesised by the orphan sweep (no observed webhook created it).</td></tr>
+      <tr><td class="cname">product_system, product_type</td><td class="ctype">TEXT</td><td class="cdesc">Snapshot of the deal's product info at the moment of this stage change.</td></tr>
+      <tr><td class="cname">custom_fields_snapshot</td><td class="ctype">JSONB</td><td class="cdesc">Full snapshot of the opportunity's custom fields at the time. Lets us answer "what was the product_type when this deal was at Sales Qualified?"</td></tr>
+      <tr><td class="cname">triggered_by</td><td class="ctype">TEXT</td><td class="cdesc">Provenance: opportunity_created / opportunity_stage_updated / daily_sweep / backfill.</td></tr>
+      <tr><td class="cname">from_backfill</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE if backfilled.</td></tr>
+      <tr><td class="cname">imported_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When we wrote the row.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ------------------ messages ------------------ -->
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">messages</span>
+    <span class="kind core">Core</span>
+    <span class="pk">Primary key: id (UUID) · Unique: (location_id, message_id) · FKs → contacts, opportunities, stage_history</span>
+    <p class="tbldesc">One row per conversation message — email, SMS, WhatsApp, call, webchat. Deduped by GHL's provider message ID so re-fetches never duplicate. Cleaned body is what the LLM reads; raw body is retained for audit.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">id <span class="tag pk">PK</span></td><td class="ctype">UUID</td><td class="cdesc">Row identifier.</td></tr>
+      <tr><td class="cname">location_id</td><td class="ctype">TEXT</td><td class="cdesc">Sub-account. RLS scope.</td></tr>
+      <tr><td class="cname">contact_id <span class="tag fk">FK</span></td><td class="ctype">TEXT</td><td class="cdesc">Customer this message belongs to.</td></tr>
+      <tr><td class="cname">opportunity_id <span class="tag fk">FK</span></td><td class="ctype">TEXT</td><td class="cdesc">Deal the message belongs to. May be NULL for messages on multi-open-deal contacts (see sync-fix plan).</td></tr>
+      <tr><td class="cname">stage_history_id <span class="tag fk">FK</span></td><td class="ctype">UUID</td><td class="cdesc">Which stage window the message fell inside. Lets us answer "how many follow-ups happened after Quote Sent?" per deal.</td></tr>
+      <tr><td class="cname">message_id <span class="tag uk">UQ</span></td><td class="ctype">TEXT</td><td class="cdesc">GHL's unique provider message ID — the dedup key.</td></tr>
+      <tr><td class="cname">conversation_id</td><td class="ctype">TEXT</td><td class="cdesc">GHL's conversation container. One contact can have multiple.</td></tr>
+      <tr><td class="cname">thread_id</td><td class="ctype">TEXT</td><td class="cdesc">Email thread ID (subject-group). Nullable — SMS / WhatsApp / calls have no thread. To be populated after the sync fix ships.</td></tr>
+      <tr><td class="cname">message_timestamp</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When the message was sent/received (from GHL — not our sync time).</td></tr>
+      <tr><td class="cname">message_body</td><td class="ctype">TEXT</td><td class="cdesc">Cleaned body — emojis stripped, HTML style/class attributes removed. The LLM's input.</td></tr>
+      <tr><td class="cname">message_body_raw</td><td class="ctype">TEXT</td><td class="cdesc">Original unmodified body. Audit trail.</td></tr>
+      <tr><td class="cname">message_direction</td><td class="ctype">TEXT</td><td class="cdesc">inbound (from customer) / outbound (from us).</td></tr>
+      <tr><td class="cname">message_channel</td><td class="ctype">TEXT</td><td class="cdesc">Email / SMS / WhatsApp / Call / Webchat / etc.</td></tr>
+      <tr><td class="cname">message_status</td><td class="ctype">TEXT</td><td class="cdesc">delivered / failed / read / sent / pending — GHL's value.</td></tr>
+      <tr><td class="cname">is_call</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE for call events. Call recording/transcript columns arrive in Phase 2.</td></tr>
+      <tr><td class="cname">from_backfill</td><td class="ctype">BOOLEAN</td><td class="cdesc">TRUE if backfilled.</td></tr>
+      <tr><td class="cname">imported_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When we wrote the row.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2><span class="num">02</span>Analytics views — one row per deal, all facts pre-joined</h2>
+<p>Two views layered on the four tables above. Designed so query tools (Claude, ad-hoc SQL) don't have to write joins every time.</p>
+
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">vw_opportunity_flat</span>
+    <span class="kind view">View</span>
+    <p class="tbldesc"><strong>One row per opportunity.</strong> The metrics table for everyday querying — funnel, business leaks, coaching benchmarks, pipeline risk. Joins contacts, opportunities, the open <code>stage_history</code> row, and per-opp message aggregates. Excludes deleted and ghost opportunities.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">location_id, opportunity_id, contact_id</td><td class="ctype">TEXT</td><td class="cdesc">Identity + tenant scope.</td></tr>
+      <tr><td class="cname">business_name</td><td class="ctype">TEXT</td><td class="cdesc">Readable label for the sub-account (Crittall / BGD / Veritas / Omnia).</td></tr>
+      <tr><td class="cname">opportunity_name, pipeline_id, pipeline_name, assigned_to, owner_name</td><td class="ctype">TEXT</td><td class="cdesc">Deal identity + routing.</td></tr>
+      <tr><td class="cname">lead_source_opportunity, first_contact_method, utm_source, utm_medium, utm_campaign, gad_source, has_gclid</td><td class="ctype">TEXT / BOOL</td><td class="cdesc">Source attribution — from the linked contact where relevant.</td></tr>
+      <tr><td class="cname">product_system, product_type, client_type, postcode, inquiry</td><td class="ctype">TEXT</td><td class="cdesc">Deal shape.</td></tr>
+      <tr><td class="cname">first_stage_name, current_stage_name, status</td><td class="ctype">TEXT</td><td class="cdesc">Where the deal started, where it is now, whether it's still open.</td></tr>
+      <tr><td class="cname">current_stage_entered_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">When the deal entered its current open stage.</td></tr>
+      <tr><td class="cname">days_in_current_stage</td><td class="ctype">NUMERIC</td><td class="cdesc">Time in the current stage, in days.</td></tr>
+      <tr><td class="cname">total_pipeline_age_days</td><td class="ctype">NUMERIC</td><td class="cdesc">Days since the lead first entered the system (includes any marketing-pipeline dwell).</td></tr>
+      <tr><td class="cname">monetary_value</td><td class="ctype">NUMERIC(12,2)</td><td class="cdesc">Full deal value.</td></tr>
+      <tr><td class="cname">created_at_ghl, updated_at, last_activity_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">Deal creation time, last update to the deal, latest message on the deal.</td></tr>
+      <tr><td class="cname">first_response_minutes</td><td class="ctype">NUMERIC</td><td class="cdesc">Minutes between deal creation and first outbound message — speed-to-lead proxy.</td></tr>
+      <tr><td class="cname">message_count, inbound_count, outbound_count, has_call</td><td class="ctype">INTEGER / BOOL</td><td class="cdesc">Message activity aggregates for the deal.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">vw_opportunity_messages_json</span>
+    <span class="kind view">View</span>
+    <p class="tbldesc"><strong>One row per opportunity.</strong> Full conversation for the deal assembled into a single JSONB blob, sorted ascending by timestamp — ready to hand to an LLM in one grab rather than rebuild from rows each time. Kept separate from <code>vw_opportunity_flat</code> because it's heavy; only joined when reading a deal's thread.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">location_id, opportunity_id</td><td class="ctype">TEXT</td><td class="cdesc">Join key back to <code>vw_opportunity_flat</code>.</td></tr>
+      <tr><td class="cname">message_count</td><td class="ctype">INTEGER</td><td class="cdesc">Total messages on the deal.</td></tr>
+      <tr><td class="cname">messages_json</td><td class="ctype">JSONB</td><td class="cdesc">Array of <code>{message_id, timestamp, direction, channel, body}</code>, ordered by timestamp. Every message keeps its ID so the LLM can cite which one a fact came from.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2><span class="num">03</span>Internal tables — plumbing, not queried by analytics</h2>
+<p>Three internal tables run the sync itself. Analytics queries can ignore them.</p>
+
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">installs</span>
+    <span class="kind op">Internal</span>
+    <span class="pk">Primary key: location_id</span>
+    <p class="tbldesc">One row per GHL sub-account that has installed the marketplace app. Holds the OAuth tokens the pipeline uses to call GHL APIs.</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:26%">Column</th><th style="width:15%">Type</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td class="cname">location_id <span class="tag pk">PK</span></td><td class="ctype">TEXT</td><td class="cdesc">GHL sub-account.</td></tr>
+      <tr><td class="cname">company_id</td><td class="ctype">TEXT</td><td class="cdesc">GHL agency ID above the location.</td></tr>
+      <tr><td class="cname">user_type</td><td class="ctype">TEXT</td><td class="cdesc">"Location" — indicates location-scoped install.</td></tr>
+      <tr><td class="cname">access_token, refresh_token, token_expires_at, scopes</td><td class="ctype">TEXT / TIMESTAMPTZ</td><td class="cdesc">OAuth credentials. Refreshed automatically 5 min before expiry.</td></tr>
+      <tr><td class="cname">installed_at, tracking_started_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">First-install timestamps — never overwritten so historical analytics stay coherent.</td></tr>
+      <tr><td class="cname">reinstalled_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">Set on any reinstall (NULL on first install).</td></tr>
+      <tr><td class="cname">uninstalled_at</td><td class="ctype">TIMESTAMPTZ</td><td class="cdesc">Set when the app is uninstalled; cleared on reinstall.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">pending_opportunities</span>
+    <span class="kind op">Internal</span>
+    <span class="pk">Primary key: (location_id, opportunity_id)</span>
+    <p class="tbldesc">Deals that were created via webhook but haven't yet had a stage change. Emptied by the nightly orphan-sweep, which synthesises a stage_history row for anything that's sat here too long.</p>
+  </div>
+</div>
+
+<div class="tblcard">
+  <div class="tblhead">
+    <span class="tname">processed_events</span>
+    <span class="kind op">Internal</span>
+    <span class="pk">Primary key: event_id</span>
+    <p class="tbldesc">Every webhook we've handled, keyed by GHL's event ID. Lets us skip duplicate deliveries. Purged after 14 days by the same daily cron.</p>
+  </div>
+</div>
+
+<h2><span class="num">04</span>How the tables relate</h2>
+
+<div class="call">
+  <span class="label">Join keys — for anyone writing SQL</span>
+  <p><code>contacts</code> ↔ <code>opportunities</code> on <code>(location_id, contact_id)</code></p>
+  <p><code>opportunities</code> ↔ <code>stage_history</code> on <code>(location_id, opportunity_id)</code></p>
+  <p><code>opportunities</code> ↔ <code>messages</code> on <code>(location_id, opportunity_id)</code></p>
+  <p><code>stage_history</code> ↔ <code>messages</code> on <code>stage_history_id</code> (already denormalised — no extra join needed)</p>
+  <p>Everything is tenant-scoped by <code>location_id</code>. Row-level security enforces this at the database level; every query should still filter by <code>location_id</code> as a matter of habit.</p>
+</div>
+
+<div class="call good">
+  <span class="label">Query pattern — the two "always start here"</span>
+  <p><strong>Metrics query?</strong> Start from <code>vw_opportunity_flat</code>. It already has every deal fact pre-joined.</p>
+  <p><strong>LLM context / conversation content?</strong> Join <code>vw_opportunity_flat</code> to <code>vw_opportunity_messages_json</code> on <code>(location_id, opportunity_id)</code>. Filter to one opportunity — you get facts + full thread in one row.</p>
+</div>
+
+<div class="call warn">
+  <span class="label">A few gotchas to know about</span>
+  <p><strong>Name collisions</strong> — <code>contact.client_type</code> (single-line, per contact) and <code>opportunity.client_type</code> (checkbox, per deal) both exist. Same for <code>product_type</code>. Also <code>contact.first_contact_method</code> (single underscore, how they contacted Crittall) vs <code>opportunity.first_contact__method</code> (double underscore, how they contacted us). Different meanings.</p>
+  <p><strong>Filter junk</strong> — analytics queries should include <code>WHERE is_deleted = false AND is_ghost = false</code> on <code>opportunities</code>. <code>vw_opportunity_flat</code> already does this.</p>
+  <p><strong>Empty <code>inquiry</code> is a data-quality flag</strong> — <code>opportunity.inquiry</code> is populated by one of four upstream workflow routes (website form, Crittall handover, webchat, enquiries@ inbox). An empty inquiry means the deal was created outside all four — usually a manual or imported deal.</p>
+</div>
+
+<p class="keynote">Not covered here — Phase 2 additions still to come: 10× <code>meddic_N_ai</code> · 10× <code>meddic_N_evidence</code> · <code>ai_extraction_meta</code> · three whys · <code>messages.recording_url</code> · <code>messages.transcript</code>. These will be added to <code>opportunities</code> and <code>messages</code> as the AI extraction and call-transcription pipelines land.</p>
+
+</div>
+</body>
+</html>

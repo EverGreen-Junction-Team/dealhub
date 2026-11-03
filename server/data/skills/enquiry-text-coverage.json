@@ -1,0 +1,16 @@
+{
+  "name": "enquiry_text_coverage",
+  "description": "How many closed deals carry the customer's original enquiry text, how long it typically is, and how many are long enough to be worth reading. Use for 'do we have the customer's own words', 'how much enquiry text do we have', and as a precondition before any claim about what customers say in their enquiries. usable_60plus counts enquiries of at least 60 characters — shorter ones are usually a name, a phone number or a single word, and reading themes out of them produces noise. If with_inquiry is a small share of closed, say so before quoting anything drawn from enquiry text: it describes the deals that have text, not the business. This view counts; it does not read. There is no phrase list here on purpose — a frozen list of search terms goes stale invisibly and nobody can see which words it missed.",
+  "viewName": "vw_enquiry_text_coverage",
+  "params": [
+    { "name": "status", "column": "status", "type": "text", "op": "eq",
+      "description": "won, lost or abandoned." },
+    { "name": "min_closed", "column": "closed", "type": "int", "op": "gte",
+      "description": "Only rows covering at least this many closed deals." }
+  ],
+  "columns": [],
+  "orderBy": "closed DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

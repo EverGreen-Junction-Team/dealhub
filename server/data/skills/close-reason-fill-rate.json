@@ -1,0 +1,35 @@
+{
+  "name": "close_reason_fill_rate",
+  "description": "How well close reasons are being recorded, broken down by the stage each deal was in when it closed: how many lost and abandoned deals there were, how many carry a written reason, and how many were answered in GHL's built-in pop-up instead of the written field. Use for 'are reps filling in lost reasons', 'how complete is our loss data', 'can we trust the loss data', 'is the loss data complete'. This skill measures whether the reasons were RECORDED, not what they say \u2014 for the reasons themselves use close_reason_list, which is what 'why are we losing deals' is asking. Reach for this one alongside it, to say how much of the pipeline those reasons cover. This is the confidence figure for a reason analysis: when close_reason_list has been used, quote this alongside its themes \u2014 a theme holding 40% of losses means very different things at 90% fill and at 12%. Lost and abandoned fill rates are reported separately because GHL writes them to different fields and one side is often ignored entirely. Read popup_only carefully: those deals DO have a recorded reason, just in GHL's pop-up rather than the written field, so a high number is a workflow problem and not reps failing to record anything. no_reason_anywhere is the genuine gap.",
+  "viewName": "vw_close_reason_by_stage",
+  "params": [
+    {
+      "name": "stage",
+      "column": "stage_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages with at least this many closed deals."
+    },
+    {
+      "name": "filled_below_pct",
+      "column": "pct_filled",
+      "type": "number",
+      "op": "lte",
+      "description": "Only stages where reasons are recorded at or below this rate. Use for 'where are we not capturing why we lost'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 50,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

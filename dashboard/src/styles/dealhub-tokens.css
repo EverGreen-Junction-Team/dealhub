@@ -1,0 +1,3295 @@
+/*
+ * Deal Hub design tokens — verbatim from the EverGreen Junction design system.
+ * Scoped under [data-dealhub] so they don't leak into the existing dashboard
+ * (which uses Ant Design). Any page that opts into the Deal Hub UI wraps its
+ * root in <div data-dealhub> and inherits these variables.
+ *
+ * Full source of truth: Deal Hub v3 prototype, _ds/tokens/*.css.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0');
+
+/* Tokens are declared for the dealhub subtree AND for portalled surfaces.
+ *
+ * A popover rendered with createPortal attaches to <body>, outside
+ * [data-dealhub], so NONE of these variables resolved there: every
+ * var(--gray-25), var(--text-muted), var(--radius-lg) fell back to its
+ * default or to nothing. The card still rendered, which is what made it
+ * look merely ugly rather than broken — tinted bands came out transparent
+ * and spacing tokens collapsed.
+ *
+ * The same scope problem hit the Material Symbols rule further down; see the
+ * note there. Anything portalled must carry .pp-portal.
+ */
+[data-dealhub],
+.pp-portal {
+  /* Neutrals */
+  --white: #ffffff;
+  --gray-25: #fafbfc;
+  --gray-50: #f5f6f8;
+  --gray-100: #eceef1;
+  --gray-200: #dcdfe4;
+  --gray-300: #c3c8d0;
+  --gray-400: #9aa1ad;   /* borders / disabled fills only — 2.6:1, not for text */
+  --gray-450: #6f7784;   /* faintest READABLE text — 4.52:1 on white, AA */
+  --gray-500: #676f7c;
+  --gray-600: #4b515c;
+  --gray-700: #323844;
+  --gray-800: #1f2430;
+
+  /* Primary — evergreen */
+  --green-50: #e9f4f0;
+  --green-100: #cfe7de;
+  --green-300: #6fae97;
+  --green-500: #1f7a5c;
+  --green-600: #186349;
+  --green-700: #124d39;
+
+  /* Section accents — one per group / topic */
+  --accent-pine: #1f7a5c;
+  --accent-sky: #2470c2;
+  --accent-plum: #7b5cc9;
+  --accent-clay: #c95d2e;
+  /* The Tasks page's own identity colour (spec §1). Deliberately its own
+     token rather than reusing --accent-clay: that is the shared clay accent
+     used for chips and icons elsewhere, and a solid header bar needs a
+     slightly deeper value to hold white text at 18px/600. */
+  --tasks-header: #c25a1f;
+  --tasks-header-border: #b5501a;
+  --tasks-header-hover: #a94d19;
+  /* The Notes page's header — the design's brown band. Same reasoning as
+     --tasks-header: deep enough to hold white 18px/600 text (about 6:1). */
+  --notes-header: #8b5a2b;
+  --notes-header-border: #7a4e24;
+  /* The Contacts page's header — the design's blue band, a step deeper than
+     --accent-sky so white 18px/600 text holds (about 5.6:1). */
+  --contacts-header: #1f69bd;
+  --contacts-header-border: #1a5ca6;
+  --accent-gold: #b8860b;
+  /* The People rail's "Add someone" fill — the design's bright yellow,
+     which is not --accent-gold (a dark goldenrod used for text and badges).
+     gray-800 on it is 10.76:1, computed. */
+  --accent-sun: #e9c84b;
+  --accent-sun-text: var(--gray-800);
+  --accent-rose: #c23a5f;
+  --accent-teal: #0f7f8b;
+  --accent-brown: #8a5a2b;
+
+  /* SOLID PANEL HEADERS (client design, Oct 2026).
+   *
+   * Every Deal hub section header is a solid band of its own accent with white
+   * text, replacing the pale tint + coloured text it used before.
+   *
+   * These are separate tokens rather than the --accent-* values above for the
+   * reason --tasks-header already documents: an accent tuned as a chip fill or
+   * a large heading is not always dark enough to hold white text.
+   *
+   * MEASURED against white, not estimated:
+   *
+   *   brown #8a5a2b  5.87:1  AA     plum  #7759c2  5.26:1  AA
+   *   pine  #1f7a5c  5.25:1  AA     teal  #0e7985  5.13:1  AA
+   *   sky   #2470c2  5.03:1  AA     clay  #c25a1f  4.40:1  large only
+   *   gold  #b8860b  3.25:1  large only
+   *
+   * The 18px/600 title clears AA-large (3:1) on every one of them. GOLD AND
+   * CLAY DO NOT clear 4.5:1, so the 13px subtitle beside the title cannot be
+   * plain white on those two — it uses --panel-head-sub, an opaque white that
+   * the header sets to full white where the band is dark enough and leaves
+   * alone where it is not. Kept as the client's colours rather than darkened:
+   * the palette is theirs, and the fix belongs on the text that fails.
+   *
+   * The -border value is one step darker, for the 1px rule under the band —
+   * without it the header bleeds into the panel body on a white background.
+   */
+  --panel-head-pine: #1f7a5c;
+  --panel-head-pine-border: #186349;
+  --panel-head-teal: #0e7985;
+  --panel-head-teal-border: #0b616b;
+  --panel-head-clay: #c25a1f;
+  --panel-head-clay-border: #b5501a;
+  --panel-head-brown: #8a5a2b;
+  --panel-head-brown-border: #744a22;
+  --panel-head-gold: #b8860b;
+  --panel-head-gold-border: #a4790a;
+  --panel-head-plum: #7759c2;
+  --panel-head-plum-border: #5f45a3;
+  --panel-head-sky: #2470c2;
+  --panel-head-sky-border: #1d5da3;
+
+  /* The same accents as TEXT.
+   *
+   * The accents above are tuned as fills and as large headings. Used for SMALL
+   * text on their own tint — which is what every badge and chip in the app does
+   * — seven of the eight combinations fell below 4.5:1, gold worst at 2.94:1.
+   *
+   * These are the same hues darkened just enough to clear AA on BOTH their tint
+   * and white. The shift is 1-5%: visually the same colour, legibly different.
+   */
+  --accent-pine-text: #1f7a5c;
+  --accent-sky-text:  #236ec0;
+  --accent-plum-text: #7759c2;
+  --accent-clay-text: #b05128;
+  --accent-gold-text: #8f6808;
+  --accent-rose-text: #c0395e;
+  --accent-teal-text: #0e7985;
+  /* Notes' own accent in the client's Deal hub palette. The body text variant
+     is the band colour itself (#8a5a2b, 5.87:1 on white) — unlike gold or
+     clay it is already dark enough to use as small text without a shift. */
+  --accent-brown-text: #8a5a2b;
+  /* 'gray' is the server's fallback accent when a record has no id
+   * (accentFor() in routes/contacts.js and routes/deals.js). Without this the
+   * dynamic `var(--accent-${accent}-text)` resolves to nothing and the avatar
+   * initials render invisible. */
+  --accent-gray-text: var(--text-muted);
+
+  /* Section-accent tints */
+  --tint-pine: #e9f4f0;
+  --tint-sky: #e8f1fb;
+  --tint-plum: #f1ecfa;
+  --tint-clay: #fbeee6;
+  --tint-gold: #faf3e0;
+  --tint-rose: #fbe9ee;
+  --tint-teal: #e6f4f6;
+  --tint-brown: #f5eee6;
+  --tint-gray: var(--gray-50);
+
+  /* Status */
+  /* Fills — white text sits ON these, so vividness is what matters. */
+  --status-done: #00a25b;
+  --status-working: #f5a300;
+  --status-stuck: #d83a52;
+
+  /* The same states as TEXT on white. A single colour cannot serve both: the
+   * fills above are 3.32:1 (done) and 2.07:1 (working) as text, which fails
+   * AA. These are the AA-passing equivalents. */
+  --status-done-text: #00854a;      /* 4.71:1 */
+  --status-working-text: #a86e00;   /* 4.29:1 — AA for large/bold, near AA body */
+  --status-stuck-text: #c1273e;     /* darkened rose */
+  --status-hold: #7b5cc9;
+  --status-none: #c3c8d0;
+
+  /* Semantic aliases */
+  /* Overridden to a tint in the v6 block below — cards need a ground to
+   * lift off. Kept here so the alias exists before first use. */
+  --surface-page: var(--white);
+  --surface-card: var(--white);
+  --surface-sunken: var(--gray-50);
+  --surface-hover: var(--gray-50);
+  /* Selected rows. green-50 is 1.13:1 against a white surface — a "selected"
+   * state you cannot see is not a state. tint-pine is the strengthened tint the
+   * v7 pass introduced. */
+  --surface-selected: var(--tint-pine);
+  --text-heading: var(--gray-800);
+  --text-body: var(--gray-700);
+  --text-muted: var(--gray-500);
+  /* Was gray-400 (2.60:1) — failed AA on the 42 meta lines using it.
+   * gray-450 is the darkest value that still reads as the faintest tier. */
+  --text-faint: var(--gray-450);
+  --text-link: var(--green-600);
+  --border-default: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --border-prominent: 2px solid var(--gray-800);
+  --focus-ring: 0 0 0 3px rgba(31, 122, 92, 0.25);
+  --brand-primary: var(--green-500);
+  --brand-primary-hover: var(--green-600);
+  --brand-primary-active: var(--green-700);
+
+  /* Typography */
+  --font-sans: 'Poppins', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Type scale.
+   *
+   * Seven steps, and nothing between them. Before this the app carried 26
+   * distinct font sizes across 365 declarations — including 12.5, 13.5, 11.5,
+   * 10.5 and 9.5px. Half-pixel sizes are the symptom of per-element decisions
+   * rather than a system: 13 felt a touch large somewhere, so it became 12.5,
+   * and nothing quite aligned with anything else again.
+   *
+   * Mapped from what was actually in use, so the migration mostly rounds to
+   * the nearest step rather than redesigning every surface:
+   *   9-10.5  -> xs    (uppercase labels, field keys)
+   *   11-11.5 -> sm    (meta lines, chip text)
+   *   12-12.5 -> base  (secondary body, table cells)
+   *   13-13.5 -> md    (primary body — the most common size in the app)
+   *   14-15.5 -> lg    (row titles, card headings)
+   *   16-18   -> xl    (panel headings)
+   *   19-25   -> 2xl   (page titles)
+   */
+  /* Raised one step across the board (2026-09-12).
+   *
+   * The old scale ran 10/11/12/13/14 — five sizes inside 4px, which is not a
+   * scale so much as a rounding error, and the bottom of it was genuinely
+   * hard to read on a laptop at arm's length. Labels, table cells, chips and
+   * meta lines all sat at 11-12px.
+   *
+   * Every size moves up 1-2px and the gaps widen, so the steps are now
+   * distinguishable: a label reads as smaller than body text rather than
+   * merely thinner. Changed at the TOKEN, so all ~40 components move together
+   * and nothing drifts out of step.
+   *
+   * .pp-menu and .pp-cal below keep their own smaller overrides on purpose —
+   * a dropdown's own type should not grow with the page's. */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --text-3xl: 28px;   /* page titles */
+  --text-display: 34px;  /* the one number or name a card is ABOUT */
+
+  /* Line heights. Tight for headings, open for anything read in paragraphs. */
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.55;
+
+  /* Weights, named so "semibold" doesn't drift between 600 and 700. */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* Letter-spacing for the uppercase micro-labels. Uppercase text at 10px is
+   * unreadable without it. */
+  --tracking-label: 0.07em;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(31, 36, 48, 0.06);
+  --shadow-raised: 0 4px 12px rgba(31, 36, 48, 0.1);
+  --shadow-overlay: 0 8px 28px rgba(31, 36, 48, 0.16);
+
+  /* Control sizes */
+  --control-h-sm: 28px;
+  --control-h-md: 36px;
+  --control-h-lg: 44px;
+  --row-h: 40px;
+
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  background: var(--surface-page);
+}
+
+/* Material Symbols Rounded — utility class.
+ *
+ * Scoped to [data-dealhub] AND to portalled content.
+ *
+ * A popover rendered with createPortal attaches to <body>, OUTSIDE the
+ * [data-dealhub] ancestor, so the selector missed it and every icon rendered
+ * as its raw ligature text — "link_off" instead of the glyph. The pill's own
+ * icons worked (still inside the tree) while the popover's did not, which is
+ * what made it look like a styling slip rather than a scope problem.
+ *
+ * .pp-portal is set by any portalled surface; see MessageDealPill and
+ * TaskDealsPopover.
+ */
+[data-dealhub] .ms,
+.pp-portal .ms {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  -webkit-font-smoothing: antialiased;
+  font-size: 20px;
+}
+[data-dealhub] .ms.ms-fill,
+.pp-portal .ms.ms-fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Type resets for the Deal Hub subtree */
+[data-dealhub] h1,
+[data-dealhub] h2,
+[data-dealhub] h3,
+[data-dealhub] h4 {
+  color: var(--text-heading);
+  line-height: 1.2;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Rendered note/task bodies. GHL's editor emits <p>, <ul>, <strong> etc; the
+   browser's default margins are far too large inside a compact list row, and
+   an unconstrained <img> or <table> would break the layout. */
+[data-dealhub] .pp-rich > :first-child { margin-top: 0; }
+[data-dealhub] .pp-rich > :last-child { margin-bottom: 0; }
+/* 0.6em, not 6px: the gap between paragraphs scales with the row's type, so
+   a note in the timeline and the same note on the Notes page both separate
+   proportionally. At a flat 6px the paragraphs ran together at larger sizes —
+   the plain-text view separates them with a full blank line, which is part of
+   why it read more clearly. */
+[data-dealhub] .pp-rich p,
+[data-dealhub] .pp-rich div,
+[data-dealhub] .pp-rich ul,
+[data-dealhub] .pp-rich ol { margin: 0 0 0.6em; }
+[data-dealhub] .pp-rich ul,
+[data-dealhub] .pp-rich ol { padding-left: 20px; }
+/* Same Tailwind-preflight reset as .pp-md — see the note there. A note
+   written with bullets showed as indented bare lines on every card. */
+[data-dealhub] .pp-rich ul { list-style: disc; }
+[data-dealhub] .pp-rich ol { list-style: decimal; }
+[data-dealhub] .pp-rich li { margin: 0 0 2px; }
+[data-dealhub] .pp-rich a { color: var(--text-link); }
+[data-dealhub] .pp-rich img { max-width: 100%; height: auto; }
+[data-dealhub] .pp-rich table { max-width: 100%; border-collapse: collapse; }
+[data-dealhub] .pp-rich td,
+[data-dealhub] .pp-rich th { border: 1px solid var(--border-default); padding: 3px 6px; }
+/* GHL's rich-text editor inlines the typeface AND the size it was authored
+   with — usually a 13px Arial or a bare <font> tag from a pasted email. That
+   won a specificity fight with the row's own type, so the SAME note read in a
+   different, smaller face when formatted than it did in plain text: the client
+   noticed the plain-text version was "a better font, larger and clearer".
+ *
+ * Reclaim both. The element itself and everything inside it inherit the row's
+ * face and scale, so formatting (bold, lists, links) still comes through while
+ * the typography stays ours.
+ *
+ * The rule this replaces reset font-size only, and only on elements whose
+ * inline style literally contained "font-size" — so a body carrying just
+ * font-family, which is the common case, kept GHL's typeface. */
+[data-dealhub] .pp-rich,
+[data-dealhub] .pp-rich * {
+  font-family: var(--font-sans) !important;
+  font-size: inherit !important;
+  line-height: inherit;
+}
+/* <font size="2"> and friends — the attribute form, which no font-family rule
+   above can reach because it isn't CSS at all. */
+[data-dealhub] .pp-rich font { font: inherit !important; }
+/* Bold and italics must survive the reset above; `font: inherit` on <font>
+   and `font-family` on * are both safe for weight, but a pasted
+   style="font-weight:400" on a <strong> is not. */
+[data-dealhub] .pp-rich strong,
+[data-dealhub] .pp-rich b { font-weight: 600 !important; }
+[data-dealhub] .pp-rich em,
+[data-dealhub] .pp-rich i { font-style: italic !important; }
+
+/* Motion.
+ *
+ * One global transition on the properties that change on hover/focus/state.
+ * Borrowed from ConvoVault, where it is the single biggest reason the UI feels
+ * finished: without it every hover snaps. Deliberately excludes layout
+ * properties (width/height/top/left) — animating those causes reflow jank.
+ */
+[data-dealhub] *,
+[data-dealhub] *::before,
+[data-dealhub] *::after {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Respect the OS setting. A global transition is exactly the kind of motion
+ * someone with vestibular sensitivity turns off. */
+@media (prefers-reduced-motion: reduce) {
+  [data-dealhub] *,
+  [data-dealhub] *::before,
+  [data-dealhub] *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visibility. Keyboard users get a ring on every interactive element;
+ * mouse users don't see it (:focus-visible, not :focus). Previously only some
+ * hand-styled controls had any focus state at all. */
+[data-dealhub] :focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* Opt out where a WRAPPER already shows focus.
+ *
+ * The composer's textarea is borderless inside a box that draws its own focus
+ * border and ring, so the global rule above painted a SECOND ring around the
+ * text itself — it read as a stray input border nested in the composer.
+ *
+ * The element stays keyboard-reachable and still shows focus; the focus is
+ * just drawn once, by the box, at the right size. */
+[data-dealhub] .pp-focus-inherit:focus-visible {
+  box-shadow: none;
+}
+
+/* Same problem, in antd's controls.
+ *
+ * A Select renders a real <input> INSIDE its .ant-select-selector, and a
+ * DatePicker does the same. The global rule above therefore painted a focus
+ * ring around that inner input — a green box nested inside the selector's own
+ * green box, which is the double border visible on the country field.
+ *
+ * antd already draws focus on the selector (border + shadow), so the inner
+ * input should draw none. Listed by component rather than a blanket `input`
+ * opt-out, so a plain input inside an antd wrapper still gets its ring. */
+[data-dealhub] .ant-select-selection-search-input:focus-visible,
+[data-dealhub] .ant-select-selector input:focus-visible,
+[data-dealhub] .ant-picker input:focus-visible {
+  box-shadow: none;
+}
+
+/* Scrollbars, scoped to the Deal Hub. Slimmer and quieter than the browser
+ * default, which is visually heavy next to 1px card borders. */
+[data-dealhub] ::-webkit-scrollbar { width: 10px; height: 10px; }
+[data-dealhub] ::-webkit-scrollbar-track { background: var(--gray-50); }
+[data-dealhub] ::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border: 2px solid var(--gray-50);
+  border-radius: var(--radius-pill);
+}
+[data-dealhub] ::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+/* ── Surface recipes ──────────────────────────────────────────────────
+ *
+ * Three classes replacing the same inline style repeated across 22 files.
+ * Not a utility framework — just the shapes this app actually uses, so a
+ * card looks the same on every page without each component re-deciding.
+ */
+
+/* A panel: the bordered container a section lives in. */
+[data-dealhub] .pp-card {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* A row inside a list, clickable. Hover moves the BORDER and the shadow, never
+ * the background — a background flip on a dense list reads as selection, which
+ * is a different meaning. (ConvoVault's convention, and it's the right one.) */
+[data-dealhub] .pp-row-interactive {
+  cursor: pointer;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+[data-dealhub] .pp-row-interactive:hover {
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-raised);
+}
+
+/* An uppercase micro-label. Was 35 near-identical inline blocks with five
+ * different letter-spacings. */
+[data-dealhub] .pp-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Tabular figures wherever digits stack in a column — money, counts, tokens.
+ * Proportional digits make a column of numbers look ragged. */
+[data-dealhub] .pp-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Panel headers.
+ *
+ * Every section (Deal, Timeline, Tasks, Notes, Co-Pilot, Qualification) draws
+ * the same header: coloured icon, coloured title, meta on the right. It was
+ * duplicated inline in each component, which is why the weights and sizes had
+ * drifted apart. One definition; components set only the accent.
+ */
+[data-dealhub] .pp-panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--surface-card);
+}
+[data-dealhub] .pp-panel-head h2,
+[data-dealhub] .pp-panel-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+[data-dealhub] .pp-panel-meta {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+}
+
+/* A tinted band under a panel header — the explanatory blurb on Tasks, the
+ * "Company Info" note on Businesses, the coverage line on Co-Pilot. */
+[data-dealhub] .pp-panel-note {
+  margin: 0;
+  padding: 11px var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--gray-25);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-body);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * v6 — visual refresh.
+ *
+ * The previous pass fixed sizes but kept the same look: white cards, 1px grey
+ * borders, everything at one elevation. On a dense page that reads as a form,
+ * not a product. Three changes carry the new treatment:
+ *
+ *   1. The PAGE gets a tint, so white cards lift off it. Previously both were
+ *      #fff and the only separation was a hairline border.
+ *   2. Cards get real elevation and a 12px radius instead of 8px.
+ *   3. Panel headers get a tinted band in their accent, so a section reads as
+ *      a section at a glance rather than as another row of text.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-dealhub] {
+  /* The page is no longer white — cards need something to sit on. */
+  --surface-page: #f4f6f8;
+  --surface-raised: #ffffff;
+
+  /* Softer, layered shadows. The old --shadow-card was a 1px hairline that
+   * read as a border, not a lift. */
+  --shadow-card: 0 1px 2px rgba(23, 33, 46, 0.04), 0 2px 8px rgba(23, 33, 46, 0.04);
+  --shadow-raised: 0 2px 4px rgba(23, 33, 46, 0.05), 0 8px 24px rgba(23, 33, 46, 0.08);
+  --shadow-overlay: 0 12px 40px rgba(23, 33, 46, 0.18);
+
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+/* Panels.
+ *
+ * The accent moves from a 2px full border (which boxed every section in a loud
+ * colour) to a tinted header band plus a soft shadow. The section still reads
+ * as its colour, but the colour is where the label is, not wrapped around the
+ * content. */
+[data-dealhub] .pp-panel {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+[data-dealhub] .pp-panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 13px var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  /* Set by the component: --panel-accent / --panel-tint */
+  background: var(--panel-tint, var(--gray-25));
+}
+[data-dealhub] .pp-panel-head h2,
+[data-dealhub] .pp-panel-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--panel-accent, var(--text-heading));
+}
+[data-dealhub] .pp-panel-head .ms {
+  color: var(--panel-accent, var(--text-muted));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * v7 — client feedback (James, 24 Aug 2026).
+ *
+ *   "The colours on the UI are too faded, they look washed out, like they
+ *    are on old faded clothes. ExportKit is much more bold, vibrant, easy
+ *    to read... the background colours help to highlight the text, and
+ *    enable your eye to navigate around the page."
+ *
+ * Measured against ExportKit rather than guessed at:
+ *
+ *   body text   ours #323844 = 11.8:1   ExportKit #111827 = 17.7:1
+ *   badge tints ours 0.05 sat (near white)   ExportKit green-100 = 0.13 sat
+ *
+ * So two changes, both aimed at exactly what he described:
+ *   1. NEUTRALS GO DARKER — text stops being grey-on-white and becomes
+ *      near-black, which is the single biggest cause of "washed out".
+ *   2. TINTS GO STRONGER — badge and header backgrounds actually read as a
+ *      colour, so the eye can use them to navigate.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-dealhub] {
+  /* Darker text ramp. Each step keeps the slight cool bias so it still sits
+   * with the evergreen brand, but every one is materially darker. */
+  --gray-800: #141922;   /* 17.6:1 — headings */
+  --gray-700: #252c38;   /* 14.0:1 — body */
+  --gray-600: #3d4552;   /*  9.7:1 */
+  --gray-500: #5b6472;   /*  6.0:1 — muted */
+  --gray-450: #6b7482;   /*  4.7:1 — faintest readable */
+
+  /* Stronger tints. These are the "background colours that help highlight the
+   * text": at 0.05 saturation they were indistinguishable from white, so a
+   * badge read as bare text and a panel header as a plain row. */
+  --tint-pine: #d8ede4;
+  --tint-sky:  #dbeafe;
+  --tint-plum: #e8e0f8;
+  --tint-clay: #fbe3d4;
+  --tint-gold: #fbeeca;
+  --tint-rose: #fbdde5;
+  --tint-teal: #d5eef1;
+
+  /* A brighter brand green. The old #1f7a5c is dark for a primary — it reads
+   * as a border colour more than an action colour. */
+  --green-500: #16855f;
+  --brand-primary: #16855f;
+  --brand-primary-hover: #11704f;
+  --brand-primary-active: #0d5b40;
+
+  /* Vivid status colours, ExportKit-style: saturated fills for badges. */
+  --status-done: #059669;
+  --status-working: #d97706;
+  --status-stuck: #dc2626;
+
+  /* Page ground a touch cooler and more defined, so white cards read as
+   * raised rather than merged. */
+  --surface-page: #eef1f5;
+}
+
+/* Accent text, re-derived for the stronger tints.
+ *
+ * Strengthening the tints dropped all seven accent-on-tint badge combinations
+ * below 4.5:1 — the badge text and its background moved toward each other.
+ * These are the same hues darkened until each clears AA on BOTH its new tint
+ * and white. Recomputed, not eyeballed. */
+[data-dealhub] {
+  --accent-pine-text: #1e7659;
+  --accent-sky-text:  #2169b8;
+  --accent-plum-text: #6f53b6;
+  --accent-clay-text: #a84d26;
+  --accent-gold-text: #8d6607;
+  --accent-rose-text: #b63659;
+  --accent-teal-text: #0d747f;
+}
+
+/* antd overrides, scoped to the Deal Hub.
+ *
+ * The global ConfigProvider theme in main.jsx handles size, radius and border
+ * colour. This is for the one control that needs a different treatment: the
+ * stage Select is the primary action on the Deal card, and an antd default
+ * reads as the least important thing in the column.
+ */
+[data-dealhub] .pp-stage-select .ant-select-selector {
+  /* 1.5px on WHITE, not 2px on a pine tint (client design, Oct 2026).
+     The tinted fill made this the only green block in a column of white
+     controls, which read as a selected state rather than as the field that
+     matters most. The green border and bold green text carry that on their
+     own, and the status select directly above it stays plain — so the two
+     still read as a pair rather than as one control. */
+  border: 1.5px solid var(--brand-primary) !important;
+  background: #fff !important;
+}
+[data-dealhub] .pp-stage-select .ant-select-selection-item {
+  font-weight: var(--weight-semibold);
+  color: var(--accent-pine-text);
+}
+[data-dealhub] .pp-stage-select .ant-select-arrow {
+  color: var(--accent-pine-text);
+}
+
+/* Spinner for in-flight saves. Material Symbols' progress_activity is drawn as
+   a partial ring, so rotating it reads as a spinner without any extra markup.
+   Honours reduced-motion by holding still rather than vanishing — the icon is
+   still the "working" signal. */
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+[data-dealhub] .pp-spin {
+  display: inline-block;
+  animation: pp-spin 900ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-dealhub] .pp-spin { animation: none; }
+}
+
+/* An antd Select carrying an unsaved change. The text inputs beside it get a
+   green border from an inline style; antd renders its border on an inner
+   .ant-select-selector, which an inline style on the wrapper cannot reach — so
+   the same signal needs a class. Without it a changed country was the one
+   edited field with no marker. */
+[data-dealhub] .pp-dirty-select .ant-select-selector {
+  border-color: var(--brand-primary) !important;
+}
+
+/* antd dropdown menus, brought into the app's own type and spacing.
+ *
+ * The default is 32px rows at antd's font — noticeably tighter and smaller than
+ * everything around it, so a 247-row country list read as a foreign control
+ * dropped into the page. These match the row height and typeface used elsewhere.
+ *
+ * NOT scoped under [data-dealhub], and the tokens are REDECLARED below, because
+ * antd renders its menu into document.body — OUTSIDE the [data-dealhub] wrapper
+ * where every token is defined. A var() reference alone resolves to nothing out
+ * there, so the menu would render with no font, no colours and square corners.
+ *
+ * Only the handful the menu uses. If one changes in the block at the top of this
+ * file, change it here too: there is no way to inherit across the boundary short
+ * of putting the tokens on :root, which would leak them into the host page's own
+ * Ant Design. */
+.pp-menu {
+  --font-sans: 'Poppins', -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 10px;
+  --text-md: 13px;
+  --gray-50: #f5f6f8;
+  --tint-pine: #d8ede4;
+  --accent-pine-text: #1e7659;
+  --text-body: #323844;
+  --text-muted: #676f7c;
+  --weight-semibold: 600;
+  --tracking-label: 0.07em;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  /* Needed here too: antd portals this to document.body, outside
+     [data-dealhub], so any token used below must be redeclared. That is the
+     same trap that required the eleven above. */
+  --radius-lg: 12px;
+  --shadow-overlay: 0 8px 28px rgba(31, 36, 48, 0.16);
+
+  font-family: var(--font-sans);
+  /* radius-lg and the modals' layered shadow, so a dropdown opened from a
+     dialog is the same material as the dialog. A flat single-blur popover
+     beside the new panels read as a different app. */
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 1px rgba(31, 36, 48, 0.06),
+    0 2px 6px rgba(31, 36, 48, 0.08),
+    0 12px 32px rgba(31, 36, 48, 0.18);
+  padding: 5px;
+  /* NO ANIMATION HERE — this was the dropdown flicker.
+   *
+   * Two reasons it had to go:
+   *
+   *   1. antd already animates this popup (its own slide-up motion, driven by
+   *      mount/unmount classes). Mine was a SECOND animation on the same
+   *      element, fighting the first.
+   *
+   *   2. Worse, a CSS animation restarts whenever the element re-renders, and
+   *      antd re-renders the dropdown on every keystroke and every option
+   *      hover. Each restart replayed from opacity:0 — so typing in a
+   *      searchable Select made the menu strobe.
+   *
+   * The material (radius, layered shadow) is what we wanted from this class;
+   * the motion was never ours to add.
+   */
+}
+
+.pp-menu .ant-select-item {
+  min-height: 38px;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  color: var(--text-body);
+}
+.pp-menu .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: var(--gray-50);
+}
+.pp-menu .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: var(--tint-pine);
+  color: var(--accent-pine-text);
+  font-weight: var(--weight-semibold);
+}
+/* Group headings — "Common" / "All countries". Uppercase micro-label, matching
+   every other section label in the app. */
+.pp-menu .ant-select-item-group {
+  padding: 9px 11px 5px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.pp-menu .ant-select-item-empty {
+  padding: 12px;
+  font-size: var(--text-md);
+  color: var(--text-muted);
+}
+
+/* An antd Select whose value the server rejected. Same reason .pp-dirty-select
+   exists: antd draws its border on an inner .ant-select-selector, and a
+   className is the only hook that reaches it. Without this the contact picker
+   showed the error message with no marker on the box that caused it. */
+[data-dealhub] .pp-invalid-select .ant-select-selector {
+  border-color: var(--status-stuck) !important;
+}
+
+/* ── Modals ───────────────────────────────────────────────────────────────
+ *
+ * One definition for the five dialogs (note, task, tag, business, confirm).
+ * Each one hand-rolled its own fixed overlay and a plain white box, so they
+ * were structurally correct — role="dialog", aria-modal, click-away — but
+ * visually flat: a hard-cut backdrop, no depth, no motion. Restyling five
+ * files by hand would guarantee they drift, so the look lives here and the
+ * components carry a class.
+ *
+ * NOT scoped to [data-dealhub]. A dialog is rendered inside the shell today,
+ * but the scoping bit us before: .pp-menu had to redeclare eleven tokens
+ * because antd portals its dropdowns to document.body, outside the attribute.
+ * Anything that might portal should not depend on an ancestor selector. The
+ * rules below therefore use only tokens that resolve at :root.
+ */
+
+@keyframes pp-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes pp-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Blurred variant, for the full-screen email thread. The page behind it
+   is the timeline the thread came from, and a blur says "you are still
+   here, this is just enlarged" better than a flat dim. Opt-in by class,
+   so confirm dialogs and the like keep the plain dim: a blur under a
+   small "Delete this task?" box is drama the box does not need.
+   Only what is INSIDE this iframe can be blurred — GHL's own sidebar
+   around it is out of reach. */
+.pp-backdrop.pp-backdrop-blur {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.pp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  /* Cooler and deeper than the old flat rgba(23,33,46,.45): the panel reads as
+     lifted off the page rather than pasted onto a grey wash. */
+  background: rgba(19, 28, 40, 0.52);
+  /* Blur is a progressive enhancement — unsupported browsers just get the
+     wash, which is why the colour above is opaque enough to stand alone. */
+  backdrop-filter: blur(3px) saturate(115%);
+  -webkit-backdrop-filter: blur(3px) saturate(115%);
+  animation: pp-backdrop-in 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* A long form on a short viewport must still be reachable. Centred while it
+     fits, scrollable when it doesn't. */
+  overflow-y: auto;
+}
+
+.pp-modal {
+  /* Default only. The dialogs are deliberately different widths — a confirm is
+     460px, a tag picker 520, a business form 680 — so each overrides this
+     inline. Forcing one width here would have made every dialog the size of
+     the note editor. */
+  width: min(580px, 100%);
+  /* Never taller than the viewport, so the footer with the save button cannot
+     end up below the fold — the single worst modal failure. */
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  /* radius-lg, not md: a 580px panel with an 8px radius reads as a rectangle
+     that happens to have soft corners. */
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  /* Layered rather than one big blur — a tight contact shadow for the edge, a
+     wide ambient one for the lift, and a hairline ring so the panel has a
+     defined edge against a light backdrop. */
+  box-shadow:
+    0 0 0 1px rgba(31, 36, 48, 0.06),
+    0 2px 6px rgba(31, 36, 48, 0.08),
+    0 16px 48px rgba(31, 36, 48, 0.22);
+  overflow: hidden;
+  animation: pp-modal-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* The panel is a fixed anchor while its content scrolls. */
+  flex: none;
+}
+
+/* The scrolling middle. The header and footer stay put, so the title and the
+   actions are always visible — on a long note the old layout scrolled the
+   whole panel and the Save button went with it. */
+.pp-modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Momentum scrolling inside the panel on iOS, which the GHL iframe hits. */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* A footer that sits above scrolled content rather than being overrun by it. */
+.pp-modal-foot {
+  flex: none;
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-sunken);
+}
+
+.pp-modal-head {
+  flex: none;
+  border-bottom: 1px solid var(--border-default);
+}
+
+/* Same reasoning as the global transition block above: this is exactly the
+   motion someone enables the OS setting to avoid. */
+@media (prefers-reduced-motion: reduce) {
+  .pp-backdrop,
+  .pp-modal {
+    animation: none;
+  }
+}
+
+/* ── The date panel ───────────────────────────────────────────────────────
+ *
+ * The four DatePickers rendered antd's stock calendar: Inter-ish system font,
+ * a blue today marker, a blue selected cell. Next to the app's Poppins and
+ * pine-green everything else, it was visibly a third-party control.
+ *
+ * PORTALED, like .pp-menu — antd renders this to document.body, outside
+ * [data-dealhub], so every token used below has to be redeclared here. That is
+ * the same trap that made .pp-menu redeclare eleven.
+ */
+.pp-cal {
+  /* Every value below is the RESOLVED original, checked against the :root
+     block rather than eyeballed — my first pass guessed four of them wrong
+     (brand-primary, gray-100, text-faint, accent-pine-text) and a calendar
+     tinted a slightly different green from everything else is worse than an
+     obviously foreign one. */
+  --font-sans: 'Poppins', -apple-system, 'Segoe UI', sans-serif;
+  --text-sm: 11px;
+  --text-md: 13px;
+  --gray-50: #f5f6f8;
+  --gray-100: #eceef1;
+  --brand-primary: #1f7a5c;       /* green-500 */
+  --accent-pine-text: #1f7a5c;
+  --text-heading: #1f2430;        /* gray-800 */
+  --text-body: #323844;           /* gray-700 */
+  --text-muted: #676f7c;          /* gray-500 */
+  --text-faint: #6f7784;          /* gray-450 */
+  --radius-sm: 4px;
+  --radius-lg: 12px;
+
+  font-family: var(--font-sans);
+  /* No animation, same reason as .pp-menu above — antd owns this panel's
+     motion, and a competing one restarts on every re-render (changing month,
+     hovering a day). */
+}
+
+/* Same material as the menus and the dialogs. */
+.pp-cal .ant-picker-panel-container {
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 1px rgba(31, 36, 48, 0.06),
+    0 2px 6px rgba(31, 36, 48, 0.08),
+    0 12px 32px rgba(31, 36, 48, 0.18);
+}
+
+.pp-cal .ant-picker-header {
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--text-heading);
+  font-weight: 600;
+}
+.pp-cal .ant-picker-header button { color: var(--text-muted); }
+.pp-cal .ant-picker-header button:hover { color: var(--text-heading); }
+
+/* Weekday initials are a legend, not data — they should recede. */
+.pp-cal .ant-picker-content th {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pp-cal .ant-picker-cell .ant-picker-cell-inner {
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  color: var(--text-body);
+}
+.pp-cal .ant-picker-cell:hover:not(.ant-picker-cell-selected) .ant-picker-cell-inner {
+  background: var(--gray-50);
+}
+
+/* Today is a HINT — a ring, not a fill. antd ships it as a blue border that
+   competes with the selected day for attention; only one cell should read as
+   chosen. */
+.pp-cal .ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: var(--gray-100) !important;
+}
+.pp-cal .ant-picker-cell-today:not(.ant-picker-cell-selected) .ant-picker-cell-inner {
+  color: var(--accent-pine-text);
+  font-weight: 600;
+}
+
+/* Selected: brand green, not antd blue. */
+.pp-cal .ant-picker-cell-selected .ant-picker-cell-inner {
+  background: var(--brand-primary) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+/* Days spilling in from the neighbouring month are context, not choices. */
+.pp-cal .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-cell-inner {
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
+.pp-cal .ant-picker-footer { border-top: 1px solid var(--gray-100); }
+.pp-cal .ant-picker-today-btn { color: var(--accent-pine-text); font-weight: 600; }
+
+/* ── Cards ────────────────────────────────────────────────────────────────
+ *
+ * The read surfaces: deal cards, contact cards, business cards. Each was a
+ * 1px border with the flat --shadow-card hairline and NO hover state, so a row
+ * carrying two buttons gave no sign it was under the cursor.
+ *
+ * A class rather than inline styles because hover cannot be expressed inline —
+ * which is exactly why none of these had one.
+ */
+[data-dealhub] .pp-card {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  /* Two layers even at rest: a hairline ring for the edge plus a soft drop, so
+     the card sits ON the page rather than being drawn onto it. */
+  box-shadow:
+    0 0 0 1px rgba(31, 36, 48, 0.02),
+    0 1px 2px rgba(31, 36, 48, 0.05),
+    0 1px 8px rgba(31, 36, 48, 0.04);
+  transition-property: box-shadow, border-color, transform;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Lift on hover. 1px, not 4 — the cue should register without the list
+   feeling like it is moving under the cursor. */
+[data-dealhub] .pp-card:hover {
+  border-color: var(--border-strong);
+  box-shadow:
+    0 0 0 1px rgba(31, 36, 48, 0.03),
+    0 2px 4px rgba(31, 36, 48, 0.06),
+    0 8px 20px rgba(31, 36, 48, 0.08);
+  transform: translateY(-1px);
+}
+
+/* An expanded card stays lifted and takes the brand edge: it is the one the
+   rep is working on, and it should not drop back the moment the pointer
+   leaves. */
+[data-dealhub] .pp-card-open,
+[data-dealhub] .pp-card-open:hover {
+  border-color: var(--brand-primary);
+  box-shadow:
+    0 0 0 1px rgba(31, 122, 92, 0.14),
+    0 2px 6px rgba(31, 36, 48, 0.07),
+    0 10px 28px rgba(31, 36, 48, 0.1);
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dealhub] .pp-card,
+  [data-dealhub] .pp-card:hover { transform: none; }
+}
+
+/* ── The inline field picker ──────────────────────────────────────────────
+ *
+ * The chip row on the deal card swaps a 34px chip for an antd Select when a
+ * field is being edited. antd's default control is 32px, so without this the
+ * swap changed the row's height by 2px and every chip after it shifted.
+ *
+ * Height pinned on the SELECTOR, not the wrapper: antd draws the box on an
+ * inner .ant-select-selector, and a height on the outer element leaves the
+ * inner one at its own size — the same reason .pp-dirty-select and
+ * .pp-invalid-select exist.
+ */
+[data-dealhub] .pp-field-select .ant-select-selector {
+  height: 34px !important;
+  min-height: 34px;
+  border-radius: var(--radius-md);
+}
+
+/* Single-select: centre the text in the taller box. */
+[data-dealhub] .pp-field-select.ant-select-single .ant-select-selector .ant-select-selection-item,
+[data-dealhub] .pp-field-select.ant-select-single .ant-select-selector .ant-select-selection-placeholder,
+[data-dealhub] .pp-field-select.ant-select-single .ant-select-selector .ant-select-selection-search-input {
+  height: 32px;
+  line-height: 32px;
+}
+
+/* Multi-select: the tags set the height, so let it scroll inside the fixed box
+   rather than growing it — a third selected value would otherwise push the row
+   taller and reflow the chips again. */
+[data-dealhub] .pp-field-select.ant-select-multiple .ant-select-selector {
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+[data-dealhub] .pp-field-select.ant-select-multiple .ant-select-selection-item {
+  flex: none;
+}
+
+/* ── Tasks toolbar values ─────────────────────────────────────────────────
+ *
+ * The chosen value in each toolbar control (Status, Assignee, Due, Sort, the
+ * date range and the search text) at medium weight, per Figma — antd's 400
+ * read too light against the grey band. Placeholders stay at 400 so a typed
+ * or chosen value still stands apart from an empty prompt.
+ */
+[data-dealhub] .pp-task-toolbar .ant-select-selection-item,
+[data-dealhub] .pp-task-toolbar .ant-picker-input > input,
+[data-dealhub] .pp-task-toolbar .pp-task-search {
+  font-weight: 500;
+}
+[data-dealhub] .pp-task-toolbar .ant-picker-input > input::placeholder,
+[data-dealhub] .pp-task-toolbar .pp-task-search::placeholder {
+  font-weight: 400;
+}
+
+/* The Deals and Businesses toolbar fields (Pipeline, Stage, Owner, Sort,
+ * Type) — the same treatment as the Tasks toolbar above, plus the chevron.
+ * antd's defaults read too light on the grey band: a 400 grey value and a
+ * hairline arrow. The value steps to 500 in the heading colour, and the
+ * arrow to the same colour with its outline thickened — antd's DownOutlined
+ * is a filled path on a 1024 grid, so a stroke in its own colour is what
+ * gives it weight without swapping the icon. */
+/* Not on a DISABLED select — a dark value there reads as clickable. */
+[data-dealhub] .pp-filter-field .ant-select:not(.ant-select-disabled) .ant-select-selection-item {
+  font-weight: 500;
+  color: var(--text-heading);
+}
+[data-dealhub] .pp-filter-field .ant-select:not(.ant-select-disabled) .ant-select-arrow {
+  color: var(--text-heading);
+  font-size: 13px;
+}
+[data-dealhub] .pp-filter-field .ant-select:not(.ant-select-disabled) .ant-select-arrow svg {
+  stroke: currentColor;
+  stroke-width: 60;
+}
+
+/* Multi-select toolbar fields (the Insights Section filter). The value is a
+ * TEXT SUMMARY — maxTagCount 0, so antd draws only its "rest" item ("Pipeline
+ * leakage", "3 sections") — styled as a plain value like the single selects
+ * above, not as antd's grey chip. One line, pinned at the toolbar's 34px. */
+[data-dealhub] .pp-filter-field .ant-select-multiple .ant-select-selector {
+  height: 34px;
+  min-height: 34px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+/* THE TASKS TOOLBAR'S LOOK (client request): antd's own thin grey chevron
+ * and 6px corner, as the Due / Sort fields there draw them — not the
+ * thickened heading-colour arrow the Deals fields above get. */
+[data-dealhub] .pp-filter-field .ant-select-multiple:not(.ant-select-disabled) .ant-select-arrow {
+  color: rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+}
+[data-dealhub] .pp-filter-field .ant-select-multiple:not(.ant-select-disabled) .ant-select-arrow svg {
+  stroke: none;
+}
+[data-dealhub] .pp-filter-field .ant-select-multiple .ant-select-selection-overflow {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+[data-dealhub] .pp-filter-field .ant-select-multiple .ant-select-selection-overflow-item-rest .ant-select-selection-item {
+  margin: 0;
+  padding-inline: 7px;
+  background: transparent;
+  border-color: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+}
+/* "All sections" (nothing picked) is the field's real state, not a prompt —
+ * it reads as a value, the way "All" does in the Deals toolbar. */
+[data-dealhub] .pp-filter-field .ant-select-multiple .ant-select-selection-placeholder {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────────────
+ *
+ * Also defined in ListChrome.jsx's SHIMMER_CSS, which injects it via a
+ * <SkeletonStyles /> element. That works for the list tabs that render it, but
+ * it makes .pp-sk conditional on a particular component being mounted — a
+ * shared dialog (the tag picker's loading rows) cannot rely on that.
+ *
+ * Declared here so the class always exists. The injected copy is identical and
+ * harmless: same keyframes name, same declarations, so whichever lands last
+ * produces the same result.
+ */
+@keyframes pp-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.pp-sk {
+  background: linear-gradient(
+    90deg,
+    var(--gray-100) 25%,
+    var(--gray-50)  37%,
+    var(--gray-100) 63%
+  );
+  background-size: 200% 100%;
+  animation: pp-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-sk { animation: none; }
+}
+
+/* ── Modal typography and chrome ──────────────────────────────────────────
+ *
+ * The dialogs were legible but undifferentiated: the title, the field labels
+ * and the values all sat within a few pixels of each other, so nothing led the
+ * eye. Three specific problems, each fixed below.
+ *
+ * 1. NO TITLE SIZE. Headers used --text-xl (17px), one step above a field
+ *    label. --text-2xl (22px) already exists in the scale for exactly this and
+ *    was simply never applied here.
+ *
+ * 2. LABELS COMPETED WITH VALUES. Uppercase at 10px with 0.07em tracking is
+ *    loud — it draws as much attention as the value it names. A label is
+ *    scaffolding: it should be findable and then recede.
+ *
+ * 3. COLOUR CARRIED NO MEANING. Each modal picked its own tinted header —
+ *    gold for notes, rose for tasks, sky for businesses — and rose is also
+ *    what ConfirmDialog uses for destructive actions. So an ordinary task edit
+ *    looked like a warning. Colour now means one thing: rose is danger.
+ */
+
+/* A calm header. The accent survives as a small coloured icon rather than a
+   full tinted band, so the identity is still there without shouting. */
+.pp-modal-head {
+  padding: 15px var(--space-4) 13px;
+  background: var(--surface-card);
+}
+
+.pp-modal-title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  /* Optical: at 22px the default tracking reads loose. */
+  letter-spacing: -0.011em;
+  color: var(--text-heading);
+}
+
+/* Only ConfirmDialog keeps a tinted header, because there the colour is the
+   message — this is destructive. */
+.pp-modal-head-danger {
+  background: var(--tint-rose);
+  border-bottom-color: var(--status-stuck);
+}
+
+/* Field labels: 11px rather than 10px so the tracking is not doing all the
+   work, and --text-faint rather than --text-muted so they sit clearly BEHIND
+   the value. */
+.pp-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* The required marker. Its own rule so it cannot drift between dialogs, and
+   colour is not the only signal — the asterisk carries it. */
+.pp-req {
+  margin-left: 3px;
+  color: var(--status-stuck);
+  font-weight: var(--weight-semibold);
+}
+
+/* Values inside a dialog read at 14px, one step up from the 13px used in dense
+   list rows. A form is read deliberately, not scanned. */
+.pp-modal-body .ant-input,
+.pp-modal-body .ant-input-affix-wrapper,
+.pp-modal-body .ant-select-selection-item,
+.pp-modal-body .ant-select-selection-search-input,
+.pp-modal-body .ant-picker-input > input {
+  font-size: var(--text-lg);
+}
+
+.pp-modal-body .ant-input::placeholder,
+.pp-modal-body .ant-select-selection-placeholder,
+.pp-modal-body .ant-picker-input > input::placeholder {
+  color: var(--text-faint);
+}
+
+/* Co-Pilot sidebar's Search field (CopilotSidebar.jsx) — GHL's own field
+   reads noticeably lighter than this app's usual input placeholder, so it
+   needs its own rule rather than the default browser placeholder colour
+   (which inherits from the input's own --text-muted and read too dark). */
+[data-dealhub] .pp-copilot-search::placeholder {
+  color: var(--text-faint);
+}
+
+/* A quieter footer. It was --surface-sunken, which put a grey band under every
+   dialog; a hairline rule separates it just as well without the weight. */
+.pp-modal-foot {
+  padding: 13px var(--space-4);
+  background: var(--surface-card);
+}
+
+/* The status line ("No changes yet", "3 unsaved changes"). Deliberately faint:
+   it is a confirmation, not an instruction. */
+.pp-modal-status {
+  flex: 1;
+  font-size: var(--text-base);
+  color: var(--text-faint);
+}
+
+/* ── Rich editor ──────────────────────────────────────────────────────────
+ *
+ * The note/task body editor (TipTap). Styles live here rather than inline
+ * because the editable surface and its content are rendered by ProseMirror —
+ * a style prop cannot reach `.ProseMirror` or the paragraphs inside it.
+ */
+[data-dealhub] .pp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* Roomier than the old 5px/6px: the buttons were 30x28 in a 5px band, so the
+     toolbar read as a dense strip of glyphs rather than a set of controls. */
+  padding: 6px 7px;
+  border-bottom: 1px solid var(--border-default);
+  /* WHITE, not --surface-sunken. A grey band above a white writing area drew a
+     hard horizontal line across the field and made the editor look like two
+     stacked boxes. The border alone separates them. */
+  background: var(--surface-card);
+  flex-wrap: wrap;
+}
+
+[data-dealhub] .pp-tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Square and larger. 30x28 was neither — an off-square button makes an icon
+     row look misaligned even when it is not. 30px also clears the 24px
+     minimum for a comfortable pointer target in a dense dialog. */
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+[data-dealhub] .pp-tb-btn:hover:not(:disabled) {
+  background: var(--gray-100);
+  color: var(--text-heading);
+}
+[data-dealhub] .pp-tb-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* Keyboard users get the same affordance as the mouse. The global focus ring
+   is suppressed inside the toolbar because a 30px square with an outer ring
+   overlaps its neighbours. */
+[data-dealhub] .pp-tb-btn:focus-visible {
+  outline: none;
+  background: var(--tint-pine);
+  box-shadow: inset 0 0 0 2px var(--brand-primary);
+}
+
+/* An active mark reads as pressed. Brand tint rather than a border, so the
+   button does not change size when it toggles. */
+[data-dealhub] .pp-tb-on {
+  background: var(--tint-pine);
+  color: var(--accent-pine-text);
+}
+[data-dealhub] .pp-tb-on:hover:not(:disabled) {
+  background: var(--tint-pine);
+  color: var(--accent-pine-text);
+}
+
+[data-dealhub] .pp-tb-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 5px;
+  background: var(--border-default);
+}
+
+/* The colour swatch, sized to match a toolbar button exactly so the row does
+   not develop a bump where it sits. The native input paints its own border
+   and padding differently in every browser, hence the reset. */
+[data-dealhub] .pp-tb-colour {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+[data-dealhub] .pp-tb-colour input[type="color"] {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+[data-dealhub] .pp-tb-colour input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+[data-dealhub] .pp-tb-colour input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+[data-dealhub] .pp-tb-colour input[type="color"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* An image inside the editor must not escape its box — a 1600px logo pasted
+   by URL would otherwise set the editor's width and scroll the panel. */
+[data-dealhub] .pp-editor-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* The editable surface. */
+[data-dealhub] .pp-editor-content {
+  /* Set by RichEditor as an inline custom property on the wrapper, so the
+     EDITABLE element carries the height rather than its container — without
+     this the area below the text was not clickable. */
+  min-height: var(--pp-editor-min, 120px);
+  box-sizing: border-box;
+  /* 14px sides to line the text up with the first toolbar icon's glyph rather
+     than with the button's edge — 12px left the text looking inset. */
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+  color: var(--text-body);
+  outline: none;
+  overflow-y: auto;
+  /* Grows to 45vh rather than a fixed 320px. In a dialog already capped at the
+     viewport, a fixed pixel max meant a short screen scrolled the editor
+     inside a scrolling body — two scrollbars for one field. */
+  max-height: 45vh;
+}
+
+/* The placeholder. Needs the Placeholder extension to add this class — the CSS
+   was here before the extension was installed, so nothing ever matched it and
+   the editor rendered blank instead of prompting. */
+[data-dealhub] .pp-editor-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--text-faint);
+}
+
+/* Content spacing. ProseMirror emits bare <p>, and the browser default margin
+   leaves a gap above the first line that reads as broken padding. */
+[data-dealhub] .pp-editor-content > p { margin: 0 0 var(--space-2); }
+[data-dealhub] .pp-editor-content > p:last-child { margin-bottom: 0; }
+[data-dealhub] .pp-editor-content ul,
+[data-dealhub] .pp-editor-content ol { margin: 0 0 var(--space-2); padding-left: 22px; }
+/* And in the editor, so a rep sees the bullets they are typing. */
+[data-dealhub] .pp-editor-content ul { list-style: disc; }
+[data-dealhub] .pp-editor-content ol { list-style: decimal; }
+[data-dealhub] .pp-editor-content li { margin: 0 0 2px; }
+[data-dealhub] .pp-editor-content li > p { margin: 0; }
+[data-dealhub] .pp-editor-content blockquote {
+  margin: 0 0 var(--space-2);
+  padding-left: 12px;
+  border-left: 3px solid var(--tint-pine);
+  color: var(--text-muted);
+}
+[data-dealhub] .pp-editor-content a {
+  color: var(--text-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+[data-dealhub] .pp-editor-content strong { font-weight: var(--weight-semibold); }
+
+/* Focus ring on the WRAPPER, since the editable child has outline:none. */
+[data-dealhub] .pp-editor {
+  transition: border-color 140ms ease-out, box-shadow 140ms ease-out;
+}
+[data-dealhub] .pp-editor:focus-within {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(31, 122, 92, 0.12);
+}
+
+/* ── Click-to-edit text ───────────────────────────────────────────────────
+ *
+ * The deal name, its value and the owner row. Each was static text despite
+ * being writable, so the only way to rename or reprice a deal was the Deals
+ * tab or the CRM.
+ *
+ * The pencil is always visible: a control with no affordance at all reads as
+ * static text, and these fields are only discoverable as editable if the
+ * pencil is there to notice. Hover/focus still get a slightly stronger
+ * opacity so the affordance sharpens as the target is approached.
+ */
+[data-dealhub] .pp-inline-pencil {
+  opacity: 0.85;
+  transition: opacity 120ms ease-out;
+}
+[data-dealhub] .pp-inline-edit:hover .pp-inline-pencil,
+[data-dealhub] .pp-inline-edit:focus-visible .pp-inline-pencil {
+  opacity: 1;
+}
+
+/* A faint wash on hover, so the whole label reads as one target rather than
+   just the pencil being clickable. */
+[data-dealhub] .pp-inline-edit:hover {
+  background: var(--gray-50) !important;
+}
+[data-dealhub] .pp-inline-edit:focus-visible {
+  background: var(--gray-50) !important;
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 1px;
+}
+
+/* Keyboard users need the pencil visible without a pointer — :focus-visible
+   above covers tabbing to it; this covers a screen reader announcing it. */
+[data-dealhub] .pp-inline-edit[disabled] .pp-inline-pencil {
+  opacity: 1;
+}
+
+/* ── Contact rows in a dropdown ───────────────────────────────────────────
+ *
+ * ContactPicker renders an avatar plus two lines of text per option. antd's
+ * defaults fight that in two ways:
+ *
+ *   • .ant-select-item-option-content is `overflow: hidden` with
+ *     `text-overflow: ellipsis` — meant for a single line of label text. On a
+ *     two-line row it clips the second line and can truncate the first.
+ *
+ *   • The row's min-height was sized for one line (38px), so a 30px avatar
+ *     plus a detail line either overflowed or sat cramped against the edges.
+ *
+ * The whole .ant-select-item is antd's click target, so making the content
+ * fill it is what makes the entire row clickable rather than just the text.
+ */
+.pp-menu .ant-select-item-option-content {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  /* Fills the row, so a click anywhere on it selects — including the gap to
+     the right of a short name. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Taller rows, because they now hold an avatar and two lines. */
+.pp-menu .ant-select-item-option {
+  min-height: 46px;
+  padding: 6px 10px;
+}
+
+/* The selected row keeps the brand tint from .pp-menu above, but a check mark
+   makes the state readable without relying on colour alone — which matters for
+   the one in eight men with a colour vision deficiency. */
+.pp-menu .ant-select-item-option-selected .ant-select-item-option-state {
+  color: var(--accent-pine-text);
+}
+
+/* ── Email in the timeline ────────────────────────────────────────────────
+ *
+ * An email row is a collapsed document, not a chat bubble: subject, one line
+ * of preview, and the full body on click. Styled here rather than inline
+ * because the header is a <button> that has to shed every default a browser
+ * gives it (background, border, its own font) while staying a real button for
+ * focus and keyboard use.
+ *
+ * Scoped under [data-dealhub] to match the rest of this file — an unscoped
+ * .pp-email would apply inside the GHL iframe's own chrome. */
+
+[data-dealhub] .pp-email {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  /* Clips the header's hover tint to the rounded corners — without it the
+     tint squares off the top two. */
+  overflow: hidden;
+}
+
+/* Keyboard focus stays visible. `-2px` keeps the ring inside the clipping
+   parent, which would otherwise crop it. */
+[data-dealhub] .pp-email-icon {
+  flex: none;
+  margin-top: 1px;
+  font-size: 18px;
+  color: var(--text-heading);
+}
+
+[data-dealhub] .pp-email-subject,
+[data-dealhub] .pp-email-preview {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-lg);
+}
+
+[data-dealhub] .pp-email-subject {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+[data-dealhub] .pp-email-preview {
+  margin-top: 6px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-email-chev {
+  flex: none;
+  font-size: 18px;
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-email-full {
+  padding: 10px 11px;
+  border-top: 1px solid var(--border-default);
+}
+
+/* From / To. A two-column grid so the addresses line up under each other
+   instead of ragging off the label widths. */
+[data-dealhub] .pp-email-addr {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 0;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-email-addr > span {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 44px 1fr;
+  /* An address has no spaces to break on, so a long one would push the card
+     wide without this. */
+  overflow-wrap: anywhere;
+}
+
+[data-dealhub] .pp-email-addr-k {
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+/* ── Email threads ────────────────────────────────────────────────────────
+ *
+ * The "3 in thread" affordance on a timeline row, and the message list inside
+ * the thread dialog. */
+
+/* The header is a flex ROW holding two buttons: the expander (which takes the
+ * remaining width) and the thread chip at the top right. They cannot nest —
+ * a button inside a button is invalid, and the inner click would also fire
+ * the expander. */
+[data-dealhub] .pp-email-bar {
+  /* icon | text | chip | chevron
+   *
+   * The text column is the only flexible one, so a long subject truncates
+   * instead of pushing the chip off the card. `position: relative` anchors
+   * the .pp-email-hit overlay. */
+  position: relative;
+  display: grid;
+  /* icon | subject | clip | thread | chevron
+   *
+   * FIVE columns, and the count is why. With four, adding the attachment
+   * pill pushed the chevron onto row 2, where it rendered underneath the
+   * icon — the grid places auto items in order and wraps when the row is
+   * full. The explicit grid-row/grid-column on .pp-email-preview then put
+   * the preview in the same cell.
+   *
+   * Only the subject track flexes, so a long subject truncates rather than
+   * displacing anything. An absent pill leaves a zero-width `auto` track,
+   * which costs nothing. */
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: start;
+  column-gap: 8px;
+  padding: 14px 16px;
+}
+
+[data-dealhub] .pp-email-icon {
+  /* Row 1, column 1. */
+  margin-top: 1px;
+  font-size: 18px;
+  color: var(--text-heading);
+}
+
+[data-dealhub] .pp-email-subject {
+  /* Row 1, column 2. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* Row 2, spanning the text column THROUGH the chip and chevron columns —
+ * this is the whole point of the grid. Confined to the text column it made
+ * the card read as a narrow column with a chip beside it; spanning to the
+ * right edge, the preview is plainly the subject's second line and the chip
+ * belongs to the subject line alone. */
+[data-dealhub] .pp-email-preview {
+  grid-row: 2;
+  grid-column: 2 / -1;
+  margin-top: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-lg);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* The thread count, on the subject's line at the right. Two earlier
+ * placements were wrong: a full-width band under the card (far from the
+ * subject it describes, and a third row on a two-line card), then a flex
+ * sibling of the whole text block (its own column beside a stack).
+ *
+ * z-index lifts it above .pp-email-hit so it receives its own clicks. */
+[data-dealhub] .pp-email-thread {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Negative vertical margin so the pill's 20px box does not set row 1's
+     height — the subject's text is 15px, and letting the chip drive the row
+     added 9px to every threaded card. The pill still draws at full size; it
+     just stops dictating the layout. */
+  margin: -2px 0;
+  padding: 1px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  /* Or "2 in thread" wraps to two lines in a narrow rail. */
+  white-space: nowrap;
+  color: var(--text-link);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+[data-dealhub] .pp-email-thread:hover {
+  border-color: var(--border-prominent);
+  background: var(--surface-hover);
+}
+
+[data-dealhub] .pp-email-thread:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: 1px;
+}
+
+[data-dealhub] .pp-email-chevbtn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-email-chevbtn:hover {
+  background: var(--surface-hover);
+}
+
+[data-dealhub] .pp-email-chevbtn:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: -1px;
+}
+
+[data-dealhub] .pp-email-chev {
+  font-size: 18px;
+  color: var(--text-faint);
+}
+
+/* The expand hit area: covers the card head so clicking the subject or the
+ * preview toggles the email, while the chip and chevron keep their own clicks.
+ *
+ * IT MUST NEVER PAINT.
+ *
+ * This overlay is `position: absolute` with `z-index: 0`, and the subject,
+ * icon and preview beside it are all `position: static` at `z-index: auto`.
+ * A positioned element paints ABOVE static content regardless of a zero
+ * z-index — so when this had a `:hover { background: var(--surface-hover) }`,
+ * and that token is fully opaque rgb(245,246,248), hovering the card filled
+ * it with flat grey and the email vanished: no icon, no subject, no preview.
+ *
+ * The hover feedback belongs on the CARD, which is behind everything (see
+ * .pp-email:hover below). This element stays a pure hit target: no
+ * background, in any state.
+ *
+ * `z-index: 0` rather than -1: at -1 it would drop behind .pp-email's own
+ * background and stop receiving clicks entirely. */
+[data-dealhub] .pp-email-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* The hover state, moved here from the overlay. On the card it sits behind
+ * the text rather than over it, which is the whole point. */
+[data-dealhub] .pp-email:hover {
+  background: var(--surface-hover);
+}
+
+[data-dealhub] .pp-email-hit:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: -2px;
+}
+
+/* ── Email attachments ────────────────────────────────────────────────────
+ *
+ * Collapsed: a count. Expanded: the files themselves, named and sized.
+ *
+ * The count is deliberately not the full list. An email's files are why a rep
+ * opens it, so the closed row has to say there ARE some — but three filenames
+ * on the subject line would push the subject itself out of view, and the
+ * subject is what the row is scanned for. */
+
+/* The paperclip count. Reads as a label, not a button: clicking it does
+ * nothing special, expanding the email is what shows the files. */
+[data-dealhub] .pp-email-clip,
+[data-dealhub] .pp-thread-clip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* Cancels the pill's box height so it cannot drive the subject row taller —
+     the same fix the thread chip needed. */
+  margin: -2px 0;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-thread-clip {
+  flex: none;
+  margin-left: 6px;
+}
+
+/* The expanded list. A rule above it so a long body does not run straight
+ * into the files. */
+[data-dealhub] .pp-email-atts {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border-default);
+}
+
+/* When the email has NO body text — an attachment-only send — the files sit
+ * directly under the From/To block, which already draws a rule. A second one
+ * immediately below it read as an empty row where the body should be. */
+[data-dealhub] .pp-email-atts-first {
+  margin-top: 2px;
+  padding-top: 0;
+  border-top: none;
+}
+
+[data-dealhub] .pp-email-nobody {
+  margin: 0;
+  font-size: var(--text-md);
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-email-atts-h {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-email-atts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  /* A long filename truncates inside its own chip (see AttachmentChip), so
+     the list itself never needs to scroll sideways. */
+  min-width: 0;
+}
+
+/* ── Attachment viewer ────────────────────────────────────────────────────
+ *
+ * One attachment, previewed in a dialog. Images and PDFs render inline;
+ * everything else (and any preview that fails to load) falls back to a card
+ * with an "Open in a new tab" link. */
+
+/* The preview area. A dark ground rather than white: an image with a light
+ * background needs an edge to read against, and it matches what every other
+ * image viewer does. Fixed height so paging between a tall PDF and a small
+ * image does not resize the dialog under the cursor. */
+[data-dealhub] .pp-att-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: min(70vh, 620px);
+  padding: 0;
+  overflow: auto;
+  /* gray-800 is the darkest token in the scale — there is no gray-900. */
+  background: var(--gray-800);
+}
+
+[data-dealhub] .pp-att-img {
+  /* Fits without cropping, and never upscales past its own size — a 200px
+     logo blown up to 600px is worse than a small sharp one. */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+[data-dealhub] .pp-att-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  /* The browser's PDF viewer draws its own light ground; without this the
+     dark stage shows through around the edges while it loads. */
+  background: #fff;
+}
+
+/* The fallback card: an unpreviewable type, or a preview that failed. */
+[data-dealhub] .pp-att-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--gray-100);
+}
+
+[data-dealhub] .pp-att-none-icon {
+  font-size: 56px;
+  /* Dimmer than the text: it is decoration, and at 56px full-strength it
+     out-shouted the filename. */
+  color: var(--gray-500);
+}
+
+[data-dealhub] .pp-att-none-name {
+  max-width: 420px;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  /* A long filename has no spaces to break on. */
+  overflow-wrap: anywhere;
+}
+
+[data-dealhub] .pp-att-none-msg {
+  max-width: 360px;
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  color: var(--gray-400);
+}
+
+/* Open in a new tab. Present on the fallback card AND in the footer when a
+ * preview worked — the browser's own PDF viewer has print and download, and
+ * an image is easier to inspect at full size. */
+[data-dealhub] .pp-att-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  background: var(--brand-primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+}
+
+[data-dealhub] .pp-att-open:hover {
+  filter: brightness(1.08);
+}
+
+/* The footer variant sits on a light ground, so it is a quiet link rather
+ * than a filled button competing with the file itself. */
+[data-dealhub] .pp-att-open-sm {
+  margin-top: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  font-size: var(--text-sm);
+  color: var(--text-body);
+}
+
+[data-dealhub] .pp-att-open-sm:hover {
+  filter: none;
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-att-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-att-nav:hover {
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-att-nav:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: 1px;
+}
+
+/* ── Inside the thread dialog ──────────────────────────────────────────── */
+
+/* .pp-thread-msg carries no rule of its own by design: it marks each message
+ * for scripts and tests to select, and only the non-last one needs a divider.
+ * Not dead code — do not remove it from the JSX. */
+[data-dealhub] .pp-thread-msg-div {
+  border-bottom: 1px solid var(--border-default);
+}
+
+[data-dealhub] .pp-thread-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  padding: 11px var(--space-4);
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+[data-dealhub] .pp-thread-head:hover {
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-thread-head:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: -2px;
+}
+
+[data-dealhub] .pp-thread-dir {
+  flex: none;
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+[data-dealhub] .pp-thread-lines {
+  flex: 1;
+  /* Same reason as .pp-email-subject: a flex child defaults to min-width auto
+     and refuses to shrink below its text, so the preview would overflow
+     instead of truncating. */
+  min-width: 0;
+}
+
+[data-dealhub] .pp-thread-who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+[data-dealhub] .pp-thread-name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-heading);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+[data-dealhub] .pp-thread-time {
+  flex: none;
+  /* Pushed right, so times form a column down the thread and the gap between
+     name and time doesn't jitter per row. */
+  margin-left: auto;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-thread-prev {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-md);
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-thread-chev {
+  flex: none;
+  margin-top: 1px;
+  font-size: 18px;
+  color: var(--text-faint);
+}
+
+/* Indented to the text column above it, so an open body lines up with the
+   sender name rather than with the direction icon. */
+[data-dealhub] .pp-thread-full {
+  padding: 0 var(--space-4) 14px 50px;
+}
+
+[data-dealhub] .pp-thread-nobody {
+  margin: 0;
+  font-size: var(--text-md);
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* Header controls on the dialog. */
+[data-dealhub] .pp-thread-allbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-thread-allbtn:hover {
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-thread-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-thread-x:hover {
+  background: var(--gray-100, var(--surface-hover));
+  color: var(--text-heading);
+}
+
+/* ── Custom field sections ────────────────────────────────────────────────
+ *
+ * One collapsible section per GHL folder, matching how a rep navigates the
+ * same fields in the CRM. Collapsed by default (bar the first) because a
+ * location with eight folders and forty fields would otherwise bury the
+ * contact's name and phone under a wall of inputs. */
+
+[data-dealhub] .pp-cf-group {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  /* Clips the header's hover tint to the rounded corners. */
+  overflow: hidden;
+}
+
+[data-dealhub] .pp-cf-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 11px;
+  border: none;
+  background: var(--gray-25);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+[data-dealhub] .pp-cf-head:hover {
+  background: var(--surface-hover);
+}
+
+[data-dealhub] .pp-cf-head:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: -2px;
+}
+
+[data-dealhub] .pp-cf-chev {
+  flex: none;
+  font-size: 18px;
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-cf-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* "3 of 8" — says which sections hold data, so a collapsed one is not
+ * opaque and a rep does not have to open each in turn. */
+[data-dealhub] .pp-cf-count {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-cf-body {
+  display: grid;
+  /* Two up on a wide panel, one on a narrow one. GHL renders these in a
+     single column; two is legible here because our panel is wider, and the
+     minmax means it collapses rather than squeezing. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  padding: 12px 11px;
+  border-top: 1px solid var(--border-default);
+}
+
+/* EACH FIELD SPANS TWO ROWS OF THE BODY GRID — a label row and a control row
+ * — and shares them with its neighbours through subgrid.
+ *
+ * Each field used to stack its own label over its own control, so one label
+ * that wrapped ("PLEASE EXPLAIN YOUR INQUIRY ENQUIRIES AT GMAIL") pushed its
+ * box a line lower than every other box in the row. With the rows shared, the
+ * label row is as tall as the tallest label in it, and every control in the
+ * row starts on the same line.
+ *
+ * Without subgrid support the field falls back to its own two rows — the old
+ * layout, still usable. */
+[data-dealhub] .pp-cf-field {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  /* The label-to-control gap. The body's 12px stays between ROWS of fields. */
+  row-gap: 5px;
+  /* Same reason as everywhere else: a grid child defaults to min-width auto
+     and refuses to shrink, so a long option string would widen the column. */
+  min-width: 0;
+}
+
+@supports not (grid-template-rows: subgrid) {
+  [data-dealhub] .pp-cf-field {
+    grid-row: auto;
+    grid-template-rows: auto auto;
+  }
+}
+
+[data-dealhub] .pp-cf-label {
+  /* Sits on the control below it whatever the label row's height: a one-line
+   * label beside a two-line one stays attached to its box rather than floating
+   * at the top of the row. */
+  align-self: end;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Controls sit at the top of the shared control row, so a two-line textarea
+ * beside a one-line input grows downward instead of pushing the input to the
+ * middle. */
+[data-dealhub] .pp-cf-field > :not(.pp-cf-label) {
+  align-self: start;
+}
+
+/* FILE_UPLOAD. No OAuth documents API, so it is shown and not offered — a
+ * control that could never save would be a lie. */
+[data-dealhub] .pp-cf-readonly {
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+[data-dealhub] .pp-cf-file {
+  font-size: var(--text-md);
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+
+[data-dealhub] .pp-cf-empty {
+  font-size: var(--text-md);
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-cf-note {
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+
+/* The save bar, only once something has changed. */
+[data-dealhub] .pp-cf-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-4);
+  border-top: 1px solid var(--border-default);
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-cf-foot-note {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-cf-btn {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-cf-btn:hover {
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-cf-btn-go {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+[data-dealhub] .pp-cf-btn-go:hover {
+  filter: brightness(1.08);
+  background: var(--brand-primary);
+}
+
+[data-dealhub] .pp-cf-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Follow-up counts in the deal edit panel. A quiet line, not a panel: it
+ * answers "does this deal have anything outstanding" without competing with
+ * the fields the rep came here to change. */
+[data-dealhub] .pp-deal-followup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 var(--space-3);
+  padding: 8px 11px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--gray-25);
+  font-size: var(--text-md);
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-deal-followup strong {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* ── Follow-up chips ──────────────────────────────────────────────────────
+ *
+ * Open tasks and notes, on the deal and contact cards. Previously visible
+ * only after clicking Edit, so scanning a list for records with outstanding
+ * work meant opening every one.
+ *
+ * A chip rather than another clause in the grey meta line: a count is a state
+ * worth spotting, not one more attribute among "4 days in stage · last
+ * contact 9 Aug". */
+
+[data-dealhub] .pp-followup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  /* Counts line up when several cards stack. */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+/* An open TASK is something owed; a note is only a record. Tinting the task
+ * chip separates "someone must act" from "there is history here" without
+ * shouting — rose would read as an error on a perfectly healthy deal. */
+[data-dealhub] .pp-followup-task {
+  background: var(--tint-gold);
+  color: var(--accent-gold-text);
+}
+
+/* ── File upload custom fields ────────────────────────────────────────────
+ *
+ * These rendered as a dashed read-only box saying "Upload files in your CRM",
+ * on the belief that GHL had no upload API for them. It does — POST
+ * /locations/:id/customFields/upload — so they are now a real picker. */
+
+[data-dealhub] .pp-cf-files {
+  display: grid;
+  gap: 6px;
+  /* justify-items so the button hugs its text instead of stretching to the
+     grid column, which is what made the deal panel's "Add someone" read as a
+     drop zone. */
+  justify-items: start;
+}
+
+[data-dealhub] .pp-cf-filelist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  /* The chips must be able to shrink, or one long filename widens the whole
+     two-column field grid. */
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* An uploaded file. A LINK, not text: the reason to look at this field is to
+ * open the file, and a signed URL as body text is unreadable. */
+[data-dealhub] .pp-cf-filechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 9px 3px 7px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: var(--gray-50);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-body);
+  text-decoration: none;
+}
+
+[data-dealhub] .pp-cf-filechip:hover {
+  border-color: var(--border-prominent);
+  background: var(--surface-hover);
+}
+
+[data-dealhub] .pp-cf-filename {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+[data-dealhub] .pp-cf-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 11px 0 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-cf-upload:hover:not(:disabled) {
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-cf-upload:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+[data-dealhub] .pp-cf-error {
+  font-size: var(--text-sm);
+  color: var(--status-stuck-text);
+}
+
+/* ── Contact cards ────────────────────────────────────────────────────────
+ *
+ * The October 2026 design: the contact's fields as a bordered two-column
+ * table — icon and label in a ruled key column, the value beside it, and a
+ * pencil at the end of every row. Each row is a readable line that becomes an
+ * input on click, so a page of twenty contacts does not read as a form. */
+
+[data-dealhub] .pp-cc-fields {
+  display: grid;
+  gap: 1px;
+  /* A hairline between rows, drawn by the gap over a tinted ground: cheaper
+     than a border per row, and it cannot double up at the ends. */
+  background: var(--border-default);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Two columns — the contact record page's field table, where each pair of
+ * fields (first and last name, email and phone) reads as one row. One column
+ * again on a narrow screen, where two key columns would leave no room for a
+ * value. */
+[data-dealhub] .pp-cc-fields-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 720px) {
+  [data-dealhub] .pp-cc-fields-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-dealhub] .pp-cc-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: var(--surface-card);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+[data-dealhub] .pp-cc-row:hover {
+  background: var(--gray-25);
+}
+
+[data-dealhub] .pp-cc-row:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: -2px;
+}
+
+/* An edited row, so it is obvious what Save will send. */
+[data-dealhub] .pp-cc-row-dirty {
+  background: var(--tint-pine);
+}
+
+[data-dealhub] .pp-cc-row-open {
+  background: var(--surface-card);
+  cursor: text;
+}
+
+/* The KEY column — icon and label, ruled off from the value. A fixed width so
+ * every value in the card starts on the same vertical line. */
+[data-dealhub] .pp-cc-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  width: 118px;
+  padding: 8px 10px;
+  border-right: 1px solid var(--border-default);
+}
+
+[data-dealhub] .pp-cc-icon {
+  flex: none;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+[data-dealhub] .pp-cc-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: #4a515c;
+}
+
+[data-dealhub] .pp-cc-value {
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+  padding: 8px 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-lg);
+  color: var(--text-heading);
+}
+
+/* An unset field reads as a prompt, not as data. */
+[data-dealhub] .pp-cc-value-empty {
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* At the end of every row, as the design draws it. */
+[data-dealhub] .pp-cc-pencil {
+  flex: none;
+  align-self: center;
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--text-faint);
+  transition: color 120ms ease;
+}
+
+[data-dealhub] .pp-cc-row:hover .pp-cc-pencil,
+[data-dealhub] .pp-cc-row:focus-visible .pp-cc-pencil {
+  color: var(--text-muted);
+}
+
+/* A row's own small control — the business row's unlink, the tag row's add.
+ * Rendered as a real button inside a <div> row, never inside a <button>. */
+[data-dealhub] .pp-cc-act {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0 12px;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-cc-act:hover {
+  color: var(--text-muted);
+}
+
+/* Tags as chips in the value cell, with a dashed "+ Tag" to add one. */
+[data-dealhub] .pp-cc-tags {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+}
+
+[data-dealhub] .pp-cc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  font-size: var(--text-base);
+  color: var(--text-body);
+  /* ONE LINE, never wider than its cell. The pill is a fixed 24px tall, and
+   * without these a long tag ("another-device-replied-whatsapp") wrapped to
+   * two lines inside it and spilled over the pill below. The name ellipsises
+   * in .pp-cc-tag-text; the full name is the pill's title. */
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+[data-dealhub] .pp-cc-tag-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-dealhub] .pp-cc-tag-x {
+  display: inline-flex;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-faint);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+[data-dealhub] .pp-cc-tag:hover .pp-cc-tag-x,
+[data-dealhub] .pp-cc-tag-x:focus-visible {
+  opacity: 1;
+}
+
+/* The selection checkbox on a contact card and a list row — the design's
+ * 18px rounded square, in the contact blue when ticked. */
+[data-dealhub] .pp-check {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--contacts-header);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-cc-tag-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-cc-input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--brand-primary);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--text-md);
+  color: var(--text-heading);
+}
+
+[data-dealhub] .pp-cc-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--tint-pine);
+}
+
+[data-dealhub] .pp-cc-input-bad {
+  border-color: var(--status-stuck);
+}
+
+[data-dealhub] .pp-cc-input-bad:focus {
+  box-shadow: 0 0 0 2px var(--tint-rose);
+}
+
+/* The "find this in the timeline" affordance on a media tile.
+ *
+ * A span with role=button, not a real one: the tile itself is a button now
+ * that it opens a preview, and a button inside a button is invalid HTML —
+ * the inner click would also fire the outer. */
+[data-dealhub] .pp-media-jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-media-jump:hover {
+  background: var(--surface-hover);
+  color: var(--text-body);
+}
+
+[data-dealhub] .pp-media-jump:focus-visible {
+  outline: 2px solid var(--border-prominent);
+  outline-offset: 1px;
+}
+
+/* ── Message context dialog ───────────────────────────────────────────────
+ *
+ * The message a media file arrived in. Opened from a tile's second control,
+ * which used to jump to the timeline — that works but closes the Media tab
+ * and loses your place in the grid. */
+
+[data-dealhub] .pp-mc-meta {
+  flex: none;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* An email's subject, above its body — the same order an email reads in. */
+[data-dealhub] .pp-mc-subject {
+  margin-bottom: 8px;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-heading);
+  overflow-wrap: anywhere;
+}
+
+/* SMS and WhatsApp bodies are plain text and carry their own line breaks. */
+[data-dealhub] .pp-mc-text {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  color: var(--text-body);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+[data-dealhub] .pp-mc-empty {
+  margin: 0;
+  font-size: var(--text-md);
+  font-style: italic;
+  color: var(--text-faint);
+}
+
+/* Which file brought the reader here. On a message with four attachments the
+ * dialog would otherwise give no clue which tile was clicked. */
+[data-dealhub] .pp-mc-file {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-default);
+}
+
+[data-dealhub] .pp-mc-filename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text-body);
+}
+
+[data-dealhub] .pp-mc-size {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+
+[data-dealhub] .pp-mc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+[data-dealhub] .pp-mc-btn:hover {
+  background: var(--gray-25);
+}
+
+
+/* Deal options inside the message-attribution popover.
+ *
+ * CSS rather than inline onMouseEnter handlers for three reasons: it also
+ * covers :focus-visible, so a keyboard user gets the same affordance; it is
+ * one rule instead of two handlers per row; and a JS hover cannot be
+ * verified in a headless browser, because React synthesises onMouseEnter
+ * from delegated mouseover/mouseout and a dispatched event does not
+ * reproduce it.
+ *
+ * Also under .pp-portal — the popover renders outside [data-dealhub].
+ */
+[data-dealhub] .pp-deal-option,
+.pp-portal .pp-deal-option {
+  background: #fff;
+  border: 1px solid var(--border-default);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+[data-dealhub] .pp-deal-option:hover,
+.pp-portal .pp-deal-option:hover,
+[data-dealhub] .pp-deal-option:focus-visible,
+.pp-portal .pp-deal-option:focus-visible {
+  background: var(--tint-pine);
+  border-color: var(--accent-pine-text);
+}
+[data-dealhub] .pp-deal-option:disabled,
+.pp-portal .pp-deal-option:disabled {
+  opacity: 0.6;
+}
+
+
+/* Primary action button.
+ *
+ * The brand fill is set inline where it is used (several places already do
+ * that); this adds the states inline styles cannot express — hover, active
+ * and keyboard focus. --brand-primary-hover / -active have been defined
+ * since the token file was written and nothing was using them.
+ */
+[data-dealhub] .pp-btn-primary:hover,
+.pp-portal .pp-btn-primary:hover {
+  background: var(--brand-primary-hover);
+}
+[data-dealhub] .pp-btn-primary:active,
+.pp-portal .pp-btn-primary:active {
+  background: var(--brand-primary-active);
+}
+[data-dealhub] .pp-btn-primary:focus-visible,
+.pp-portal .pp-btn-primary:focus-visible {
+  outline: 2px solid var(--brand-primary-active);
+  outline-offset: 2px;
+}
+[data-dealhub] .pp-btn-primary:disabled,
+.pp-portal .pp-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Co-Pilot — the portfolio tab's two-column layout.
+ *
+ * The conversation fills the viewport so the composer pins to the bottom, but
+ * that only works while the two columns sit side by side. Below 900px the
+ * grid collapses to one column and the rail stacks UNDER the conversation —
+ * a fixed viewport height there would squeeze both into a few scrolling
+ * inches. Height goes back to auto and the page scrolls normally. */
+@media (max-width: 900px) {
+  [data-dealhub] .pp-copilot-layout {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+}
+
+/* Co-Pilot "Thinking…" pulse.
+ *
+ * On the sparkle glyph only, while a question is running. Opacity rather than
+ * a spinner: the card already says "Thinking", and a spinner beside a word
+ * that means the same thing is two controls for one state.
+ *
+ * The reduced-motion block above damps transitions, not animations, so this
+ * one opts out explicitly. */
+@keyframes pp-think {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-dealhub] .ms { animation: none !important; }
+}
+
+/* Co-Pilot transcript — the scrolling list of turns (AskDeal.jsx).
+ *
+ * Every turn keeps its natural height. A flex child shrinks below its content
+ * by default, and because an answer card clips its own overflow, that shrink
+ * showed up as prose cut off mid-sentence — while the container, never
+ * exceeding its own height, showed no scrollbar at all. Pinning shrink to 0
+ * makes the turns sum past the container, which is what puts the scrollbar
+ * there and lets the full answer render.
+ *
+ * Scoped to the container's children rather than set on the shared UserTurn,
+ * which the portfolio Co-Pilot tab renders too.
+ *
+ * Also under .pp-portal — the expand arrow portals the whole panel to
+ * document.body, outside [data-dealhub], and the full view is exactly where
+ * a long transcript most needs to scroll. */
+[data-dealhub] .pp-transcript > *,
+.pp-portal .pp-transcript > * {
+  flex: none;
+}
+
+/* Co-Pilot answer text — rendered markdown (MarkdownAnswer.jsx).
+ *
+ * Matches the type scale already used for the answer bubble (--text-md,
+ * line-height 1.6) rather than marked's/the browser's own UA-stylesheet
+ * defaults, so a bullet list reads as the SAME text as the paragraph before
+ * it, not a visually distinct block dropped in from elsewhere. */
+[data-dealhub] .pp-md {
+  font-size: var(--text-md);
+  line-height: 1.6;
+  color: var(--text-body);
+  /* The answer must never be what widens the conversation. min-width:0 lets
+     this shrink inside a grid/flex parent (which sizes to min-content without
+     it), and overflow-wrap breaks the one thing a browser otherwise refuses
+     to break: a long unspaced token. Model answers are full of them —
+     view names like vw_forecast_slippage_summary, raw ids, URLs — and one is
+     enough to push the whole chat sideways. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+[data-dealhub] .pp-md p { margin: 0 0 10px; }
+[data-dealhub] .pp-md strong { font-weight: 600; color: var(--text-heading); }
+[data-dealhub] .pp-md ul,
+[data-dealhub] .pp-md ol {
+  margin: 4px 0 10px;
+  padding-left: 22px;
+}
+/* THE MARKERS, restored. index.css loads Tailwind preflight, which resets
+   `ol, ul { list-style: none }` globally — so every numbered or bulleted
+   list in every answer rendered as bare indented lines, however correctly
+   the model wrote "1. " and "- ". The padding above put the indent back and
+   nothing put the markers back, which is why "reply with a number" sat over
+   a list with no numbers. Declared on the list, not the li: list-style is
+   inherited by list items, and `disc`/`decimal` on the container is the
+   browser default this undoes. */
+[data-dealhub] .pp-md ul { list-style: disc; }
+[data-dealhub] .pp-md ol { list-style: decimal; }
+/* Declared AFTER the type-specific p/ul/ol margins above, not before: this
+   selector and those all tie on specificity (one class + one
+   element/universal each), so whichever comes LAST in the stylesheet wins
+   regardless of which element actually ends up first/last in a given
+   answer. Declaring these first let a trailing <ul>'s own 10px
+   margin-bottom silently win over "zero the last child" — stacking with
+   the dealsRead chip row's own top margin below it into a visibly wider
+   gap than every other answer, whose last child happens to be a <p>. */
+[data-dealhub] .pp-md > :first-child { margin-top: 0; }
+[data-dealhub] .pp-md > :last-child { margin-bottom: 0; }
+[data-dealhub] .pp-md li { margin: 6px 0; }
+[data-dealhub] .pp-md li::marker { color: var(--text-faint); }
+[data-dealhub] .pp-md h1,
+[data-dealhub] .pp-md h2,
+[data-dealhub] .pp-md h3,
+[data-dealhub] .pp-md h4 {
+  margin: 14px 0 6px;
+  font-weight: 600;
+  color: var(--text-heading);
+  line-height: 1.3;
+}
+[data-dealhub] .pp-md h1 { font-size: var(--text-xl); }
+[data-dealhub] .pp-md h2 { font-size: var(--text-lg); }
+[data-dealhub] .pp-md h3,
+[data-dealhub] .pp-md h4 { font-size: var(--text-md); }
+[data-dealhub] .pp-md code {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--gray-100);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  /* Inline code is where unbreakable tokens actually appear — the model
+     writes `forecast_summary` mid-sentence constantly. Without this the span
+     is one atomic word as wide as it needs to be. Block code is NOT given
+     this: there, scrolling inside the pre is correct and breaking a line of
+     SQL mid-token would make it unreadable. */
+  overflow-wrap: anywhere;
+}
+[data-dealhub] .pp-md pre {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  overflow-x: auto;
+}
+/* Undo the inline-code break inside a block: a pre scrolls, and breaking a
+   line of SQL at an arbitrary character makes it unreadable. */
+[data-dealhub] .pp-md pre code {
+  padding: 0;
+  background: none;
+  overflow-wrap: normal;
+}
+[data-dealhub] .pp-md blockquote {
+  margin: 0 0 10px;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-muted);
+}
+[data-dealhub] .pp-md a { color: var(--accent-sky-text); }
+/* Wide tables scroll inside themselves rather than the page — the same rule
+   marked's own renderer.table wraps every table in (table-scroll-wrapper). */
+[data-dealhub] .pp-md table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+}
+[data-dealhub] .pp-md th,
+[data-dealhub] .pp-md td {
+  padding: 6px 10px;
+  border: 1px solid var(--border-default);
+  text-align: left;
+}
+[data-dealhub] .pp-md th { background: var(--gray-25); font-weight: 600; }
+
+/* ── Qualification's two-column grid ──────────────────────────────────────
+ *
+ * TWO columns, never three. repeat(auto-fit, minmax(420px, 1fr)) packs in as
+ * many as fit, so a wide screen got three — the design shows two, and at three
+ * the heading column is squeezed until every question wraps to three lines.
+ *
+ * A media query rather than a JS breakpoint: this is a layout rule, and
+ * matchMedia state would re-render all ten rows on every resize tick.
+ *
+ * Both selectors, because the panel is NOT portalled but the rule has to hold
+ * wherever the grid renders — see the .pp-portal note at the top of this file.
+ */
+[data-dealhub] .pp-qual-grid,
+.pp-portal     .pp-qual-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  [data-dealhub] .pp-qual-grid,
+  .pp-portal     .pp-qual-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Email thread card (EmailThreadCard.jsx) — GHL's conversation shape ── */
+[data-dealhub] .pp-thread {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-top: 4px;
+}
+[data-dealhub] .pp-thread-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--gray-100);
+  border-bottom: 1px solid var(--border-default);
+  cursor: pointer;
+}
+[data-dealhub] .pp-thread-subject {
+  flex: 1; min-width: 0;
+  font-size: var(--text-lg); font-weight: 500; color: var(--text-heading);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+[data-dealhub] .pp-thread-tools { display: inline-flex; gap: 4px; flex: none; }
+[data-dealhub] .pp-thread-tool {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: none; border-radius: var(--radius-sm);
+  /* The email accent, so expand and full-screen read as controls rather
+     than greyed-out chrome; a tint on hover, not a grey block. */
+  background: transparent; color: var(--accent-sky-text); cursor: pointer;
+}
+[data-dealhub] .pp-thread-tool:hover { background: var(--tint-sky); color: var(--accent-sky); }
+/* The "+ N messages earlier" pill, centred on a rule. */
+[data-dealhub] .pp-thread-pillrow {
+  position: relative; height: 0; margin: 14px 0 12px;
+  border-top: 1px solid var(--border-strong);
+}
+/* First position: the pill straddles the subject bar's bottom border. */
+[data-dealhub] .pp-thread-pillrow-top { margin-top: 0; border-top: none; }
+[data-dealhub] .pp-thread-pillrow-top .pp-thread-pill { transform: translate(-50%, -50%); }
+[data-dealhub] .pp-thread-pill {
+  position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 14px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+  background: var(--surface-card); color: var(--text-body);
+  font-family: var(--font-sans); font-size: var(--text-md); font-weight: 500;
+  box-shadow: var(--shadow-card); cursor: pointer; white-space: nowrap;
+  /* NO z-index. It only needs to sit above its own card's rule, which
+     source order already gives it; a z-index put it above the timeline's
+     sticky day header when the card scrolled underneath. */
+}
+[data-dealhub] .pp-thread-pill:hover { background: var(--gray-50); }
+[data-dealhub] .pp-thread-plus { font-size: 18px; line-height: 1; color: var(--text-muted); }
+/* One email */
+[data-dealhub] .pp-mail { border-bottom: 1px solid var(--border-default); }
+[data-dealhub] .pp-mail-last { border-bottom: none; }
+[data-dealhub] .pp-mail-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; cursor: pointer;
+}
+[data-dealhub] .pp-mail-head:hover { background: var(--gray-25); }
+[data-dealhub] .pp-mail-tick { width: 16px; height: 16px; flex: none; accent-color: var(--brand-primary); }
+[data-dealhub] .pp-mail-avatar {
+  position: relative; flex: none;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--tint-plum); color: var(--accent-plum-text);
+  font-size: var(--text-sm); font-weight: 600;
+}
+[data-dealhub] .pp-mail-avatar[data-inbound="1"] { background: var(--tint-sky); color: var(--accent-sky-text); }
+[data-dealhub] .pp-mail-avatar-badge {
+  position: absolute; right: -3px; bottom: -3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-card); color: var(--accent-sky-text);
+  font-size: 12px; box-shadow: 0 0 0 1.5px var(--surface-card);
+}
+[data-dealhub] .pp-mail-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+[data-dealhub] .pp-mail-name { font-size: var(--text-md); font-weight: 600; color: var(--text-heading); line-height: 1.2; }
+[data-dealhub] .pp-mail-snippet,
+[data-dealhub] .pp-mail-to {
+  font-size: var(--text-md); color: var(--text-muted); line-height: 1.3;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+[data-dealhub] .pp-mail-time { flex: none; font-size: var(--text-md); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+[data-dealhub] .pp-mail-replyicon {
+  flex: none; width: 28px; height: 28px; border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-body); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+[data-dealhub] .pp-mail-replyicon:hover { background: var(--gray-100); }
+[data-dealhub] .pp-mail-body { padding: 4px 14px 14px 58px; }
+[data-dealhub] .pp-mail-actions { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-default); }
+[data-dealhub] .pp-mail-reply {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 38px; padding: 0 16px;
+  border: none; border-radius: var(--radius-md);
+  background: var(--brand-primary); color: #fff;
+  font-family: var(--font-sans); font-size: var(--text-md); font-weight: 600; cursor: pointer;
+}
+
+/* @-mentions inside an internal comment (utils/mentions.js). The signed-in
+   user's own mention is the link blue, as GHL draws "this one is about you";
+   anyone else is the heading colour, bold. */
+[data-dealhub] .pp-mention,
+.pp-portal .pp-mention {
+  /* Someone else: plain text, as GHL draws it — the @ is the marker. */
+  font-weight: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
+[data-dealhub] .pp-mention[data-me="1"],
+.pp-portal .pp-mention[data-me="1"] {
+  /* You: GHL's blue, and only the colour changes. */
+  color: var(--accent-sky-text);
+  font-weight: 600;
+}
+
+/* Attachment tiles (MessageAttachments.jsx): the download button and the
+   gentle zoom appear on hover, as in GHL's inbox. */
+[data-dealhub] .pp-att-tile .pp-att-dl,
+.pp-portal .pp-att-tile .pp-att-dl { opacity: 0; transition: opacity 150ms ease; }
+[data-dealhub] .pp-att-tile:hover .pp-att-dl,
+.pp-portal .pp-att-tile:hover .pp-att-dl { opacity: 1; }
+[data-dealhub] .pp-att-tile .pp-att-thumb { transition: transform 200ms ease; }
+[data-dealhub] .pp-att-tile:hover .pp-att-thumb { transform: scale(1.03); }

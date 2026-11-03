@@ -1,0 +1,33 @@
+{
+  "name": "closed_won_value_by_lead_source",
+  "description": "Won value and win rate by lead source, in two views: what the SYSTEM recorded (website form, webchat, enquiries@ inbox, Crittall email upload, or none — each split into paid and free) and what a REP recorded in the lead source picklist. Use for 'which lead sources make money', 'what is our best source', 'do website leads or webchat earn more', 'how much have we won from free sources', 'which sources are worth the effort'. This shows what a source EARNED; for where its deals died, use the sources-fail-at-which-stage skill. CRITICAL: a deal appears once in each split, so never total across both — report one at a time and say which. A source with a low win rate but high won value is still worth having.",
+  "viewName": "vw_source_won_value",
+  "params": [
+    {
+      "name": "split",
+      "column": "split",
+      "type": "text",
+      "op": "contains",
+      "description": "Which view of source to report: 'system' for what the CRM recorded, 'rep' for what a rep entered. Almost always worth setting — the two are not comparable."
+    },
+    {
+      "name": "source",
+      "column": "source",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one source, e.g. 'webchat', 'paid' or 'referral'."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only sources with at least this many deals. Use to ignore one-offs that cannot support a percentage."
+    }
+  ],
+  "columns": [],
+  "orderBy": "won_value DESC",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

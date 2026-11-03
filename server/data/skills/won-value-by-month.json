@@ -1,0 +1,33 @@
+{
+  "name": "won_value_by_month",
+  "description": "Won deals and revenue per calendar month, with the change from the previous month, average deal size and how long those deals took to close. Use for 'how much did we win this month', 'compare this month to last', 'is revenue growing', 'what was our best month', 'how has our sales performance changed'. This groups by the month a deal was WON — for what a month's enquiries eventually became, use enquiries_by_month instead; the same deal falls in different months in each and mixing them gives nonsense. Covers the full history: won_at sits on the deal, so every month the CRM has ever held is here. Check months_since_previous — 1 means consecutive, and anything larger means the intervening months had no wins at all, so do not describe that change as month-on-month. A month with no won deals produces NO ROW rather than a zero: say the month is absent rather than reporting zero revenue, because absent can mean nothing was won or nothing was recorded and those are different findings. median_days_to_win rising while value stays flat means deals are taking longer for the same return, which is worth saying. won_value_missing counts won deals with no value recorded — they are in the deal count but contribute nothing to revenue, which is why a month can look strong on count and weak on value.",
+  "viewName": "vw_won_value_by_month",
+  "params": [
+    {
+      "name": "since",
+      "column": "month",
+      "type": "date",
+      "op": "gte",
+      "description": "Only months on or after this date. Pass the first of the month, e.g. 2026-01-01."
+    },
+    {
+      "name": "until",
+      "column": "month",
+      "type": "date",
+      "op": "lte",
+      "description": "Only months on or before this date. Use with since to compare a specific window."
+    },
+    {
+      "name": "min_won_deals",
+      "column": "won_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only months with at least this many won deals."
+    }
+  ],
+  "columns": [],
+  "orderBy": "month DESC",
+  "rowLimit": 60,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

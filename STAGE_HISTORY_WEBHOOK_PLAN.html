@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GHL → Supabase Webhook Integration — Project Plan</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <style>
+    /* GitHub-inspired clean reading style — no external dependencies */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      line-height: 1.6;
+      color: #24292f;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 48px;
+      background: #ffffff;
+    }
+    h1, h2, h3, h4 {
+      border-bottom: 1px solid #eaecef;
+      padding-bottom: 0.3em;
+      margin-top: 1.6em;
+      margin-bottom: 0.6em;
+      line-height: 1.25;
+    }
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; color: #0969da; }
+    h3 { font-size: 1.25em; border-bottom: none; }
+    h4 { font-size: 1em;    border-bottom: none; }
+    p, ul, ol, blockquote { margin: 0.6em 0; }
+    a { color: #0969da; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #f6f8fa;
+      border-radius: 4px;
+      padding: 0.2em 0.4em;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+    pre {
+      background: #f6f8fa;
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      line-height: 1.45;
+      font-size: 0.88em;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+    table {
+      border-collapse: collapse;
+      margin: 1em 0;
+      width: 100%;
+      display: block;
+      overflow-x: auto;
+    }
+    th, td {
+      border: 1px solid #d0d7de;
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f6f8fa; font-weight: 600; }
+    tr:nth-child(2n) td { background: #f6f8fa; }
+    blockquote {
+      border-left: 4px solid #d0d7de;
+      color: #57606a;
+      padding-left: 16px;
+      margin-left: 0;
+    }
+    hr { border: none; border-top: 1px solid #d0d7de; margin: 2em 0; }
+    strong { color: #1f2328; }
+    ul li, ol li { margin: 0.2em 0; }
+
+    /* Architecture diagram */
+    .diagram {
+      margin: 1.5em -120px;
+      padding: 20px;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      font-size: 0.92em;
+    }
+    @media (max-width: 900px) {
+      .diagram { margin-left: 0; margin-right: 0; }
+    }
+    .diagram-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+    .diagram-node {
+      flex: 1 1 0;
+      min-width: 140px;
+      max-width: 220px;
+      background: #ffffff;
+      border: 1.5px solid #0969da;
+      border-radius: 6px;
+      padding: 12px 14px;
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .diagram-node.ghl { border-color: #1f883d; }
+    .diagram-node.app { border-color: #0969da; }
+    .diagram-node.db { border-color: #8250df; }
+    .diagram-node.out-of-scope {
+      border-color: #bf8700;
+      border-style: dashed;
+      background: #fff8e5;
+    }
+    .diagram-node .node-title {
+      font-weight: 600;
+      color: #1f2328;
+      margin-bottom: 4px;
+      font-size: 0.98em;
+    }
+    .diagram-node .node-sub {
+      font-size: 0.82em;
+      color: #57606a;
+      line-height: 1.35;
+    }
+    .diagram-arrow {
+      flex: 0 0 auto;
+      min-width: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      color: #57606a;
+      font-size: 0.78em;
+      line-height: 1.3;
+      text-align: center;
+    }
+    .diagram-arrow .arrow-label {
+      margin-bottom: 4px;
+      font-style: italic;
+    }
+    .diagram-arrow .arrow-line {
+      width: 100%;
+      height: 0;
+      border-top: 2px solid #6e7781;
+      position: relative;
+    }
+    .diagram-arrow .arrow-line::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -6px;
+      width: 0; height: 0;
+      border-left: 8px solid #6e7781;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+    .diagram-arrow .arrow-label-second {
+      margin-top: 6px;
+      font-style: italic;
+    }
+    .diagram-down {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 6px 0;
+      color: #57606a;
+      font-size: 0.78em;
+      font-style: italic;
+      text-align: center;
+    }
+    .diagram-down .down-line {
+      width: 0;
+      height: 28px;
+      border-left: 2px solid #6e7781;
+      position: relative;
+    }
+    .diagram-down .down-line::after {
+      content: "";
+      position: absolute;
+      left: -6px;
+      bottom: -1px;
+      width: 0; height: 0;
+      border-top: 8px solid #6e7781;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+    }
+    .diagram-down .down-label { margin: 4px 0; }
+    .diagram-bottom-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .diagram-bottom-row .diagram-node {
+      max-width: 420px;
+      flex: 0 1 420px;
+    }
+    @media (max-width: 700px) {
+      .diagram-row { flex-direction: column; align-items: center; }
+      .diagram-arrow { min-width: 0; padding: 8px 0; width: 100%; }
+      .diagram-arrow .arrow-line {
+        width: 0; height: 28px;
+        border-top: none;
+        border-left: 2px solid #6e7781;
+      }
+      .diagram-arrow .arrow-line::after {
+        right: auto; left: -6px;
+        top: auto; bottom: -1px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 8px solid #6e7781;
+        border-bottom: none;
+      }
+      .diagram-node { max-width: 100%; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">GHL → Supabase Webhook Integration — Project Plan</h1>
+</header>
+<h1 id="ghl-supabase-webhook-integration-project-plan">GHL → Supabase
+Webhook Integration — Project Plan</h1>
+<p><strong>Project:</strong> Stage History + Conversation Data →
+Self-hosted Supabase on EU (Germany) server</p>
+<hr />
+<h2 id="what-were-building">1. What we’re building</h2>
+<p>The goal is to pull GoHighLevel (GHL) <strong>conversation +
+opportunity stage data</strong> out of the sub-account(s) and into a
+<strong>database we control</strong>, so that analytics and LLM
+summarization can later be built on top of the same dataset — without
+ever exporting CSV by hand. (Those downstream pieces are <em>not</em> in
+scope of this build — see Section 13.)</p>
+<p>The new flow:</p>
+<ol type="1">
+<li><strong>GHL fires a webhook</strong> at our server whenever an
+opportunity moves between stages (real-time). A separate once-per-day
+job sweeps for opportunities that were created but never moved (so
+nothing falls through the cracks).</li>
+<li><strong>A private GHL Marketplace app</strong> (we build, deployed
+on the EU server) receives that webhook, enriches it with conversation
+messages, cleans the data, and writes structured rows into
+<strong>self-hosted Supabase</strong> (Postgres) running on the same EU
+footprint.</li>
+<li><strong>Analytics and LLM summarization can be built on top of the
+database</strong> by you — same server, same data. <strong>Not in
+scope</strong> of this build (see Section 13).</li>
+</ol>
+<p>Everything stays inside the EU (GDPR-compliant — Germany region agreed
+with the client; see Section 7).</p>
+<div class="diagram" role="img" aria-label="GoHighLevel sends real-time stage-change webhooks and daily orphan sweeps to a Private GHL App on an EU Node.js server, which cleans data and writes into a self-hosted Supabase Postgres on an EU host. Analytics and LLM summaries can be built on top of Supabase but are not in scope.">
+  <div class="diagram-row">
+    <div class="diagram-node ghl">
+      <div class="node-title">GoHighLevel</div>
+      <div class="node-sub">(sub-account)</div>
+    </div>
+    <div class="diagram-arrow">
+      <div class="arrow-label">real-time on stage change</div>
+      <div class="arrow-line"></div>
+      <div class="arrow-label-second">daily sweep for orphan opportunities</div>
+    </div>
+    <div class="diagram-node app">
+      <div class="node-title">Private GHL App</div>
+      <div class="node-sub">Node.js, EU server<br/>+ data cleaning</div>
+    </div>
+    <div class="diagram-arrow">
+      <div class="arrow-label">INSERT / UPSERT</div>
+      <div class="arrow-line"></div>
+    </div>
+    <div class="diagram-node db">
+      <div class="node-title">Self-hosted Supabase</div>
+      <div class="node-sub">Postgres<br/>(EU host)</div>
+    </div>
+  </div>
+  <div class="diagram-down">
+    <div class="down-line"></div>
+    <div class="down-label">SQL queries / analytics</div>
+  </div>
+  <div class="diagram-bottom-row">
+    <div class="diagram-node out-of-scope">
+      <div class="node-title">Analytics + LLM summaries</div>
+      <div class="node-sub">You can build these on top of Supabase &mdash; <strong>NOT in scope</strong> of this build (see Section 13)</div>
+    </div>
+  </div>
+</div>
+<hr />
+<h2 id="webhook-triggers-when-does-the-system-fire">2. Webhook Triggers
+(when does the system fire?)</h2>
+<h3 id="real-time-opportunity-stage-update">2.1 — Real-time: Opportunity
+Stage Update</h3>
+<ul>
+<li>Fires the moment an opportunity moves from one stage to another in GHL</li>
+<li>One webhook event <strong>per message</strong> (flat structure, not
+grouped) — so a stage with 6 messages fires 6 events</li>
+</ul>
+<h3 id="orphan-opportunities-created-but-never-moved">2.2 — Orphan
+opportunities (created but never moved)</h3>
+<p>The “lead came in, sat there” case — opportunities that exist but
+have no stage change and no communication.</p>
+<p><strong>How we handle it:</strong> 1. When an opportunity is
+<strong>created</strong> in GHL, we store a record of it internally (in
+our own tracking table — “pending stage update”) 2. When that
+opportunity <strong>gets a stage update</strong>, we fire the normal
+real-time webhook (with messages bucketed into the stage window) AND
+remove the record from the pending list 3. <strong>Once per
+day</strong>, a sweep finds any records still sitting in the pending
+list (opportunities that have been created but never moved). For each, we fire
+the webhook <strong>once</strong>, then remove from the pending list</p>
+<p>Each orphan opportunity is therefore notified at most <strong>one
+time</strong> — either when it finally moves, or once via the daily
+sweep when it’s been sitting too long. We won’t spam the system with the
+same orphan every day.</p>
+<hr />
+<h2 id="webhook-payload-what-each-event-looks-like">3. Webhook Payload —
+what each event looks like</h2>
+<p>One event = one (message × stage) row. Same flat shape as the CSV
+today. JSON shape:</p>
+<pre class="jsonc"><code>{
+  // identifiers
+  &quot;location_id&quot;: &quot;QufTHN7dRygscPmKguNZ&quot;,
+  &quot;contact_id&quot;: &quot;hGFKHeZCWwcx6R42bpHA&quot;,
+  &quot;opportunity_id&quot;: &quot;nweP6H6lZsFm84CeKGWp&quot;,
+
+  // opportunity snapshot (current values at webhook time)
+  &quot;opportunity&quot;: {
+    &quot;name&quot;: &quot;Henrietta Haines&quot;,
+    &quot;pipeline_id&quot;: &quot;DftlnFZD4tQKrloHE3UF&quot;,
+    &quot;pipeline_stage_id&quot;: &quot;c9a93fef-23a5-44c9-8bd5-6a1aae709abd&quot;,
+    &quot;pipeline_name&quot;: &quot;Sales Pipeline&quot;,
+    &quot;stage_name&quot;: &quot;Won&quot;,
+    &quot;status&quot;: &quot;open&quot;,                    // open | won | lost | abandoned
+    &quot;monetary_value&quot;: 5000,
+    &quot;assigned_to&quot;: &quot;zT46WSCPbudrq4zhWMk6&quot;,
+    &quot;custom_fields&quot;: {
+      &quot;meddic_1&quot;: &quot;...&quot;, &quot;meddic_2&quot;: &quot;...&quot;, &quot;meddic_3&quot;: &quot;...&quot;,
+      &quot;meddic_4&quot;: &quot;...&quot;, &quot;meddic_5&quot;: &quot;...&quot;, &quot;meddic_6&quot;: &quot;...&quot;,
+      &quot;meddic_7&quot;: &quot;...&quot;, &quot;meddic_8&quot;: &quot;...&quot;, &quot;meddic_9&quot;: &quot;...&quot;,
+      &quot;meddic_10&quot;: &quot;...&quot;,
+      &quot;client_type&quot;: &quot;...&quot;,
+      &quot;product_system&quot;: &quot;Crittall&quot;,                       // brand/material — Crittall | Cortizo | Genosal | …
+      &quot;product_type&quot;: &quot;Bifold Door&quot;,                       // specific product within the system
+      &quot;postcode&quot;: &quot;SW1A 1AA&quot;,                              // opportunity-level postcode (NOT contact address postcode)
+      &quot;lead_source_opportunity&quot;: &quot;...&quot;, &quot;first_contact__method&quot;: &quot;...&quot;,
+      &quot;inquiry&quot;: &quot;...&quot;, &quot;upload_from_enquiry&quot;: &quot;...&quot;
+      // …any other opportunity custom fields, by exact field name
+    }
+  },
+
+  // contact snapshot
+  &quot;contact&quot;: {
+    &quot;custom_fields&quot;: {
+      &quot;google_click_id&quot;: &quot;...&quot;, &quot;gbraid&quot;: &quot;...&quot;, &quot;wbraid&quot;: &quot;...&quot;,
+      &quot;gad_source&quot;: &quot;...&quot;,
+      &quot;utm_source&quot;: &quot;...&quot;, &quot;utm_medium&quot;: &quot;...&quot;, &quot;utm_campaign&quot;: &quot;...&quot;,
+      &quot;utm_content&quot;: &quot;...&quot;, &quot;utm_term&quot;: &quot;...&quot;,
+      &quot;marketing_consent_crittall&quot;: true,
+      &quot;ienquiry_crittall_email&quot;: &quot;...&quot;, &quot;file_upload_crittall_email&quot;: &quot;...&quot;,
+      &quot;checkbox_2wpw&quot;: &quot;...&quot;
+      // …any other contact custom fields
+    }
+  },
+
+  // stage history (this opportunity × this stage)
+  &quot;stage_history&quot;: {
+    &quot;stage_id&quot;: &quot;c9a93fef-23a5-44c9-8bd5-6a1aae709abd&quot;,   // stable internal pipeline_stage_id — canonical (use for queries / joins)
+    &quot;stage_name&quot;: &quot;Sales Qualified&quot;,                      // display name AT TIME OF STAGE CHANGE — snapshot, so renames don&apos;t rewrite history
+    &quot;entered_at&quot;: &quot;2026-04-20T15:49:01.143Z&quot;,
+    &quot;left_at&quot;: null,                                     // null = still in this stage
+    &quot;in_stage_duration_seconds&quot;: 2388506,                // computed: now - entered_at, or left_at - entered_at
+    &quot;current_stage&quot;: true,                                // true if still in this stage
+    &quot;ghost_opportunity&quot;: false,                          // computed: true when opportunity referenced by activity events (deleted/merged opportunity)
+    &quot;custom_fields_snapshot&quot;: {                          // opportunity.custom_fields FROZEN at this stage change.
+      &quot;product_system&quot;: &quot;Crittall&quot;,                      // if the lead switches Crittall → Cortizo mid-pipeline, the
+      &quot;product_type&quot;: &quot;Bifold Door&quot;,                     // earlier stage row still shows &quot;Crittall&quot;.
+      &quot;client_type&quot;: &quot;...&quot;, &quot;lead_source_opportunity&quot;: &quot;...&quot;,
+      &quot;first_contact__method&quot;: &quot;...&quot;, &quot;inquiry&quot;: &quot;...&quot;
+      // …all opportunity custom fields, frozen at this moment
+    }
+  },
+
+  // one message (one event = one message)
+  &quot;message&quot;: {
+    &quot;message_id&quot;: &quot;IhcjqiP1KJpjOEejv2AP&quot;,
+    &quot;conversation_id&quot;: &quot;wMjyjNMN6VaNOBsJ0AbF&quot;,
+    &quot;timestamp&quot;: &quot;2026-04-27T11:22:15.366Z&quot;,
+    &quot;body&quot;: &quot;Hi Shari, just confirming…&quot;,                // CLEANED (see Section 4)
+    &quot;direction&quot;: &quot;outbound&quot;,                              // inbound | outbound
+    &quot;channel&quot;: &quot;WhatsApp&quot;,                                // SMS | Email | WhatsApp | Call | Webchat | …
+    &quot;is_call&quot;: false
+  }
+}</code></pre>
+<h3 id="when-theres-no-message-in-a-stage-window">When there’s no
+message in a stage window</h3>
+<p>The stage_history block still fires once (so empty stages are
+tracked), and <code>message</code> is <code>null</code> or has empty
+fields.</p>
+<hr />
+<h2 id="data-cleaning-applied-in-the-private-app-before-insert">4. Data
+Cleaning (applied in the private app before INSERT)</h2>
+<p>GHL’s raw message bodies contain stuff that’s not analyst-friendly.
+We strip it out before storing.</p>
+<h3 id="emails">4.1 Emails</h3>
+<ul>
+<li><strong>Keep</strong>: HTML content <strong>inside</strong>
+<code>&lt;body&gt;...&lt;/body&gt;</code> (so links and formatting
+survive)</li>
+<li><strong>Strip</strong>: email headers (<code>From:</code>,
+<code>To:</code>, MIME boundaries), footers, signatures, unsubscribe
+links, tracking pixels</li>
+<li><strong>Tech approach</strong>: parse with <code>cheerio</code>
+(server-side jQuery for Node) — extract <code>body</code> element’s
+inner HTML, then run a sanitizer pass to remove known footer/header
+patterns</li>
+</ul>
+<h3 id="sms-whatsapp">4.2 SMS / WhatsApp</h3>
+<ul>
+<li><strong>Strip emojis</strong> using Unicode regex:
+<code>/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu</code></li>
+<li>Strip GHL UI placeholders like <code>&gt;AUDIO&lt;</code>,
+<code>&gt;IMAGE&lt;</code> (best-effort, not a blocker)</li>
+</ul>
+<h3 id="what-stays-raw-for-audit">4.3 What stays raw (for audit)</h3>
+<ul>
+<li>We keep a <code>message_body_raw</code> column for the first month
+so any “this body looks wrong” reports can be debugged against the
+original. Drop the column after validation period.</li>
+</ul>
+<hr />
+<h2 id="database-schema-supabase-postgres">5. Database Schema (Supabase
+/ Postgres)</h2>
+<p><strong>4 tables</strong>, normalized. Each row has
+<code>location_id</code> for multi-tenant isolation (see Section 6).</p>
+<h3 id="contacts">5.1 <code>contacts</code></h3>
+<p>One row per contact per sub-account. UTM/Google-ads fields promoted
+to dedicated columns for easy filtering; everything else lives in
+JSONB.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> contacts (</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  location_id        TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  contact_id         TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-4a"><a href="#cb3-4a" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- Note: postcode is intentionally NOT here. The client uses the custom opportunity field</span></span>
+<span id="cb3-4b"><a href="#cb3-4b" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- `opportunity.postcode` (per-opportunity, not per-contact). See opportunities.postcode below.</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  gclid              TEXT,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  gbraid             TEXT,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  wbraid             TEXT,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  gad_source         TEXT,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  utm_source         TEXT,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  utm_medium         TEXT,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  utm_campaign       TEXT,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  utm_content        TEXT,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  utm_term           TEXT,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  marketing_consent  <span class="dt">BOOLEAN</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  custom_fields      JSONB,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  imported_at        TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  updated_at         TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (location_id, contact_id)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> contacts <span class="kw">USING</span> GIN (custom_fields);</span></code></pre></div>
+<h3 id="opportunities">5.2 <code>opportunities</code></h3>
+<p>One row per opportunity. MEDDIC fields promoted; rest in JSONB.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> opportunities (</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  location_id          TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  opportunity_id       TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  contact_id           TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  name                 TEXT,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  pipeline_id          TEXT,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  pipeline_name        TEXT,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  current_stage_id     TEXT,</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  current_stage_name   TEXT,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  status               TEXT,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  monetary_value       <span class="dt">NUMERIC</span>(<span class="dv">12</span>, <span class="dv">2</span>),</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  assigned_to          TEXT,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  meddic_1             TEXT, meddic_2  TEXT, meddic_3  TEXT,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  meddic_4             TEXT, meddic_5  TEXT, meddic_6  TEXT,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  meddic_7             TEXT, meddic_8  TEXT, meddic_9  TEXT,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  meddic_10            TEXT,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  client_type          TEXT,</span>
+<span id="cb4-17a"><a href="#cb4-17a" aria-hidden="true" tabindex="-1"></a>  product_system       TEXT,    <span class="co">-- brand/material (Crittall, Cortizo, Genosal, …) — promoted from opportunity custom field</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  product_type         TEXT,    <span class="co">-- specific product within the system (Bifold Door, Casement Window, …)</span></span>
+<span id="cb4-18a"><a href="#cb4-18a" aria-hidden="true" tabindex="-1"></a>  postcode             TEXT,    <span class="co">-- opportunity-level postcode custom field (per-opportunity, NOT contact address)</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  first_contact__method    TEXT,</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  lead_source_opportunity  TEXT,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  inquiry              TEXT,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  custom_fields        JSONB,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  is_ghost             <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  is_deleted           <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  created_at_ghl       TIMESTAMPTZ,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  imported_at          TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  updated_at           TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (location_id, opportunity_id),</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (location_id, contact_id) <span class="kw">REFERENCES</span> contacts (location_id, contact_id)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> opportunities (location_id, contact_id);</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> opportunities (location_id, status);</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> opportunities <span class="kw">USING</span> GIN (custom_fields);</span></code></pre></div>
+<h3 id="stage_history">5.3 <code>stage_history</code></h3>
+<p>One row per (opportunity × stage_session). Immutable append-only
+history.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> stage_history (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span>                          UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  location_id                 TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  opportunity_id              TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  contact_id                  TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  stage_id                    TEXT,                     <span class="co">-- stable internal pipeline_stage_id — CANONICAL (use for queries / joins)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  stage_name                  TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,            <span class="co">-- display name AT TIME OF STAGE CHANGE — snapshot, not live</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  entered_at                  TIMESTAMPTZ <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  left_at                     TIMESTAMPTZ,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  in_stage_duration_seconds   <span class="dt">INTEGER</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  current_stage               <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  deleted                     <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,    <span class="co">-- computed: true on the row that closes a deletion event</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  ghost_opportunity           <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,    <span class="co">-- computed: true when the opportunity doesn&#39;t exist in GHL&#39;s</span></span>
+<span id="cb5-13b"><a href="#cb5-13b" aria-hidden="true" tabindex="-1"></a>                                                        <span class="co">-- /opportunities/search but IS referenced by activity</span></span>
+<span id="cb5-13c"><a href="#cb5-13c" aria-hidden="true" tabindex="-1"></a>                                                        <span class="co">-- events (i.e. deleted/merged opportunity reconstructed from history)</span></span>
+<span id="cb5-13d"><a href="#cb5-13d" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- Per-stage snapshot of opportunity custom fields AT THE MOMENT OF THE STAGE CHANGE.</span></span>
+<span id="cb5-13e"><a href="#cb5-13e" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- The opportunities table holds the LIVE value; stage_history rows hold the HISTORICAL value.</span></span>
+<span id="cb5-13f"><a href="#cb5-13f" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- So if a lead switches Crittall → Cortizo mid-pipeline, the row for the earlier stage still</span></span>
+<span id="cb5-13g"><a href="#cb5-13g" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- shows &quot;Crittall&quot; — you can answer &quot;what product were they interested in at Sales Qualified?&quot;.</span></span>
+<span id="cb5-13h"><a href="#cb5-13h" aria-hidden="true" tabindex="-1"></a>  product_system              TEXT,                     <span class="co">-- promoted from custom_fields_snapshot for fast filtering</span></span>
+<span id="cb5-13i"><a href="#cb5-13i" aria-hidden="true" tabindex="-1"></a>  product_type                TEXT,                     <span class="co">-- promoted from custom_fields_snapshot for fast filtering</span></span>
+<span id="cb5-13j"><a href="#cb5-13j" aria-hidden="true" tabindex="-1"></a>  custom_fields_snapshot      JSONB,                    <span class="co">-- everything else: opportunity custom fields frozen at this stage transition</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  imported_at                 TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (location_id, opportunity_id) <span class="kw">REFERENCES</span> opportunities (location_id, opportunity_id)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> stage_history (location_id, opportunity_id, entered_at);</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> stage_history (location_id, stage_id);       <span class="co">-- query by stable stage id (renames don't break)</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> stage_history (location_id, stage_name);     <span class="co">-- still useful for human-readable reports</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> stage_history <span class="kw">USING</span> GIN (custom_fields_snapshot);</span></code></pre></div>
+<blockquote>
+<p><strong>Stage identifier convention:</strong> <code>stage_id</code> is the stable GHL <code>pipeline_stage_id</code> (UUID) &mdash; queries, joins, and downstream analytics should reference this. <code>stage_name</code> is a frozen <em>snapshot</em> of the display name at the time of the stage change, so historical rows continue to show the right label even if the stage is renamed in GHL later. Renames in GHL do not break any historical relationships.</p>
+</blockquote>
+<h3 id="messages">5.4 <code>messages</code></h3>
+<p>One row per message, optionally linked to a stage.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> messages (</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span>                  UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> gen_random_uuid(),</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  location_id         TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  contact_id          TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  opportunity_id      TEXT,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  stage_history_id    UUID,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  message_id          TEXT,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  conversation_id     TEXT,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  message_timestamp   TIMESTAMPTZ <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  message_body        TEXT,            <span class="co">-- CLEANED</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  message_body_raw    TEXT,            <span class="co">-- original (drop after validation)</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  message_direction   TEXT,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  message_channel     TEXT,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  is_call             <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  imported_at         TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (location_id, opportunity_id) <span class="kw">REFERENCES</span> opportunities (location_id, opportunity_id),</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (stage_history_id)             <span class="kw">REFERENCES</span> stage_history (<span class="kw">id</span>) <span class="kw">ON</span> <span class="kw">DELETE</span> <span class="kw">SET</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">FOREIGN</span> <span class="kw">KEY</span> (location_id, contact_id)      <span class="kw">REFERENCES</span> contacts (location_id, contact_id)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> messages (location_id, opportunity_id, message_timestamp);</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> messages (location_id, contact_id, message_timestamp);</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="kw">ON</span> messages (location_id, stage_history_id);</span></code></pre></div>
+<h3 id="why-this-shape-plain-english">Why this shape (plain
+English)</h3>
+<ul>
+<li><strong>One opportunity = one row in
+<code>opportunities</code></strong>, no matter how many stages it passes
+through. If its monetary value changes, we update one row, not
+hundreds.</li>
+<li><strong>One stage occupancy = one row in
+<code>stage_history</code></strong>. Three stage transitions on the same
+opportunity = three rows.</li>
+<li><strong>One message = one row in <code>messages</code></strong>.
+Linked to whichever stage it fell inside via
+<code>stage_history_id</code>.</li>
+<li><strong>Custom fields use JSONB</strong> so we don’t have to migrate
+the schema every time GHL adds a new field. Frequently-queried ones
+(MEDDIC, UTMs) are promoted to dedicated columns for speed.</li>
+</ul>
+<h3 id="rebuilding-the-csv-at-any-time">Rebuilding the CSV at any
+time</h3>
+<p>A single JOIN reconstructs the exact CSV output we produce today:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> c.contact_id, o.opportunity_id, o.monetary_value,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>       sh.stage_name, sh.entered_at, sh.left_at, sh.in_stage_duration_seconds,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>       sh.current_stage, sh.deleted,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>       m.message_timestamp, m.message_body, m.message_direction, m.message_channel,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>       m.message_id, m.conversation_id, m.is_call</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> messages m</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> stage_history sh <span class="kw">ON</span> m.stage_history_id <span class="op">=</span> sh.<span class="kw">id</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> opportunities o  <span class="kw">ON</span> sh.opportunity_id <span class="op">=</span> o.opportunity_id <span class="kw">AND</span> sh.location_id <span class="op">=</span> o.location_id</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> contacts c       <span class="kw">ON</span> o.contact_id <span class="op">=</span> c.contact_id <span class="kw">AND</span> o.location_id <span class="op">=</span> c.location_id</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> o.location_id <span class="op">=</span> $<span class="dv">1</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> sh.opportunity_id, sh.entered_at, m.message_timestamp;</span></code></pre></div>
+<hr />
+<h2 id="multi-tenant-isolation">6. Multi-Tenant Isolation</h2>
+<p>If more clients onboard later, each client’s data must be
+<strong>completely walled off</strong> from the others in the same
+Supabase instance.</p>
+<p>We do this with Postgres <strong>Row-Level Security
+(RLS)</strong>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> contacts      <span class="kw">ENABLE</span> <span class="kw">ROW</span> <span class="kw">LEVEL</span> SECURITY;</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> opportunities <span class="kw">ENABLE</span> <span class="kw">ROW</span> <span class="kw">LEVEL</span> SECURITY;</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> stage_history <span class="kw">ENABLE</span> <span class="kw">ROW</span> <span class="kw">LEVEL</span> SECURITY;</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> messages      <span class="kw">ENABLE</span> <span class="kw">ROW</span> <span class="kw">LEVEL</span> SECURITY;</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> POLICY tenant_iso <span class="kw">ON</span> contacts        <span class="kw">USING</span> (location_id <span class="op">=</span> current_setting(<span class="st">&#39;app.location_id&#39;</span>));</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> POLICY tenant_iso <span class="kw">ON</span> opportunities   <span class="kw">USING</span> (location_id <span class="op">=</span> current_setting(<span class="st">&#39;app.location_id&#39;</span>));</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> POLICY tenant_iso <span class="kw">ON</span> stage_history   <span class="kw">USING</span> (location_id <span class="op">=</span> current_setting(<span class="st">&#39;app.location_id&#39;</span>));</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> POLICY tenant_iso <span class="kw">ON</span> messages        <span class="kw">USING</span> (location_id <span class="op">=</span> current_setting(<span class="st">&#39;app.location_id&#39;</span>));</span></code></pre></div>
+<p><strong>Plain English</strong>: every table has a
+<code>location_id</code> column. Postgres enforces “you can only see
+rows where <code>location_id</code> matches the one your session
+declared.” Even if a query forgets the
+<code>WHERE location_id = …</code> filter, Postgres blocks cross-tenant
+data automatically.</p>
+<p>This is the standard Supabase multi-tenant pattern and is bulletproof
+when configured correctly.</p>
+<hr />
+<h2 id="eu-data-residency-germany-agreed-with-client">7. EU Data Residency (Germany — Agreed with Client)</h2>
+<p><strong>Every byte of customer data stays inside the EU.</strong> The
+client has confirmed that Germany (specifically: Hetzner Falkenstein for
+the app server, Netcup Nuremberg for self-hosted Supabase) is acceptable
+— UK-only residency is not required.</p>
+<h3 id="where-data-physically-lives">Where data physically lives</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Component</th>
+<th>Location</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GHL sub-account</td>
+<td>Wherever GHL stores it (US-based)</td>
+<td>Out of our control — but data leaves GHL only as the webhook payload
+to OUR server</td>
+</tr>
+<tr>
+<td>Webhook receiver (private app)</td>
+<td><strong>Germany — Hetzner Falkenstein</strong></td>
+<td>Ubuntu 22.04, 2 cores / 4 GB RAM / 40 GB SSD</td>
+</tr>
+<tr>
+<td>Supabase (Postgres)</td>
+<td><strong>Germany — Netcup Nuremberg</strong></td>
+<td>Self-hosted via elest.io, 2 cores / 4 GB RAM / 60 GB SSD</td>
+</tr>
+<tr>
+<td>Logs / backups</td>
+<td><strong>Germany / EU</strong></td>
+<td>Local filesystem + EU-region object storage for off-site backups</td>
+</tr>
+<tr>
+<td>Developer access during build</td>
+<td>From anywhere, but no copies kept outside the EU</td>
+<td>We will not export data to laptops outside the EU during debug</td>
+</tr>
+</tbody>
+</table>
+<h3 id="what-this-rules-out">What this rules out</h3>
+<ul>
+<li>AWS US regions / any non-EU region</li>
+<li>Supabase Cloud (we use self-hosted regardless)</li>
+<li>Logging services that export to non-EU destinations (e.g. Datadog US,
+default Sentry)</li>
+</ul>
+<h3 id="what-well-use">What we’ll use</h3>
+<ul>
+<li>Hetzner Falkenstein (app server, already provisioned)</li>
+<li>Self-hosted Supabase on Netcup Nuremberg via elest.io (already
+provisioned)</li>
+<li>Local filesystem logs + EU-region S3-compatible backups</li>
+</ul>
+<hr />
+<h2 id="server-specifications">8. Server Specifications</h2>
+<h3 id="provisioned-spec">Provisioned spec (as of 2026-05-26)</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Spec</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App server</td>
+<td><strong>Hetzner Falkenstein (DE)</strong> — Ubuntu 22.04, 2 cores / 4 GB RAM / 40 GB SSD</td>
+<td>EU region, $0.023/hr via elest.io</td>
+</tr>
+<tr>
+<td>Supabase host</td>
+<td><strong>Netcup Nuremberg (DE)</strong> — 2 cores / 4 GB RAM / 60 GB SSD</td>
+<td>EU region, $0.022/hr via elest.io</td>
+</tr>
+<tr>
+<td>OS</td>
+<td><strong>Ubuntu 22.04 LTS</strong></td>
+<td>LTS = supported until 2027; broadest community</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Public IPv4 + HTTPS reverse proxy (Caddy or Traefik)</td>
+<td>For GHL to reach the webhook endpoint over HTTPS</td>
+</tr>
+<tr>
+<td>Backup</td>
+<td>Daily Postgres dump → EU-region object storage</td>
+<td>7-day retention; encrypted at rest</td>
+</tr>
+</tbody>
+</table>
+<h3 id="software-well-pre-install">Software we’ll pre-install</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Software</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker + Docker Compose</td>
+<td>latest stable</td>
+<td>Run Supabase + private app as containers</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>20 LTS</td>
+<td>The private app runtime</td>
+</tr>
+<tr>
+<td>Caddy (or Traefik)</td>
+<td>latest</td>
+<td>HTTPS reverse proxy with auto-cert via Let’s Encrypt</td>
+</tr>
+<tr>
+<td><code>git</code></td>
+<td>latest</td>
+<td>Pull/deploy the private app code</td>
+</tr>
+<tr>
+<td><code>unattended-upgrades</code></td>
+<td>system</td>
+<td>Auto-apply security patches</td>
+</tr>
+</tbody>
+</table>
+<h3 id="networking">Networking</h3>
+<ul>
+<li>Inbound: <code>443/tcp</code> only (Caddy handles HTTPS
+termination)</li>
+<li>Outbound: GHL API endpoints (whitelist if possible)</li>
+<li>All other ports closed by <code>ufw</code> firewall</li>
+</ul>
+<hr />
+<h2 id="self-hosted-supabase-vs-supabase-cloud">9. Self-hosted Supabase
+vs Supabase Cloud</h2>
+<h3 id="our-recommendation-self-hosted-on-the-eu-server">Our recommendation: <strong>self-hosted on the EU server</strong></h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Self-hosted (EU — Germany)</th>
+<th>Supabase Cloud</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EU residency</strong></td>
+<td>✅ Guaranteed — runs on dedicated EU boxes</td>
+<td>✅ EU region available, but managed by Supabase</td>
+</tr>
+<tr>
+<td><strong>Cost</strong></td>
+<td>✅ Free (just server cost — ~$0.045/hr combined)</td>
+<td>$25/mo per project minimum, scales up fast</td>
+</tr>
+<tr>
+<td><strong>Control</strong></td>
+<td>✅ Full — backup, restore, schema, RLS policies</td>
+<td>❌ Locked to their dashboard + limits</td>
+</tr>
+<tr>
+<td><strong>Multi-tenant separation</strong></td>
+<td>✅ Postgres RLS, your rules</td>
+<td>✅ Same RLS, but data sits on their servers</td>
+</tr>
+<tr>
+<td><strong>Setup complexity</strong></td>
+<td>⚠️ Docker compose + one-time setup</td>
+<td>✅ Click-to-deploy</td>
+</tr>
+<tr>
+<td><strong>Maintenance</strong></td>
+<td>⚠️ You patch + monitor</td>
+<td>✅ Managed by Supabase</td>
+</tr>
+</tbody>
+</table>
+<p>Self-hosted gives full control over backups, schema, and RLS — and the
+elest.io managed-Docker option keeps the maintenance burden low.</p>
+<p>The maintenance burden is real but manageable — Docker compose +
+cron-based backups + the same monthly $55 covers it.</p>
+<hr />
+<h2 id="deliverables-timeline">10. Deliverables &amp; Timeline</h2>
+<h3 id="phase-1-documents">Phase 1 — Documents</h3>
+<ul>
+<li>✅ This document</li>
+<li>📋 Full webhook payload JSON spec (Section 3 expanded, plus
+error/retry semantics)</li>
+<li>📋 Server provisioning script (<code>provision.sh</code>) — installs
+Docker, Node.js, Caddy, sets up firewall</li>
+<li>📋 Supabase docker-compose with our schema migration files</li>
+<li>📋 Setup instructions for the Marketplace user creation, server SSH,
+etc.</li>
+</ul>
+<h3 id="phase-2-build-estimated-12-weeks">Phase 2 — Build (estimated 1–2
+weeks)</h3>
+<ul>
+<li>Private GHL Marketplace app code
+<ul>
+<li>Webhook subscription for stage update (real-time)</li>
+<li>Internal tracking table for opportunity-created events (orphan
+queue)</li>
+<li>Daily sweep job that fires one-time notifications for orphan opportunities +
+clears them from the queue</li>
+<li>Payload normalizer + data cleaner (HTML strip + emoji strip)</li>
+<li>Supabase writer with retry + idempotency</li>
+<li>Health-check endpoint + structured logs</li>
+</ul></li>
+<li>Deployed to the EU (Germany) server via the provided provision script</li>
+<li>End-to-end test: trigger a stage change in GHL → confirm row appears
+in Supabase within ~5 seconds</li>
+</ul>
+<h3 id="phase-3-validation">Phase 3 — Validation</h3>
+<ul>
+<li>Test reading from Supabase via direct SQL to confirm rows are
+queryable</li>
+<li>Confirm multi-tenant isolation (we’ll add a test sub-account
+temporarily)</li>
+<li>Confirm EU residency is clean (review server region, no logs to
+non-EU destinations)</li>
+</ul>
+<h3 id="phase-4-go-live-ongoing">Phase 4 — Go-live + ongoing</h3>
+<ul>
+<li>Switch to production</li>
+<li>Monthly subscription kicks in</li>
+<li>Bug fixes / minor changes covered</li>
+</ul>
+<hr />
+<h2 id="confirmations-received">11. Confirmations (all received)</h2>
+<ol type="1">
+<li>✅ <strong>Self-hosted Supabase</strong> on the EU (Germany) server — agreed</li>
+<li>✅ <strong>Server specs</strong> — Hetzner Falkenstein (app) + Netcup Nuremberg (Supabase), both provisioned via elest.io, Ubuntu 22.04 LTS, 2 cores / 4 GB RAM each</li>
+<li>✅ <strong>EU data residency (Germany)</strong> — agreed (UK-only not required by client)</li>
+</ol>
+<hr />
+<h2 id="commercial-terms">12. Commercial Terms</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Amount</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Setup fee</strong></td>
+<td>$700 USD</td>
+<td>Split 50/50</td>
+</tr>
+<tr>
+<td>– Half on confirmation</td>
+<td>$350</td>
+<td>✅ Received</td>
+</tr>
+<tr>
+<td>– Half on completion</td>
+<td>$350</td>
+<td>When webhook is live + writing to Supabase</td>
+</tr>
+<tr>
+<td><strong>Monthly subscription</strong></td>
+<td>$55 USD/month</td>
+<td>Starts when the system goes live. Covers uptime monitoring, minor
+changes, bug fixes</td>
+</tr>
+<tr>
+<td><strong>Major changes (out of scope)</strong></td>
+<td>Quoted separately</td>
+<td>Before any work begins</td>
+</tr>
+<tr>
+<td><strong>Payment method</strong></td>
+<td>ExportKit “Custom Charge” function</td>
+<td>One charge per milestone; confirmation email sent after each</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="out-of-scope-so-its-clear-whats-not-included">13. Out of scope
+(so it’s clear what’s NOT included)</h2>
+<ul>
+<li>Analytics jobs / queries on top of Supabase</li>
+<li>LLM summarization (prompts, model selection, output processing)</li>
+<li>Business Intelligence dashboard configuration</li>
+<li>GHL marketplace app distribution (this is a <strong>private
+app</strong>, just for this account)</li>
+<li>Historical data backfill — only forward-going from go-live (a
+separate one-time backfill can be quoted if needed)</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "name": "forecast_at_risk",
+  "description": "Open deals whose expected close date keeps being pushed back, listed individually with the original date, the current one, how many times it moved later, how many days late it now is, and a high/medium/low risk band. Use for 'which deals are slipping', 'what's at risk', 'which deals keep moving', 'what won't close when we said', 'show me the at-risk deals'. Quote the underlying numbers rather than the band alone — 'pushed 3 times, now 41 days past the original date' tells someone what to do; 'high risk' does not. The bands are a convention (high: 2+ pushes or 14+ days; medium: 1+ push or 7+ days; low: any slip), not a measurement, so present them as a rule of thumb. Pulling a date EARLIER does not count as a push and does not reduce times_pushed, but days_slipped is measured to the current date, so a deal pushed out and partly pulled back shows the net slip. IMPORTANT LIMIT: this is derived from recorded close-date changes, so a deal that slipped before change tracking started reads as never having slipped — first_seen_change shows how far back the record goes for each deal. Lead with value at stake rather than the longest slip when recommending what to chase.",
+  "viewName": "vw_forecast_slippage",
+  "params": [
+    {
+      "name": "risk",
+      "column": "risk",
+      "type": "text",
+      "op": "eq",
+      "description": "Narrow to one band: high, medium or low."
+    },
+    {
+      "name": "min_times_pushed",
+      "column": "times_pushed",
+      "type": "int",
+      "op": "gte",
+      "description": "Only deals pushed back at least this many times. Use for 'which deals keep moving'."
+    },
+    {
+      "name": "min_days_slipped",
+      "column": "days_slipped",
+      "type": "int",
+      "op": "gte",
+      "description": "Only deals at least this many days past their original close date."
+    },
+    {
+      "name": "min_value",
+      "column": "monetary_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals worth at least this much. Use for 'which big deals are slipping'."
+    },
+    {
+      "name": "owner",
+      "column": "owner",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep by name."
+    }
+  ],
+  "columns": [],
+  "orderBy": "days_slipped DESC",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

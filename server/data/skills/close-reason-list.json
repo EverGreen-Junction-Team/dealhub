@@ -1,0 +1,40 @@
+{
+  "name": "close_reason_list",
+  "description": "The reason a rep wrote when closing each lost or abandoned deal, one row per deal, with the stage it closed at, its value and when. Use for 'why are we losing deals', 'what reasons do reps give', 'are we losing on price', 'what do lost deals have in common', 'show me why these deals were lost'. Read the reasons and group them by what they actually say — there is no fixed category list, and inventing one hides the wording that makes a reason useful. Quote the actual phrasing when naming a theme, and name the deal it came from so it can be checked. Before calling any theme common, run close_reason_fill_rate and say what share of deals carry a reason at all: themes drawn from a third of deals describe that third, not the business. A NULL reason_text with a popup_reason set means the reason was recorded in GHL's pop-up instead — that is not a missing reason. A popup_reason that looks like a random id rather than words means the label has not been mapped; say it is unmapped rather than quoting the id as a reason.",
+  "viewName": "vw_close_reason_list",
+  "params": [
+    {
+      "name": "status",
+      "column": "status",
+      "type": "text",
+      "op": "eq",
+      "description": "Narrow to lost or abandoned. They fail for different reasons — a deal actively lost is not a deal nobody pursued."
+    },
+    {
+      "name": "stage",
+      "column": "stage_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Only deals that closed at this stage."
+    },
+    {
+      "name": "reason_contains",
+      "column": "reason_text",
+      "type": "text",
+      "op": "contains",
+      "description": "Only deals whose written reason contains this text. Use to confirm a theme after reading — e.g. 'price', 'no response'."
+    },
+    {
+      "name": "min_value",
+      "column": "monetary_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals worth at least this much. Use for 'why are we losing the big ones'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "lost_at DESC NULLS LAST",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

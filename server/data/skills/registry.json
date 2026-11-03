@@ -1,0 +1,697 @@
+{
+  "_comment": "THE SKILL REGISTRY — one row per skill, kept in step with the migrations. Update this file whenever a skill is added, renamed, or its view changes; it is the list someone reads to know what exists without opening four migrations. `title` is the human name, `skill` is what the AI is registered as (and what a rep types after @), `view` is the migration that created it. Each skill's full definition — description, filters, sort — stays in its own file under data/skills/, named in `file`.",
+  "skills": [
+    {
+      "title": "Exact pipeline stage where customers drop off",
+      "skill": "exact_pipeline_stage_where_customers_drop_off",
+      "view": "vw_close_without_win_by_stage",
+      "migration": "084 (087 partitioned, 099 added pct_abandoned)",
+      "file": "data/skills/close-without-win-by-stage.json",
+      "answers": "Which stage a deal was IN when it was marked lost or abandoned.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "registered",
+      "also_answers": "Lost vs abandoned, by stage — pct_abandoned per stage, same base."
+    },
+    {
+      "title": "Stage deals sit in longest before Lost",
+      "skill": "stage_deals_sit_in_longest_before_lost",
+      "view": "vw_stall_stage_before_close",
+      "migration": "088",
+      "file": "data/skills/stall-stage-before-close.json",
+      "answers": "Which stage a lost deal spent the most TIME in. Often not the stage it closed in — a deal can sit in Waiting On Details for months, move to Quote Sent, and die a day later.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Deals gone stagnant — no activity for X days",
+      "skill": "deals_gone_stagnant",
+      "view": "vw_stagnant_open_deals",
+      "migration": "089",
+      "file": "data/skills/stagnant-open-deals.json",
+      "answers": "Which OPEN deals have gone quiet, bucketed by days since the last message, stage move, note or task — and how much value is sitting idle. The only one of the three a rep can still act on.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Leads required per month to support a new sales hire",
+      "skill": "leads_required_for_new_sales_hire",
+      "view": "vw_lead_volume_for_hiring",
+      "migration": "090",
+      "file": "data/skills/lead-volume-for-hiring.json",
+      "answers": "Monthly lead volume, wins and won value for the last four complete months, plus all-time conversion and average won value. The CRM inputs to the hiring sum only — rep cost and gross margin are not in this database and must be supplied by whoever asks.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Open deals the sales team has never replied to",
+      "skill": "open_deals_never_replied_to",
+      "view": "vw_open_deals_never_replied",
+      "migration": "091",
+      "file": "data/skills/open-deals-never-replied.json",
+      "answers": "How many open deals have had no HUMAN reply — automation does not count — split by whether the customer wrote first and how long they have waited, with the value unanswered.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Open deals the sales team has never replied to — the list",
+      "skill": "unanswered_deals_list",
+      "view": "vw_unanswered_deals_list",
+      "migration": "092",
+      "file": "data/skills/unanswered-deals-list.json",
+      "answers": "The individual unanswered deals, with contact, owner, value and how long the customer has been waiting. The worklist behind 091's counts.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Conversion rate between every stage and the next",
+      "skill": "conversion_rate_between_stages",
+      "view": "vw_stage_conversion",
+      "migration": "093",
+      "file": "data/skills/stage-conversion.json",
+      "answers": "How many deals reached each stage, what share carried on to the next, and what share were eventually won from there. Stage order comes from GHL's own pipeline positions, so it matches the board. One funnel per pipeline.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Lead-to-Won Deal ratio",
+      "skill": "lead_to_won_deal_ratio",
+      "view": "vw_lead_to_won_ratio",
+      "migration": "094",
+      "file": "data/skills/lead-to-won-ratio.json",
+      "answers": "Conversion three ways — per lead created, per deal finished, and per finished deal excluding never-worked junk — with counts, won value and the date range. Returns which stage names the junk rule matched, so a renamed stage shows as unknown rather than zero.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Closed-Won value by UTM campaign / search term",
+      "skill": "closed_won_value_by_campaign",
+      "view": "vw_paid_campaign_performance",
+      "migration": "095",
+      "file": "data/skills/paid-campaign-performance.json",
+      "answers": "Won value, win rate and quote-stage progress by Google campaign id and search term, for paid-tagged deals (gclid / gbraid / wbraid). Campaign IDs are not names — decoding needs the Windsor map. Spend is not in this database, so ROAS cannot be computed here.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "requires": "paid"
+    },
+    {
+      "title": "Which sources fail at which stage",
+      "skill": "which_sources_fail_at_which_stage",
+      "view": "vw_source_failure_stage",
+      "migration": "096",
+      "file": "data/skills/source-failure-stage.json",
+      "answers": "Lead sources against the stage their deals died at, in two stacked splits: what the system recorded and what a rep recorded. A deal appears once in each split, so the two must never be totalled together — the skill tells the AI to report one at a time.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Cost to acquire a qualified lead",
+      "skill": "cost_to_acquire_a_qualified_lead",
+      "view": "vw_paid_lead_quality_by_month",
+      "migration": "097",
+      "file": "data/skills/paid-lead-quality.json",
+      "answers": "Paid leads per complete month and how many qualified, quoted or won — the denominator for cost per qualified lead. Ad spend is in Windsor, not this database, so the cost itself must be worked out with a spend figure supplied by whoever asks.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "requires": "paid"
+    },
+    {
+      "title": "Paid enquiries by campaign / search term — volume and stage reached",
+      "skill": "paid_enquiries_by_campaign_and_stage",
+      "view": "vw_paid_enquiry_progression",
+      "migration": "098",
+      "file": "data/skills/paid-enquiry-progression.json",
+      "answers": "How far paid enquiries get, by campaign and by search term — stuck pre-qualification, reached pre-quote, quote or negotiation, won. The companion to closed_won_value_by_campaign: that one asks what a campaign earned, this asks how far its traffic got. Two stacked groupings that must not be totalled together.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "requires": "paid"
+    },
+    {
+      "title": "Does contact within 5 minutes increase win rate",
+      "skill": "does_fast_reply_increase_win_rate",
+      "view": "vw_response_time_win_rate",
+      "migration": "100",
+      "file": "data/skills/response-time-win-rate.json",
+      "answers": "Win rate by how fast a PERSON answered the customer's first message. Automated replies are excluded — an autoresponder fires in seconds and would put every deal in the fastest band, making the report measure the bot rather than the team.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Closed-Won value by free source — website, inbound email, webchat",
+      "skill": "closed_won_value_by_lead_source",
+      "view": "vw_source_won_value",
+      "migration": "101",
+      "file": "data/skills/source-won-value.json",
+      "answers": "Won value and win rate by lead source, system-recorded (with paid and free separated) and rep-recorded. The earnings companion to which_sources_fail_at_which_stage, which shows where the same deals died. Two stacked splits that must not be totalled together.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Time from enquiry to won deal, by lead source",
+      "skill": "time_from_enquiry_to_won_by_source",
+      "view": "vw_source_time_to_win",
+      "migration": "102",
+      "file": "data/skills/source-time-to-win.json",
+      "answers": "Days from enquiry to won, by source — median, fastest, slowest and same-day wins. Completes the source family: 096 shows where deals died, 101 what they earned, this how long they took. Won deals only. Two stacked splits that must not be totalled together.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Response time by rep",
+      "skill": "response_time_by_rep",
+      "view": "vw_response_time_by_rep",
+      "migration": "103",
+      "file": "data/skills/response-time-by-rep.json",
+      "answers": "Median, p90 and within-1h/24h reply times per named rep, counting every customer message. Names come from the synced users table rather than a hardcoded map, so new and renamed reps appear without editing SQL, and reps are never merged across sub-accounts.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Messages per won deal vs per lost deal",
+      "skill": "messages_per_closed_deal",
+      "view": "vw_messages_per_closed_deal",
+      "migration": "105",
+      "file": "data/skills/messages-per-closed-deal.json",
+      "answers": "Median and mean message counts per closed deal, split by won / lost / abandoned and by who sent them — customer, person, automation. Automation is counted on the sender_type prefix rather than the bare value 'automation', which never matches, so nurture blasts are no longer counted as human replies; that error fell hardest on lost and abandoned deals, which attract the most sequencing. Deals where the customer never spoke are held out of the averages and reported separately. Counts are per customer, so repeat customers overstate per-deal volume — avg_deals_per_contact says by how much.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Conversion rate per rep at every stage",
+      "skill": "rep_stage_conversion",
+      "view": "vw_rep_stage_conversion",
+      "migration": "104",
+      "file": "data/skills/rep-stage-conversion.json",
+      "answers": "Per-rep deal counts by outcome, how many reached quote and negotiation, win rate overall and among quoted deals, and won value. Replaces the narrower rep_qualifying_vs_closing drafted earlier over the same base — two skills differing only in whether open deals count is a pair the model picks wrong between. Names come from the synced users table, so rows are per GHL user ACCOUNT: a person holding several accounts appears several times, since GHL records no link between them. Shared inboxes and departed users are flagged, not filtered. No minimum deal count is baked in — min_deals is a filter. Deals are not assigned at random, so every rate here measures the rep and the deals they were given together.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Why the deal was lost or abandoned — fill rate per stage",
+      "skill": "close_reason_fill_rate",
+      "view": "vw_close_reason_by_stage",
+      "migration": "106",
+      "file": "data/skills/close-reason-fill-rate.json",
+      "answers": "How often a close reason was actually recorded, by closing stage, split lost vs abandoned. Reads meddic_9 for lost and meddic_11 for abandoned — the source query read only meddic_9 while counting both statuses, so every abandoned reason was invisible and the fill rate understated. Separates deals answered in GHL’s pop-up instead of the written field (a workflow problem) from deals with no reason anywhere (the real gap). This is the confidence figure for close_reason_list and must be quoted with any theme.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Why the deal was lost or abandoned — the reasons themselves",
+      "skill": "close_reason_list",
+      "view": "vw_close_reason_list",
+      "migration": "106",
+      "file": "data/skills/close-reason-list.json",
+      "answers": "One row per lost or abandoned deal with the reason the rep wrote, verbatim, plus stage, value and date. Replaces the source’s eight keyword regexes: those were a first cut a person reviewed by hand, and frozen into a view they become unreviewed truth, with ‘Other / unclear’ absorbing every unanticipated phrasing and the patterns written for one customer’s vocabulary. The AI groups the text it reads and quotes the wording instead, which is auditable. Falls back to the mapped pop-up label where the written field is empty.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Conversion and won value by area",
+      "skill": "conversion_by_area",
+      "view": "vw_conversion_by_area",
+      "migration": "107",
+      "file": "data/skills/conversion-by-area.json",
+      "answers": "Deal counts, win rate and won value per UK postcode area. Prefers opportunities.postcode (the job site) over contacts.postal_code (the billing address) — 001_schema records that the client uses the opportunity-level field, and for a glazing business the two diverge exactly where it matters, since builders, landlords and architects are billed away from the job. Falls back to the contact address where a deal has none, and reports pct_from_job_postcode so the reader knows which they are looking at. Deals with no usable postcode are kept as their own row rather than dropped. No minimum deal count is baked in — min_deals is a filter.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Product type conversion and value",
+      "skill": "product_type_conversion",
+      "view": "vw_product_type_conversion",
+      "migration": "108",
+      "file": "data/skills/product-type-conversion.json",
+      "answers": "Win rate and won value per product shape, unnested from the product_type JSONB array (027). Deals ticked with several products count under each, so the rows do not sum to the business total — the account’s real figures ride on every row as account_deals / account_won_value, computed before the unnest. The source made coverage a separate query; it is folded in as pct_deals_with_product because deals with no product ticked are dropped by the unnest silently, and they skew toward neglected deals, so the rates read high. Malformed non-array values are counted rather than allowed to error the view.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Product system conversion and value",
+      "skill": "product_system_conversion",
+      "view": "vw_product_system_conversion",
+      "migration": "108",
+      "file": "data/skills/product-system-conversion.json",
+      "answers": "The same shape over product_system — brand or material rather than product shape. Kept as a separate view rather than a dimension column on the product_type view: unnesting both fields together would multiply the double-counting, so a deal with two products and two systems would produce four rows. Apart, each view double-counts along one axis only.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Reps ranked by how often they follow the rules",
+      "skill": "rep_process_discipline",
+      "view": "vw_rep_process_discipline",
+      "migration": "109",
+      "file": "data/skills/rep-process-discipline.json",
+      "answers": "Three CRM habits per rep on open deals — next action booked, note written, messages linked — reported as three columns with no combined score, per the source’s own instruction. The source’s tasks / notes / messages CTEs grouped and joined on opportunity_id alone; the id is unique per sub-account, not globally, so two accounts sharing one merged their work before the join and credited a rep with another account’s activity. Scoped on both columns. pct_with_assigned_msgs renamed pct_with_linked_msgs and documented as data linkage rather than behaviour: GHL’s association resolver decides it, not the rep, and repeat customers with several open deals depress it. Adds overdue-but-booked and nothing-booked-and-nothing-written as separate counts, plus unassigned open deals, which the source filtered out silently.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Lead map — enquiries by source and outcome",
+      "skill": "lead_map_area_route",
+      "view": "vw_lead_map_area_route",
+      "migration": "110",
+      "file": "data/skills/lead-map-area-route.json",
+      "answers": "Postcode area × intake route × outcome. Uses the job postcode (opportunities.postcode) over the customer’s billing address, per 001_schema — the same correction as 107, and it bites harder here because this view is explicitly a map: grouped by billing address it becomes a map of where invoices are sent. Route ladder copied verbatim from 096 and 102 rather than rewritten, so the three agree. Because a two-way split makes every cell thin, per-area and per-route totals ride on each row so a cell can be read against the group it sits in. No minimum cell size is baked in — min_deals is a filter.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Customer map — location data coverage",
+      "skill": "location_data_coverage",
+      "view": "vw_location_data_coverage",
+      "migration": "111",
+      "file": "data/skills/location-data-coverage.json",
+      "answers": "Whether the location data can be trusted at all: job-postcode, customer-postcode, city and address fill rates, how many postcodes are complete UK codes rather than partial, and coverage on won deals versus overall. This is Part A of the source query only — Part B (deals and won value by postcode area) is already conversion_by_area (107), and registering a near-identical second skill would give the model two tools it cannot choose between. Reports the job and customer postcode fields separately, because which one is filled determines whether a map shows where work happens or where invoices are sent. The source calls this the constraint and says to run it first; the skill text makes that an instruction to the AI.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Mandatory fields left empty, by rep",
+      "skill": "rep_field_completeness",
+      "view": "vw_rep_field_completeness",
+      "migration": "112",
+      "file": "data/skills/rep-field-completeness.json",
+      "answers": "Per-rep counts, percentages and value-at-stake for four deal fields left empty on open deals. The source’s presence test on lead_source_opportunity used nullif(...,’’) on a TEXT column holding a Postgres array literal, so a deal with no source holds ‘{}’ — not empty, counted as filled, understating missing_source and making reps look more diligent than they are. Braces stripped before testing. The source’s own caveat — these are four stand-ins until the real mandatory list arrives — is carried in the header, the view comment and the skill text, since a placeholder on a dashboard stops reading as one. Unlike 109’s three habits, a combined figure is kept here: four fields on one form are a single act, not unlike things averaged.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Buyer type revenue share, lead share and drop-off at Deposit",
+      "skill": "buyer_type_revenue_share",
+      "view": "vw_buyer_type_revenue_share",
+      "migration": "113",
+      "file": "data/skills/buyer-type-revenue-share.json",
+      "answers": "Each buyer type's share of enquiries against its share of won revenue, AND how far their deals progress — reached quote, reached deposit, and the quote-to-deposit conversion that the 'lowest drop-off at Deposit Paid' report asks for. Both reports group the same unnested client_type by the same key, so the second became two columns here rather than a near-duplicate view the model would pick wrong between; same call as 104 and 099. The stage lookup replaced a correlated subquery with a grouped join, which runs once instead of once per row and allowed scoping on location_id — the subquery matched opportunity_id alone, so a colliding id in another sub-account could raise max_ord. Neither source query needed other corrections.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Open deals with no task set — by stage",
+      "skill": "open_deals_no_task_by_stage",
+      "view": "vw_open_deals_no_task_by_stage",
+      "migration": "114",
+      "file": "data/skills/open-deals-no-task-by-stage.json",
+      "answers": "Counts and value of open deals with nothing booked, per stage. The source’s task CTEs grouped and joined on bare opportunity_id and contact_id; both are unique per sub-account, not globally, so two accounts sharing an id merged their tasks and a deal was credited with another account’s work — which removes it from no_open_task and makes the pipeline look better covered than it is. Scoped on both columns. Separates deals with a task on the customer but not the deal (a linkage gap) from deals with nothing booked anywhere (the real chase list), and counts open tasks with no due date, which are never overdue by any test.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Open deals with no task set — the sweeper list",
+      "skill": "open_deals_no_task_list",
+      "view": "vw_open_deals_no_task_list",
+      "migration": "114",
+      "file": "data/skills/open-deals-no-task-list.json",
+      "answers": "The deals themselves, biggest value first — the source’s Part B, which it left as a commented-out variant to be hand-edited per brand. As a view the location filter is unnecessary: runSkill scopes every query to the caller’s sub-account. Carries open_tasks_on_contact so a deal that is scheduled against the customer is not presented as forgotten. Column names follow 092’s conventions (first_name / last_name / company_name, assigned_to_name as owner) rather than inventing new ones.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Note adoption — are notes used at all",
+      "skill": "note_adoption",
+      "view": "vw_note_adoption",
+      "migration": "115",
+      "file": "data/skills/note-adoption.json",
+      "answers": "Note counts, distinct authors, link rate to deals, typical length and last-written date per sub-account. The source calls this an adoption check to run first and it is genuinely a precondition: at low adoption, per-deal note findings describe a team that does not use the feature rather than reps who failed to document, and the two call for opposite responses. Measures title+body together, since 058 promoted notes.title into a real column and a body-only length test scores a titled note as empty.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Open deals with no notes / thin notes",
+      "skill": "open_deals_note_quality",
+      "view": "vw_open_deals_note_quality_by_stage",
+      "migration": "115",
+      "file": "data/skills/open-deals-note-quality.json",
+      "answers": "Counts and value of open deals with no notes or thin notes, per stage. The source’s notes CTE grouped and joined on bare opportunity_id; notes is keyed (location_id, note_id) so the id is unique per sub-account, and two accounts sharing one merged their notes — a deal wrongly credited drops out of no_notes and the pipeline reads as better documented than it is. Scoped on both columns. Thin-note length now counts title as well as body. The 30 and 100 character thresholds are kept but documented as judgements rather than standards, with the raw median returned alongside.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Pipeline trend — how state has changed over time",
+      "skill": "pipeline_trend",
+      "view": "vw_pipeline_trend",
+      "migration": "116",
+      "file": "data/skills/pipeline-trend.json",
+      "answers": "Day-by-day pipeline condition with the change since the previous reading — the only way to answer “has the no-task rate improved”, because opportunities holds current state and a deal that gets a task booked simply changes in place, erasing what was true yesterday. Reads pipeline_snapshots, written nightly by the capture job. No history exists before the job first ran and none can be reconstructed. Covers STATE questions only; event-based history (won value by month, deals created) comes from the by-period views, which read real timestamps.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Won value by month",
+      "skill": "won_value_by_month",
+      "view": "vw_won_value_by_month",
+      "migration": "117",
+      "file": "data/skills/won-value-by-month.json",
+      "answers": "Won deals, revenue, average size and time-to-win per calendar month with month-on-month change. Event-based, so it covers the full history without any capture job — won_at is already on the deal. Empty months produce no row rather than a zero, and months_since_previous flags a comparison that skips months.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Enquiries by month",
+      "skill": "enquiries_by_month",
+      "view": "vw_enquiries_by_month",
+      "migration": "117",
+      "file": "data/skills/enquiries-by-month.json",
+      "answers": "Intake cohorts: deals grouped by creation month and followed to outcome. Deliberately distinct from won_value_by_month, which groups by the month a deal closed — the same deal lands in different months in each. Recent cohorts are unfinished, so their win rates are not comparable with older ones; the skill instructs the model to say so.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Forecast summary — expected revenue",
+      "skill": "forecast_summary",
+      "view": "vw_forecast_summary",
+      "migration": "119",
+      "file": "data/skills/forecast-summary.json",
+      "answers": "The four GHL Forecast KPIs — max potential, expected (weighted), won, open count — computed from the same resolution rules GHL uses. Carries pct_with_close_date and pct_without_probability on the same row, because at the coverage measured here (5-15% of open deals have a close date) a forecast total quoted alone describes a fraction of the pipeline.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Forecast headline, by pipeline",
+      "skill": "forecast_summary_by_pipeline",
+      "view": "vw_forecast_summary_by_pipeline",
+      "migration": "131",
+      "file": "data/skills/forecast-summary-by-pipeline.json",
+      "answers": "The forecast KPI strip for ONE pipeline, or compared across pipelines — the equivalent of GHL's pipeline dropdown.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "Which pipeline is dragging forecast coverage down — filter on max_pct_with_close_date."
+    },
+    {
+      "title": "Forecast readiness — what is breaking the forecast",
+      "skill": "forecast_readiness",
+      "view": "vw_forecast_readiness",
+      "migration": "119",
+      "file": "data/skills/forecast-readiness.json",
+      "answers": "GHL’s “Fix your forecast data” card plus one check it does not run: missing probability. GHL hides that gap behind an invented auto-stage-probability curve; we do not invent, so an unset probability silently zeroes a deal and this is the most valuable check here. Each row names which forecast figure the issue breaks.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Forecast by month",
+      "skill": "forecast_by_month",
+      "view": "vw_forecast_by_month",
+      "migration": "120",
+      "file": "data/skills/forecast-by-month.json",
+      "answers": "Weighted open pipeline by expected close month, with revenue won in the same month. Open deals with NO close date are a row in the result rather than an omission — GHL puts them in a visible column beside the dated ones, and a chat answer can drop that caveat far more easily than a UI can hide a column. Months only; the model totals them into quarters.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Deals at risk — slipping close dates",
+      "skill": "forecast_at_risk",
+      "view": "vw_forecast_slippage",
+      "migration": "121",
+      "file": "data/skills/forecast-at-risk.json",
+      "answers": "Open deals whose close date has been pushed back, derived from opportunity_field_history rather than stored counters. GHL denormalises four counters onto the opportunity because it has no change history; we have one, so these recompute if the rule changes and can be shown as dates rather than asserted as a number. Only sees changes since field tracking began.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Deals at risk — how much is slipping",
+      "skill": "forecast_at_risk_summary",
+      "view": "vw_forecast_slippage_summary",
+      "migration": "121",
+      "file": "data/skills/forecast-at-risk-summary.json",
+      "answers": "Value and counts at risk per high/medium/low band, with average and worst slip. Leads with value rather than count, since the count inverts the priority.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Forecast growth — month on month",
+      "skill": "forecast_growth",
+      "view": "vw_forecast_growth",
+      "migration": "122",
+      "file": "data/skills/forecast-growth.json",
+      "answers": "Month-on-month change in expected and won revenue, with running totals. Kept separate from forecast_by_month because that view carries an undated row — a window ordered by month would place it arbitrarily and compute a change against something that is not a period. Dated months only; the undated pipeline stays in forecast_by_month where it can be seen.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Forecast by rep, pipeline or stage",
+      "skill": "forecast_breakdown",
+      "view": "vw_forecast_breakdown",
+      "migration": "123",
+      "file": "data/skills/forecast-breakdown.json",
+      "answers": "GHL’s “Group by” selector as one stacked view with a grouped_by filter, rather than three near-identical views the model would choose between badly. A deal appears once per cut, so the skill forbids totalling across them. Unassigned and unstaged deals are rows, not omissions.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Forecast deals — the list behind the numbers",
+      "skill": "forecast_deals",
+      "view": "vw_forecast_deals",
+      "migration": "123",
+      "file": "data/skills/forecast-deals.json",
+      "answers": "Every open deal with its forecast facts. One list answering “which deals make up October”, “the biggest deals” and “which have no close date” through filters rather than three views. Carries probability_source so an odd probability can be explained.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered"
+    },
+    {
+      "title": "Recurring customer questions, by theme",
+      "skill": "customer_question_themes",
+      "view": "vw_customer_question_themes",
+      "migration": "129",
+      "file": "data/skills/customer-question-themes.json",
+      "answers": "What customers ASKED about, themed, with whether an outbound reply followed within 30 days. Filter status to compare won against lost.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "was_answered is derived from message timing, not recorded — it proves a reply was sent, not that the question was addressed."
+    },
+    {
+      "title": "Objections raised, by theme",
+      "skill": "customer_objection_themes",
+      "view": "vw_customer_objection_themes",
+      "migration": "129",
+      "file": "data/skills/customer-objection-themes.json",
+      "answers": "Objections customers raised, themed, split won vs lost, optionally by the deal's primary buyer or product type.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "buyer_type/product_type are the deal's FIRST tagged value, so they are not a complete per-type breakdown."
+    },
+    {
+      "title": "Requirements on lost deals, with lost value",
+      "skill": "requirement_lost_value",
+      "view": "vw_requirement_lost_value",
+      "migration": "129",
+      "file": "data/skills/requirement-lost-value.json",
+      "answers": "Recurring customer requirements with the value of lost and abandoned deals where they came up.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "`offered` is 'not yet classified' on every row — the classification table is empty, so this cannot say what we do NOT offer."
+    },
+    {
+      "title": "The quotes behind a requirement",
+      "skill": "requirement_quotes",
+      "view": "vw_requirement_quotes",
+      "migration": "129",
+      "file": "data/skills/requirement-quotes.json",
+      "answers": "One row per thing a customer said, with the quote, date, stage and deal outcome. The evidence view behind every theme.",
+      "surfaces": [
+        "portfolio",
+        "deal"
+      ],
+      "status": "not registered",
+      "also_answers": "Also answers 'what did this specific deal's customer ask for' — available on the deal surface."
+    },
+    {
+      "title": "Requirement themes vs the account's own baseline",
+      "skill": "requirement_vs_baseline",
+      "view": "vw_requirement_vs_baseline",
+      "migration": "129",
+      "file": "data/skills/requirement-vs-baseline.json",
+      "answers": "Lost rate per requirement theme set against the sub-account's own baseline lost rate, plus whether deals moved after a reply.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "The roadblock test: above baseline AND no movement after. Frequency alone is not evidence."
+    },
+    {
+      "title": "Replies and the stage moves that followed",
+      "skill": "reply_stage_movement",
+      "view": "vw_reply_stage_movement",
+      "migration": "129",
+      "file": "data/skills/reply-stage-movement.json",
+      "answers": "Rep replies counted by the stage the deal moved to afterwards, with median days to move.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "Correlation, not cause. under_15min_suspect flags automated transitions — 0.3% of replies on current data."
+    },
+    {
+      "title": "The replies themselves",
+      "skill": "reply_list",
+      "view": "vw_reply_list",
+      "migration": "129",
+      "file": "data/skills/reply-list.json",
+      "answers": "One row per rep reply with its text, whether the deal moved stage afterwards and how long it took.",
+      "surfaces": [
+        "portfolio",
+        "deal"
+      ],
+      "status": "not registered",
+      "also_answers": "A reading view. Available on the deal surface for 'what did we reply on this deal'."
+    },
+    {
+      "title": "Close-reason coverage by buyer type",
+      "skill": "close_reason_by_buyer_type",
+      "view": "vw_close_reason_by_buyer_type",
+      "migration": "129",
+      "file": "data/skills/close-reason-by-buyer-type.json",
+      "answers": "How many closed deals of each buyer type have a written close reason at all. Coverage, not content.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "Pair with close_reason_list, which reads what the reasons say. This one says whether there is enough written down to bother."
+    },
+    {
+      "title": "Enquiry-text coverage",
+      "skill": "enquiry_text_coverage",
+      "view": "vw_enquiry_text_coverage",
+      "migration": "129",
+      "file": "data/skills/enquiry-text-coverage.json",
+      "answers": "How many closed deals carry the customer's original enquiry text, and how much of it is long enough to read.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "A precondition check before any claim about what customers say in their enquiries."
+    },
+    {
+      "title": "What each buyer type wants, by product",
+      "skill": "requirement_by_buyer_product",
+      "view": "vw_requirement_by_buyer_product",
+      "migration": "130",
+      "file": "data/skills/requirement-by-buyer-product.json",
+      "answers": "What customers asked for, by buyer type and product, with win rate and won value. ALL requirements, not just objections.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "Covers the 1,188 of 1,334 requirements that are neutral asks — customer_objection_themes only sees the 146 marked as pushback."
+    },
+    {
+      "title": "Stated budget vs what we quoted",
+      "skill": "stated_budget_vs_quote",
+      "view": "vw_stated_budget_vs_quote",
+      "migration": "130",
+      "file": "data/skills/stated-budget-vs-quote.json",
+      "answers": "Every time a customer named a budget figure, with our quote on that deal and the gap. A list, not an average.",
+      "surfaces": [
+        "portfolio",
+        "deal"
+      ],
+      "status": "not registered",
+      "also_answers": "Only 14 deals carry an actual figure — call stated_budget_coverage first. Available on the deal surface."
+    },
+    {
+      "title": "Stated-budget coverage",
+      "skill": "stated_budget_coverage",
+      "view": "vw_stated_budget_coverage",
+      "migration": "130",
+      "file": "data/skills/stated-budget-coverage.json",
+      "answers": "How many deals state a budget at all, with median stated against median quoted. The denominator for any price-gap claim.",
+      "surfaces": [
+        "portfolio"
+      ],
+      "status": "not registered",
+      "also_answers": "Single-digit with_stated_amount means report rows, not medians."
+    }
+  ]
+}

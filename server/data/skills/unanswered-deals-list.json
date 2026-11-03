@@ -1,0 +1,40 @@
+{
+  "name": "unanswered_deals_list",
+  "description": "The individual open deals nobody has written back to — with the contact, stage, owner, value, how long the deal has been open and how long the customer has been waiting. Use for 'which deals do I need to reply to', 'show me the deals nobody has answered', 'who is waiting on a reply', 'give me the list to chase'. Deals where the customer has written are the urgent ones: they are actively waiting. For the summary counts rather than the list, use the open deals never replied to skill.",
+  "viewName": "vw_unanswered_deals_list",
+  "params": [
+    {
+      "name": "min_days_open",
+      "column": "days_open",
+      "type": "int",
+      "op": "gte",
+      "description": "Only deals open at least this many days. Use for 'anything unanswered for over a week'."
+    },
+    {
+      "name": "min_customer_messages",
+      "column": "customer_messages",
+      "type": "int",
+      "op": "gte",
+      "description": "Only deals where the customer has written at least this many times. Pass 1 for 'who is actually waiting on us'."
+    },
+    {
+      "name": "owner",
+      "column": "owner",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep by name."
+    },
+    {
+      "name": "stage",
+      "column": "stage",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one pipeline stage by name."
+    }
+  ],
+  "columns": [],
+  "orderBy": "customer_messages DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

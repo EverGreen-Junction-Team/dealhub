@@ -1,0 +1,33 @@
+{
+  "name": "enquiries_by_month",
+  "description": "Enquiries by the month they arrived and what became of them — how many were won, lost, abandoned or are still open, the value won, and the win rate. Use for 'how many leads did we get last month', 'are enquiries up or down', 'which month brought the best leads', 'how is lead volume trending', 'did that campaign month convert'. This follows an intake COHORT: each row is the deals created in that month, tracked through to their outcome. It is NOT what closed in that month — for that use won_value_by_month, and never mix the two, since the same deal appears under different months in each. CRITICAL: recent months are unfinished by nature. Their deals have not had time to close, so still_open is high and the win rate is drawn from very few closed deals — never compare a recent month's win rate with an older one without saying the recent cohort is incomplete. Enquiry COUNTS are comparable immediately; win rates are not. Check months_since_previous — anything above 1 means intervening months had no enquiries at all. A month with none produces no row rather than a zero, so say it is absent rather than reporting zero.",
+  "viewName": "vw_enquiries_by_month",
+  "params": [
+    {
+      "name": "since",
+      "column": "month",
+      "type": "date",
+      "op": "gte",
+      "description": "Only months on or after this date. Pass the first of the month, e.g. 2026-01-01."
+    },
+    {
+      "name": "until",
+      "column": "month",
+      "type": "date",
+      "op": "lte",
+      "description": "Only months on or before this date."
+    },
+    {
+      "name": "min_enquiries",
+      "column": "enquiries",
+      "type": "int",
+      "op": "gte",
+      "description": "Only months with at least this many enquiries."
+    }
+  ],
+  "columns": [],
+  "orderBy": "month DESC",
+  "rowLimit": 60,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

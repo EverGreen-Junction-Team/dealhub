@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../highlevel/ai-backend"
+		},
+		{
+			"path": "../../../highlevel/ai-frontend"
+		}
+	],
+	"settings": {}
+}

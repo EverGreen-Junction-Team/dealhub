@@ -1,0 +1,40 @@
+{
+  "name": "closed_won_value_by_campaign",
+  "description": "Closed-won value by Google campaign and search term, for paid-tagged deals only — deals carrying a Google click id. Returns deals, how many reached a quote, wins, losses, still-open, won and open value, average won deal value and win rate, per campaign and term. Use for 'which campaigns bring in revenue', 'what is our best performing search term', 'which ads are wasting money', 'what did we win from paid', 'which keywords convert'. IMPORTANT: campaign_id is Google's numeric campaign ID, not a name — present it as an id and say a campaign name needs looking up in Google Ads or the Windsor map. Never invent a campaign name. Spend is not in this database, so return on ad spend cannot be calculated here; give won value and let whoever has the spend figures do the division.",
+  "viewName": "vw_paid_campaign_performance",
+  "params": [
+    {
+      "name": "campaign",
+      "column": "campaign_id",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one campaign id."
+    },
+    {
+      "name": "search_term",
+      "column": "search_term",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to search terms containing this text, e.g. 'crittall'."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only campaigns or terms with at least this many deals. Use to ignore one-off terms that cannot support a percentage."
+    },
+    {
+      "name": "min_won",
+      "column": "won",
+      "type": "int",
+      "op": "gte",
+      "description": "Only campaigns with at least this many wins. Pass 1 for 'which campaigns have actually produced a sale'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "won_value DESC",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

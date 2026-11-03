@@ -1,0 +1,35 @@
+{
+  "name": "paid_enquiries_by_campaign_and_stage",
+  "description": "Paid enquiries grouped by Google campaign and by search term, showing how far each group's deals got \u2014 how many never passed qualification, how many got to pre-quote, quote, or negotiation, and how many were won. Use for 'how far do paid leads get', 'which campaigns bring leads that go nowhere', 'are our ads bringing quality traffic', 'which search terms actually turn into quotes', 'where do paid enquiries drop out'. This answers how far paid traffic GETS; for what a campaign EARNED use the closed-won value by campaign skill. A high stuck-pre-qualification share is a targeting problem, not a sales one \u2014 worth saying. CRITICAL: an enquiry appears once under campaign and once under search term, so never total across both groupings \u2014 report one at a time and say which. Campaign IDs are Google's numbers, not names; present them as ids and never invent a campaign name.",
+  "viewName": "vw_paid_enquiry_progression",
+  "params": [
+    {
+      "name": "grouped_by",
+      "column": "grouped_by",
+      "type": "text",
+      "op": "contains",
+      "description": "Which grouping to report: 'campaign' or 'search term'. Almost always worth setting \u2014 the two are not comparable and must not be totalled together."
+    },
+    {
+      "name": "campaign_or_term",
+      "column": "group_value",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one campaign id or search term, e.g. 'crittall'."
+    },
+    {
+      "name": "min_enquiries",
+      "column": "paid_enquiries",
+      "type": "int",
+      "op": "gte",
+      "description": "Only campaigns or terms with at least this many enquiries. Use to ignore one-offs that cannot support a percentage."
+    }
+  ],
+  "columns": [],
+  "orderBy": "paid_enquiries DESC",
+  "rowLimit": 100,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

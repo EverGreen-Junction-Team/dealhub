@@ -1,0 +1,11 @@
+{
+  "name": "open_deals_never_replied_to",
+  "description": "Open deals where nobody has written back to the customer — how many have had no human reply at all, how many wrote to us first and got nothing, how many have been waiting over a week, and the total value sitting unanswered. Use for 'which deals have we never replied to', 'is anyone being ignored', 'who is waiting on us', 'how many leads have we not answered'. A workflow or campaign send does NOT count as a reply here — only a person writing. For the individual deals to work through, use the unanswered deals list skill.",
+  "viewName": "vw_open_deals_never_replied",
+  "params": [],
+  "columns": [],
+  "orderBy": "open_deals DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

@@ -1,0 +1,40 @@
+{
+  "name": "conversion_by_area",
+  "description": "Deals, win rate and won value grouped by UK postcode area — the leading letters, so SW1A 1AA groups as SW and B15 as B. Use for 'where do we win most', 'which areas convert best', 'where is our work coming from', 'is it worth covering this region', 'won value by area'. Two caveats to state whenever you rank areas. First, postcode areas differ enormously in size and population, so a high deal count partly reflects a big area rather than good performance — compare win rates rather than volumes when the question is how well somewhere performs. Second, check pct_from_job_postcode: the area comes from the deal's own job postcode where there is one and the customer's billing address otherwise, and a low figure means the row describes where customers are billed rather than where the work is, which diverges for builders, landlords, architects and second homes. Say the deal count next to any win rate — a rate from a handful of deals is noise, and min_deals exists to set that floor deliberately. won_value_missing counts won deals with no value recorded; they are in the win count but not the average, which is why a total can look small against the number of wins.",
+  "viewName": "vw_conversion_by_area",
+  "params": [
+    {
+      "name": "area",
+      "column": "area",
+      "type": "text",
+      "op": "eq",
+      "description": "Narrow to one postcode area by its letters, e.g. SW, B, M."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only areas with at least this many deals. Use to drop areas too small for a win rate to mean anything — six is a reasonable floor."
+    },
+    {
+      "name": "min_won_value",
+      "column": "won_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only areas that have won at least this much in total. Use for 'where does our revenue actually come from'."
+    },
+    {
+      "name": "win_rate_below_pct",
+      "column": "won_per_closed_pct",
+      "type": "number",
+      "op": "lte",
+      "description": "Only areas winning at or below this rate. Use for 'where are we losing' or 'which regions are not working'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 60,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

@@ -1,0 +1,8 @@
+[
+  { "_id": "6a22bfc4fcbd457e97784fbb", "name": "WhatsApp QR",    "type": "SMS",  "alias": "", "showChannel": { "fieldType": "ShowAlways" }, "icon": "https://msgsndr-private.storage.googleapis.com/oauthclient/67fb75c15f402353e5cfaa63/bb00cdbc-9785-43da-847e-073c1078f800.svg" },
+  { "_id": "6a116a692c652618ee90299c", "name": "iMessage",       "type": "SMS",  "alias": "", "showChannel": { "fieldType": "ShowAlways" }, "icon": "https://msgsndr-private.storage.googleapis.com/oauthclient/67fb75c15f402353e5cfaa63/9d32c0f9-3a28-43b5-8b09-6e2eeed0317f.svg" },
+  { "_id": "6a22cb89b8c221e8c3197bb4", "name": "SMS Android",    "type": "SMS",  "alias": "", "showChannel": { "fieldType": "ShowAlways" }, "icon": "https://msgsndr-private.storage.googleapis.com/oauthclient/67fb75c15f402353e5cfaa63/028ece37-556f-4397-998b-d0336955e890.svg" },
+  { "_id": "6a95259c8038972f34214890", "name": "Android Voice",  "type": "Call" },
+  { "_id": "6a956e74eac74878d52b39b3", "name": "iMessage Voice", "type": "Call" },
+  { "_id": "6a951f48808db75acb4e6e38", "name": "WhatsApp Voice", "type": "Call" }
+]

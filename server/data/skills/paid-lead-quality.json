@@ -1,0 +1,26 @@
+{
+  "name": "cost_to_acquire_a_qualified_lead",
+  "description": "Paid leads per month and how far they got — how many qualified, how many reached a quote, how many were won — for the last twelve complete months. Use for 'what does a qualified lead cost us', 'how many paid leads do we get', 'are our ads producing qualified leads', 'what is our cost per lead', 'how good are the leads from Google'. IMPORTANT: this is the DENOMINATOR only. Ad spend is in Windsor (google_ads connector), not this database, so cost per lead cannot be calculated here — present the qualified lead counts, ask for the monthly spend, and only then divide. Never invent a spend figure. If paid_leads is zero across every month, say the account either does not run ads or is not capturing click identifiers, rather than reporting it as a cost of zero.",
+  "viewName": "vw_paid_lead_quality_by_month",
+  "params": [
+    {
+      "name": "month",
+      "column": "month",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one month, e.g. '2026-08'. Omit for all twelve."
+    },
+    {
+      "name": "min_paid_leads",
+      "column": "paid_leads",
+      "type": "int",
+      "op": "gte",
+      "description": "Only months with at least this many paid leads. Pass 1 to skip months with no paid activity."
+    }
+  ],
+  "columns": [],
+  "orderBy": "month DESC",
+  "rowLimit": 24,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

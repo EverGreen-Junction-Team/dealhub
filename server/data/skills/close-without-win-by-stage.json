@@ -1,0 +1,34 @@
+{
+  "name": "exact_pipeline_stage_where_customers_drop_off",
+  "description": "The exact pipeline stage deals were sitting in when they stopped progressing — marked lost or abandoned — with how many, the lost/abandoned split, and each stage's share of all deals that closed without a win. Use for 'where do customers drop off', 'which stage do we lose deals at', 'what stage do deals die at'. Also answers 'lost vs abandoned by stage': abandoned means dropped, lost means pursued and beaten, and pct_abandoned gives the split per stage. Covers this sub-account only. This is the stage a deal was IN when it closed. For where a deal spent the most TIME before closing — often a different stage — use the stage_deals_sit_in_longest_before_lost skill instead.",
+  "viewName": "vw_close_without_win_by_stage",
+  "params": [
+    {
+      "name": "stage",
+      "column": "stage_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name, e.g. 'qualified'. Omit to see every stage."
+    },
+    {
+      "name": "min_deals",
+      "column": "closed_without_win",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages where at least this many deals closed without a win. Useful for ignoring one-off stages."
+    }
+  ],
+  "columns": [
+    "stage_name",
+    "closed_without_win",
+    "lost",
+    "abandoned",
+    "pct_of_closed"
+  ],
+  "orderBy": "closed_without_win DESC",
+  "rowLimit": 50,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

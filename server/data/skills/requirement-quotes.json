@@ -1,0 +1,64 @@
+{
+  "name": "requirement_quotes",
+  "description": "The customer's own words behind a requirement — one row per thing a customer said, with the quote, the date, the stage they were at and what happened to the deal. This is the evidence view: use it whenever a theme from requirement_lost_value or customer_objection_themes is about to be quoted to a person, and for 'what did customers actually say about X', 'show me the quotes', 'give me examples'. Always name the deal a quote came from so it can be checked. is_objection marks the ones the extraction read as pushback rather than a neutral request. Note these are extracted snippets, not whole messages — a quote can read more bluntly out of context than it did in the thread, so prefer several quotes over one when characterising a theme. requirement_label is the raw extracted wording; requirement_theme is the grouped version. ALWAYS identify a deal by deal_name, never by opportunity_id. The id is in the data so a row can be looked up, not so it can be shown — an answer that reads \"2lVBs41TxfmKK8U03fIn said the price was too high\" is unusable to a rep, who cannot tell which customer that is without searching for the id. Say the deal name, and the owner when it helps.",
+  "viewName": "vw_requirement_quotes",
+  "params": [
+    {
+      "name": "deal",
+      "column": "deal_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Only rows on deals whose name contains this text. Prefer this over opportunity_id — a rep knows the name."
+    },
+    {
+      "name": "requirement",
+      "column": "requirement_theme",
+      "type": "text",
+      "op": "contains",
+      "description": "Only quotes under requirement themes matching this text."
+    },
+    {
+      "name": "quote_contains",
+      "column": "quote",
+      "type": "text",
+      "op": "contains",
+      "description": "Only quotes containing this text. Use to confirm a theme really says what its name claims."
+    },
+    {
+      "name": "status",
+      "column": "status",
+      "type": "text",
+      "op": "eq",
+      "description": "won, lost, abandoned or open."
+    },
+    {
+      "name": "stage",
+      "column": "stage_at_time",
+      "type": "text",
+      "op": "contains",
+      "description": "Only things said while the deal was at this stage."
+    },
+    {
+      "name": "objections_only",
+      "column": "is_objection",
+      "type": "bool",
+      "op": "eq",
+      "description": "true for objections only, false for neutral requirements only."
+    },
+    {
+      "name": "opportunity_id",
+      "column": "opportunity_id",
+      "type": "text",
+      "op": "eq",
+      "description": "Everything a single deal's customer asked for."
+    }
+  ],
+  "columns": [],
+  "orderBy": "quoted_at DESC NULLS LAST",
+  "rowLimit": 100,
+  "surfaces": [
+    "portfolio",
+    "deal"
+  ],
+  "isEnabled": true
+}

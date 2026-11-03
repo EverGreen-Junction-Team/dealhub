@@ -1,0 +1,1113 @@
+[
+ {
+  "card_id": "1.1 \u00b7 1.4",
+  "refs": [
+   "1.1",
+   "1.4"
+  ],
+  "group_number": 1,
+  "group_name": "Pipeline Leakage",
+  "not_ready": false,
+  "title": "Exact pipeline stage where customers drop off",
+  "status_pill": null,
+  "question": "At which stage do deals stop, when they end without a win?",
+  "caveat": null,
+  "how_to_read": "Each bar is the stage the deal sat in when it was marked lost or abandoned. Abandoned means nobody ever marked it lost \u2014 a follow-up failure, not a sales loss.",
+  "footer": {
+   "learns": "48 of the 142 deals that closed without a win stopped at Waiting On Details, and 35 of those were never marked lost at all.",
+   "does": "Take the top bar and ask what has to change at that stage. High abandoned share at a stage is a process problem, not a pricing problem."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Stage the deal was in when it closed",
+    "key": "c11",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Lost"
+     },
+     {
+      "color": "#f26b1d",
+      "label": "Abandoned"
+     }
+    ],
+    "list_key": "c11",
+    "bound": true
+   },
+   {
+    "kind": "chart",
+    "subtitle": "Share lost against abandoned, by stage",
+    "key": "c14",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Lost"
+     },
+     {
+      "color": "#f26b1d",
+      "label": "Abandoned"
+     }
+    ],
+    "list_key": "c14",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Lost"
+   },
+   {
+    "color": "#f26b1d",
+    "label": "Abandoned"
+   },
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Lost"
+   },
+   {
+    "color": "#f26b1d",
+    "label": "Abandoned"
+   }
+  ]
+ },
+ {
+  "card_id": "1.3",
+  "refs": [
+   "1.3"
+  ],
+  "group_number": 1,
+  "group_name": "Pipeline Leakage",
+  "not_ready": false,
+  "title": "Conversion rate between every stage and the next",
+  "status_pill": null,
+  "question": "What share of deals that reach a stage go on to the next one?",
+  "caveat": null,
+  "how_to_read": "Each step is deals whose furthest stage is this one or later. The percentage is how many carried on.",
+  "footer": {
+   "learns": "Deals hold up to the quote \u2014 91% to 97% carry on at each early stage \u2014 then 302 at Quote Sent become 72 at Negotiation.",
+   "does": "The biggest single drop is the cheapest thing to fix."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c13",
+    "rows_hint": null,
+    "list_key": "c13",
+    "bound": true,
+    "legends": []
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "1.5",
+  "refs": [
+   "1.5"
+  ],
+  "group_number": 1,
+  "group_name": "Pipeline Leakage",
+  "not_ready": false,
+  "title": "Why deals were lost",
+  "status_pill": null,
+  "question": "On deals that ended without a win, was a reason written down?",
+  "caveat": "Reason recorded on a minority of deals. Omnia has none at all.",
+  "how_to_read": "The grey portion is deals where nobody wrote a reason. Themes come from keyword matching on meddic_9, the only field where a real reason is written.",
+  "footer": {
+   "learns": "Only 19 of the 142 closed-without-win deals carry a written reason. Of those, price, below minimum order and no response tie on 5 each.",
+   "does": "Until the grey shrinks, the themes below are a sample, not the picture."
+  },
+  "blocks": [
+   {
+    "kind": "ghost",
+    "subtitle": "Reason recorded, by stage",
+    "label": "horizontal bar, stacked \u2014 not captured on the 13 Sept re-run"
+   },
+   {
+    "kind": "chart",
+    "subtitle": "Recorded reasons by theme",
+    "key": "c15b",
+    "rows_hint": null,
+    "list_key": "c15b",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "ghost",
+    "subtitle": "Deals with a pop-up reason but no written reason",
+    "label": "sortable table \u2014 not captured on the 13 Sept re-run"
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "2.1",
+  "refs": [
+   "2.1"
+  ],
+  "group_number": 2,
+  "group_name": "Scaling & Rep Performance",
+  "not_ready": false,
+  "title": "Lead-to-won deal ratio",
+  "status_pill": null,
+  "question": "How many enquiries does it take to win one job?",
+  "caveat": "Junk enquiries lost at intake are shown separately. The excl-junk figure is the fairer one.",
+  "how_to_read": "Win rate is won divided by won + lost + abandoned. Open deals are not in the denominator.",
+  "footer": {
+   "learns": "15.0% of closed deals are won \u2014 25 of 167. 17 junk enquiries were cleared at intake and 367 deals are still open.",
+   "does": "This is the number every hiring and ad-spend decision hangs off."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c21",
+    "rows_hint": null,
+    "list_key": "c21",
+    "bound": true,
+    "legends": []
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "2.2",
+  "refs": [
+   "2.2"
+  ],
+  "group_number": 2,
+  "group_name": "Scaling & Rep Performance",
+  "not_ready": false,
+  "title": "Leads required per month to support a new hire",
+  "status_pill": null,
+  "question": "How many enquiries a month does one more salesperson need to pay for themselves?",
+  "caveat": "Recent months are incomplete \u2014 deals created lately have not had time to close.",
+  "how_to_read": "Leads is deals created that month. Won is how many of those have since been won, so recent months look worse than they are.",
+  "footer": {
+   "learns": "185 leads arrived in July and 18 have since been won. August brought 100 leads and 3 wins so far. Only four months are held.",
+   "does": "Multiply target won deals by the all-time lead-to-won ratio to get the monthly lead target."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c22",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "#0ea5a4",
+      "label": "Leads created"
+     },
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Since won"
+     }
+    ],
+    "list_key": "c22",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "#0ea5a4",
+    "label": "Leads created"
+   },
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Since won"
+   }
+  ]
+ },
+ {
+  "card_id": "2.4",
+  "refs": [
+   "2.4"
+  ],
+  "group_number": 2,
+  "group_name": "Scaling & Rep Performance",
+  "not_ready": false,
+  "title": "Conversion rate per rep at every stage",
+  "status_pill": null,
+  "question": "Where does each salesperson\u2019s pipeline stop?",
+  "caveat": "Deals are not routed to reps at random. Charlie sends larger deals to Liam. Do not read this as a ranking of ability.",
+  "how_to_read": "Read the reach-quote rate and the win-from-quote rate as two separate skills.",
+  "footer": {
+   "learns": "Brad carries 173 deals and wins 19% of the ones that close; Liam carries 49 and wins 35%. 90 deals have no owner at all.",
+   "does": "Coach the weaker of the two rates, not the overall number."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c24",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Won"
+     },
+     {
+      "color": "#f26b1d",
+      "label": "Reached quote, not won"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "Never reached quote"
+     }
+    ],
+    "list_key": "c24",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Won"
+   },
+   {
+    "color": "#f26b1d",
+    "label": "Reached quote, not won"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "Never reached quote"
+   }
+  ]
+ },
+ {
+  "card_id": "2.5",
+  "refs": [
+   "2.5"
+  ],
+  "group_number": 2,
+  "group_name": "Scaling & Rep Performance",
+  "not_ready": false,
+  "title": "Rep strength \u2014 qualifying vs closing",
+  "status_pill": null,
+  "question": "Is this rep losing deals before the quote, or after it?",
+  "caveat": "Deals are not routed to reps at random. Charlie sends larger deals to Liam. Do not read this as a ranking of ability.",
+  "how_to_read": "Qualifying is the share of closed deals that got as far as a quote. Closing is the share of those that were won.",
+  "footer": {
+   "learns": "Liam qualifies 71% and closes 50%. Brad qualifies only 22% but closes 85% of what he quotes. Ella closes 8%.",
+   "does": "Low qualifying means a front-end problem. Low closing means a pricing or objection problem."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c25",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Qualifying \u2014 share that reached a quote"
+     },
+     {
+      "color": "#f26b1d",
+      "label": "Closing \u2014 share of those won"
+     }
+    ],
+    "list_key": "c25",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Qualifying \u2014 share that reached a quote"
+   },
+   {
+    "color": "#f26b1d",
+    "label": "Closing \u2014 share of those won"
+   }
+  ]
+ },
+ {
+  "card_id": "3.5",
+  "refs": [
+   "3.5"
+  ],
+  "group_number": 3,
+  "group_name": "Lead Source & Attribution",
+  "not_ready": false,
+  "title": "Won value by intake route",
+  "status_pill": null,
+  "question": "Which way of arriving produces the most money?",
+  "caveat": "Empty opportunity.inquiry is a data-quality flag, not a lead source. Paid-click arrivals are now split from free ones: 47 paid website-form deals and 12 paid hand-created deals.",
+  "how_to_read": "Route is worked out from which enquiry-text field is filled. Blank means the deal was typed in by hand.",
+  "footer": {
+   "learns": "\u00a3634,815 of won work came from deals typed in by hand, against \u00a3252,994 from the enquiries@ inbox. Paid clicks brought 59 deals and \u00a314,166 of won work between them.",
+   "does": "The hand-created bar is usually the sales team\u2019s own contacts. Treat it separately from marketing."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Won value by route",
+    "key": "c35a",
+    "rows_hint": null,
+    "list_key": "c35a",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "ghost",
+    "subtitle": "Hand-created deals by recorded lead source",
+    "label": "sortable table \u2014 stored on the 14 Sept run, not this one"
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "3.6",
+  "refs": [
+   "3.6"
+  ],
+  "group_number": 3,
+  "group_name": "Lead Source & Attribution",
+  "not_ready": false,
+  "title": "Revenue from repeat customers and referrals",
+  "status_pill": null,
+  "question": "How much of the money comes from people who already knew us?",
+  "caveat": "Lead source is blank on a large share of deals \u2014 170 of them, carrying \u00a3527,111 of won work. Referral \u2014 Domestic and Referral \u2014 Commercial exist as options but are recorded on zero BGD deals.",
+  "how_to_read": "Bars are won value against the rep-recorded Lead source field. The tail row holds eight values with a single deal each and no won work.",
+  "footer": {
+   "learns": "The old \u201cother recorded source\u201d bar was 17 separate values. Enquiries@ holds the most deals (142) for a 9% win rate, Crittall holds 92 for \u00a325,300, and one Self Generated deal carries \u00a395,560. Repeat Customer still wins 3 of its 4 closed deals on 12 deals.",
+   "does": "Repeat wins at six times the rate of the brand inbox, on a twelfth of the volume. Referral cannot be answered at all until reps start ticking it."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c36",
+    "rows_hint": null,
+    "list_key": "c36",
+    "bound": true,
+    "legends": []
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "3.7",
+  "refs": [
+   "3.7"
+  ],
+  "group_number": 3,
+  "group_name": "Lead Source & Attribution",
+  "not_ready": false,
+  "title": "Time from enquiry to won deal, by source",
+  "status_pill": null,
+  "question": "How long does each kind of enquiry take to turn into money?",
+  "caveat": "Same-day wins are usually deals entered after the fact, not fast sales. Two of the four routes have fewer than eight won deals behind them.",
+  "how_to_read": "Median days from deal creation to the day it was marked won, with the shortest and longest either side.",
+  "footer": {
+   "learns": "Won deals take 22 to 42 days from enquiry on median depending on the route, and hand-created ones range from same-day to 94 days.",
+   "does": "Short cycles let you forecast. Long ones need a reason."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c37",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Up to the median"
+     }
+    ],
+    "list_key": "c37",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Up to the median"
+   }
+  ]
+ },
+ {
+  "card_id": "3.8",
+  "refs": [
+   "3.8"
+  ],
+  "group_number": 3,
+  "group_name": "Lead Source & Attribution",
+  "not_ready": false,
+  "title": "Which sources fail at which stage",
+  "status_pill": null,
+  "question": "Do different lead sources die at different points?",
+  "caveat": null,
+  "how_to_read": "Each bar is one route, split by the stage where its deals died.",
+  "footer": {
+   "learns": "The enquiries@ inbox and the website form lose most of their deals before a quote goes out. Hand-created deals mostly win.",
+   "does": "A route that dies before qualification is a targeting problem."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c38",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "#f26b1d",
+      "label": "Before qualification"
+     },
+     {
+      "color": "#f5a26b",
+      "label": "Before quote"
+     },
+     {
+      "color": "#b44cf0",
+      "label": "At quote"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "At negotiation"
+     },
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Won"
+     }
+    ],
+    "list_key": "c38",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "#f26b1d",
+    "label": "Before qualification"
+   },
+   {
+    "color": "#f5a26b",
+    "label": "Before quote"
+   },
+   {
+    "color": "#b44cf0",
+    "label": "At quote"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "At negotiation"
+   },
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Won"
+   }
+  ]
+ },
+ {
+  "card_id": "4.1",
+  "refs": [
+   "4.1"
+  ],
+  "group_number": 4,
+  "group_name": "Speed to Lead & Follow-up",
+  "not_ready": false,
+  "title": "Does replying fast increase the win rate",
+  "status_pill": null,
+  "question": "Do deals answered quickly win more often?",
+  "caveat": "Phone calls are invisible here. A deal shown as never answered may have been rung.",
+  "how_to_read": "Every bar must show the number of deals behind it. Some buckets are tiny.",
+  "footer": {
+   "learns": "8 of the 13 deals answered within the hour were won \u2014 62%. Of the 20 never answered in writing, none were won.",
+   "does": "If the within-an-hour bar is clearly higher, set a response-time rule."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c41",
+    "rows_hint": null,
+    "list_key": "c41",
+    "bound": true,
+    "legends": []
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "4.2",
+  "refs": [
+   "4.2"
+  ],
+  "group_number": 4,
+  "group_name": "Speed to Lead & Follow-up",
+  "not_ready": false,
+  "title": "Response time by rep",
+  "status_pill": null,
+  "question": "How fast does each person answer a customer?",
+  "caveat": "Deals are not routed to reps at random. Charlie sends larger deals to Liam. Written messages only \u2014 calls are not counted.",
+  "how_to_read": "Median is the typical reply. The 90th percentile is the bad days, and it is the one customers remember.",
+  "footer": {
+   "learns": "Liam replies in 2.1 hours on median, Chris in 54.1. But Liam\u2019s 90th percentile is 170 hours, so the bad days are bad for everyone.",
+   "does": "A good median with a terrible p90 means no cover when someone is busy."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c42",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Median hours"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "Out to the 90th percentile"
+     }
+    ],
+    "list_key": "c42",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Median hours"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "Out to the 90th percentile"
+   }
+  ]
+ },
+ {
+  "card_id": "4.3",
+  "refs": [
+   "4.3"
+  ],
+  "group_number": 4,
+  "group_name": "Speed to Lead & Follow-up",
+  "not_ready": false,
+  "title": "Open deals nobody has replied to",
+  "status_pill": null,
+  "question": "How many live enquiries have never had a written answer?",
+  "caveat": "A deal counted here may have been telephoned. Check before accusing anyone.",
+  "how_to_read": "Counts open deals with no outbound message to the customer, ever.",
+  "footer": {
+   "learns": "131 of 367 open deals have never had a written reply, and 115 of those have been waiting more than seven days.",
+   "does": "This is the list to work through on Monday morning."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "The count",
+    "key": "c43a",
+    "rows_hint": null,
+    "list_key": "c43a",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "ghost",
+    "subtitle": "The deals themselves",
+    "label": "sortable table with drill \u2014 269 rows, regenerate on demand"
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "4.4",
+  "refs": [
+   "4.4"
+  ],
+  "group_number": 4,
+  "group_name": "Speed to Lead & Follow-up",
+  "not_ready": false,
+  "title": "Deals gone quiet",
+  "status_pill": null,
+  "question": "Which live deals have had no activity for a month or more?",
+  "caveat": null,
+  "how_to_read": "Idle means no message, note or stage change. The money column is quoted value sitting still.",
+  "footer": {
+   "learns": "109 of the 204 open deals at Quote Sent have been idle for 30 days or more, holding \u00a31,971,640 of quoted work.",
+   "does": "Anything idle past 30 days at Quote Sent needs a call this week."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c44",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "#f26b1d",
+      "label": "Idle 60+ days"
+     },
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Idle 30\u201359 days"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "Active in the last 30 days"
+     }
+    ],
+    "list_key": "c44",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "#f26b1d",
+    "label": "Idle 60+ days"
+   },
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Idle 30\u201359 days"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "Active in the last 30 days"
+   }
+  ]
+ },
+ {
+  "card_id": "4.5",
+  "refs": [
+   "4.5"
+  ],
+  "group_number": 4,
+  "group_name": "Speed to Lead & Follow-up",
+  "not_ready": false,
+  "title": "Messages per won deal vs per lost deal",
+  "status_pill": null,
+  "question": "Do won deals involve more conversation?",
+  "caveat": "Message assignment coverage is low. Most closed deals have no assigned messages at all.",
+  "how_to_read": "Only deals with at least one assigned customer message are counted.",
+  "footer": {
+   "learns": "Won deals carry a median of 9 customer messages, lost deals 2 and abandoned 1 \u2014 on the 58 closed deals that have any messages assigned.",
+   "does": "If won deals average far more messages, the lost ones were never really conversations."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c45",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Median customer messages"
+     },
+     {
+      "color": "#f26b1d",
+      "label": "Median rep messages"
+     }
+    ],
+    "list_key": "c45",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Median customer messages"
+   },
+   {
+    "color": "#f26b1d",
+    "label": "Median rep messages"
+   }
+  ]
+ },
+ {
+  "card_id": "5.1",
+  "refs": [
+   "5.1"
+  ],
+  "group_number": 5,
+  "group_name": "Objections & Bottlenecks",
+  "not_ready": false,
+  "title": "Stage deals sit in longest before being lost",
+  "status_pill": null,
+  "question": "Where do deals stall before they die?",
+  "caveat": "Deals whose longest stage lasted under a day are junk clearing, not stalls.",
+  "how_to_read": "The longest stage each deal sat in before closing. Duration is capped at the close date.",
+  "footer": {
+   "learns": "Deals that die at Waiting On Details sit there 40.8 days on median, and one in ten sits 68 days.",
+   "does": "A long stall at one stage usually means the customer is waiting for something from us."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c51",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Median days"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "90th percentile"
+     }
+    ],
+    "list_key": "c51",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Median days"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "90th percentile"
+   }
+  ]
+ },
+ {
+  "card_id": "6.1 \u00b7 6.2",
+  "refs": [
+   "6.1",
+   "6.2"
+  ],
+  "group_number": 6,
+  "group_name": "Buyer Type & Product",
+  "not_ready": false,
+  "title": "Which buyer type gets furthest",
+  "status_pill": null,
+  "question": "Which kind of customer makes it to deposit most often, and which is a small share of enquiries but a large share of the money?",
+  "caveat": "Buyer type is ticked on roughly a quarter of deals \u2014 95 of them. This is a slice, not the whole pipeline.",
+  "how_to_read": "Only deals with a buyer type ticked appear here. Both percentages in the second chart are of typed deals only.",
+  "footer": {
+   "learns": "Contractors are 42% of typed leads and 76% of typed won value, and win 43% of their closed deals. Architects have won none of 13.",
+   "does": "Aim marketing at whichever type reaches deposit most reliably. A type with a small lead share and a large revenue share is where the marketing should point."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "How far each buyer type gets",
+    "key": "c61",
+    "rows_hint": null,
+    "list_key": "c61",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "chart",
+    "subtitle": "Share of leads against share of revenue",
+    "key": "c62",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "#f26b1d",
+      "label": "Share of typed leads"
+     },
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Share of typed won value"
+     }
+    ],
+    "list_key": "c62",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "#f26b1d",
+    "label": "Share of typed leads"
+   },
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Share of typed won value"
+   }
+  ]
+ },
+ {
+  "card_id": "6.3",
+  "refs": [
+   "6.3"
+  ],
+  "group_number": 6,
+  "group_name": "Buyer Type & Product",
+  "not_ready": false,
+  "title": "Product type conversion and value",
+  "status_pill": null,
+  "question": "On how many deals do we know what was being sold?",
+  "caveat": "Product type is recorded on a minority of deals. Every product has fewer than eighteen deals behind it.",
+  "how_to_read": "Coverage first \u2014 the second chart only covers deals with a product type recorded. Win rate is on closed deals only; products with no closed deals show blank, not zero.",
+  "footer": {
+   "learns": "Product type is recorded on 94 of 535 deals and on 11 of the 36 won. Cortizo casement and bi-folding doors carry the most won value, \u00a3136,499 each.",
+   "does": "Make product type mandatory at quote stage, and push the products that both win and carry value."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Is product type being recorded",
+    "key": "c63a",
+    "rows_hint": null,
+    "list_key": "c63a",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "chart",
+    "subtitle": "Product type conversion and value",
+    "key": "c63b",
+    "rows_hint": null,
+    "list_key": "c63b",
+    "bound": true,
+    "legends": []
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "8.1",
+  "refs": [
+   "8.1"
+  ],
+  "group_number": 8,
+  "group_name": "Sales Discipline",
+  "not_ready": false,
+  "title": "Open deals with no next action set",
+  "status_pill": null,
+  "question": "Which live deals have nobody scheduled to do anything?",
+  "caveat": null,
+  "how_to_read": "No open task on the deal and none on the contact either.",
+  "footer": {
+   "learns": "62 of 202 open deals at Quote Sent have no open task and 91 have one overdue \u2014 \u00a32,017,477 with nothing scheduled.",
+   "does": "Every deal past Quote Sent should have a next action and a date."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": null,
+    "key": "c81",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "#f26b1d",
+      "label": "No open task"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "Has an open task"
+     }
+    ],
+    "list_key": "c81",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "#f26b1d",
+    "label": "No open task"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "Has an open task"
+   }
+  ]
+ },
+ {
+  "card_id": "8.2",
+  "refs": [
+   "8.2"
+  ],
+  "group_number": 8,
+  "group_name": "Sales Discipline",
+  "not_ready": false,
+  "title": "Open deals with no notes",
+  "status_pill": null,
+  "question": "How many notes exist, and who writes them?",
+  "caveat": null,
+  "how_to_read": "Counts notes, their typical length, and how many people write them. Thin means under 100 characters of note text in total.",
+  "footer": {
+   "learns": "141 notes exist, median 158 characters, written by 6 people. But 174 of the 202 open deals at Quote Sent have no note at all.",
+   "does": "If one person writes all the notes, the knowledge leaves when they do."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Open deals with no notes, by stage",
+    "key": "c82b",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "#f26b1d",
+      "label": "No notes"
+     },
+     {
+      "color": "#0ea5a4",
+      "label": "Has a note"
+     }
+    ],
+    "list_key": "c82b",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "#f26b1d",
+    "label": "No notes"
+   },
+   {
+    "color": "#0ea5a4",
+    "label": "Has a note"
+   }
+  ]
+ },
+ {
+  "card_id": "8.3",
+  "refs": [
+   "8.3"
+  ],
+  "group_number": 8,
+  "group_name": "Sales Discipline",
+  "not_ready": false,
+  "title": "Deals with most information missing",
+  "status_pill": null,
+  "question": "How much do we actually know about each live deal?",
+  "caveat": null,
+  "how_to_read": "Six fields: owner, value, enquiry text, lead source, buyer type, product type. Weak means three fields or fewer.",
+  "footer": {
+   "learns": "121 of 354 open deals have two of the six fields filled or fewer; 40 have all six. Records improve with stage \u2014 1.5 at Marketing Qualified, 4.2 at Negotiation.",
+   "does": "Anything scoring three or less cannot be forecast. Weak records at Negotiation are the dangerous ones."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Fields filled, across open deals",
+    "key": "c83a",
+    "rows_hint": null,
+    "list_key": "c83a",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "chart",
+    "subtitle": "Average fields filled, by stage",
+    "key": "c83b",
+    "rows_hint": null,
+    "list_key": "c83b",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "ghost",
+    "subtitle": "The weakest deals",
+    "label": "sortable table with drill \u2014 regenerate on demand"
+   }
+  ],
+  "legends": []
+ },
+ {
+  "card_id": "8.4 \u00b7 8.5",
+  "refs": [
+   "8.4",
+   "8.5"
+  ],
+  "group_number": 8,
+  "group_name": "Sales Discipline",
+  "not_ready": false,
+  "title": "Mandatory fields left empty, by rep",
+  "status_pill": null,
+  "question": "Who is not filling the fields in, and who follows the process?",
+  "caveat": "Deals are not routed to reps at random. Charlie sends larger deals to Liam. Do not read this as a ranking of ability.",
+  "how_to_read": "Colour is the number of that rep\u2019s open deals with the field empty. The second chart measures three habits separately \u2014 a rep can be good at one and bad at another.",
+  "footer": {
+   "learns": "Buyer type is empty on 116 of Brad\u2019s open deals \u2014 \u00a32,066,277 of open value. He sets a next action on 56% of them and writes a note on none.",
+   "does": "Make buyer type and product type mandatory before a quote can be sent. Then pick the one habit that matters most and fix it across the team first."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Fields left empty, by rep",
+    "key": "c84",
+    "rows_hint": null,
+    "list_key": "c84",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "chart",
+    "subtitle": "How often each rep follows the process",
+    "key": "c85",
+    "rows_hint": null,
+    "legends": [
+     {
+      "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+      "label": "Next action set"
+     },
+     {
+      "color": "#f26b1d",
+      "label": "Note written"
+     },
+     {
+      "color": "#b44cf0",
+      "label": "Messages linked"
+     }
+    ],
+    "list_key": "c85",
+    "bound": true
+   }
+  ],
+  "legends": [
+   {
+    "color": "linear-gradient(135deg,#6d5dfc,#b44cf0)",
+    "label": "Next action set"
+   },
+   {
+    "color": "#f26b1d",
+    "label": "Note written"
+   },
+   {
+    "color": "#b44cf0",
+    "label": "Messages linked"
+   }
+  ]
+ },
+ {
+  "card_id": "9.4",
+  "refs": [
+   "9.4"
+  ],
+  "group_number": 9,
+  "group_name": "Battle Cards",
+  "not_ready": false,
+  "title": "Phrases customers use for what they want",
+  "status_pill": null,
+  "question": "On how many closed deals do we have the original enquiry text?",
+  "caveat": "Keyword matching on enquiry text. A phrase can appear on a deal about something else.",
+  "how_to_read": "Usable means 60 characters or more of enquiry text. Phrase is the customer\u2019s word; our term is the business\u2019s name for it.",
+  "footer": {
+   "learns": "Of 181 closed deals, 123 carry enquiry text and 116 are usable. 19 enquiries use the word \u201creplace\u201d and 18 say \u201ccrittall\u201d.",
+   "does": "Empty enquiry text is a data-quality flag. Use their words in ad copy and page headings, not ours."
+  },
+  "blocks": [
+   {
+    "kind": "chart",
+    "subtitle": "Do we have the customer\u2019s own words",
+    "key": "c94a",
+    "rows_hint": null,
+    "list_key": "c94a",
+    "bound": true,
+    "legends": []
+   },
+   {
+    "kind": "chart",
+    "subtitle": "Phrases customers use",
+    "key": "c94b",
+    "rows_hint": null,
+    "list_key": "c94b",
+    "bound": true,
+    "legends": []
+   }
+  ],
+  "legends": []
+ }
+]

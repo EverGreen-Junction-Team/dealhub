@@ -1,0 +1,33 @@
+{
+  "name": "forecast_growth",
+  "description": "Month-on-month movement in the forecast: how expected (weighted) revenue and won revenue changed from the previous month, the percentage change, and running totals. Use for 'is the forecast growing', 'how much growth', 'are we up or down on last month', 'how does this quarter compare', 'how much will we close between now and March', 'is revenue trending up'. Read expected_change and won_change as DIFFERENT questions and never blend them: expected moving means more or better-qualified pipeline is landing in that month, won moving means money actually banked, and they routinely go opposite ways. Check months_since_previous — 1 means consecutive, anything higher means the months in between were empty and the change spans the whole gap, so do not call it month-on-month growth. Use expected_cumulative for 'how much between now and X' rather than adding months yourself. IMPORTANT: this covers dated months only. Open deals with no expected close date are excluded entirely because they belong to no period — they are in forecast_by_month as a '(no close date)' row, and at the coverage seen here they are usually the largest block of pipeline, so say that growth here describes only the datable portion.",
+  "viewName": "vw_forecast_growth",
+  "params": [
+    {
+      "name": "from_month",
+      "column": "month",
+      "type": "date",
+      "op": "gte",
+      "description": "Only months on or after this date. Pass the first of the month, e.g. 2026-10-01."
+    },
+    {
+      "name": "to_month",
+      "column": "month",
+      "type": "date",
+      "op": "lte",
+      "description": "Only months on or before this date."
+    },
+    {
+      "name": "growing_above_pct",
+      "column": "expected_change_pct",
+      "type": "number",
+      "op": "gte",
+      "description": "Only months where expected revenue grew by at least this percentage. Pass a negative number to find declines."
+    }
+  ],
+  "columns": [],
+  "orderBy": "month DESC",
+  "rowLimit": 40,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

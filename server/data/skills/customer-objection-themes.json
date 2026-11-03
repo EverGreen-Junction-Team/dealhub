@@ -1,0 +1,22 @@
+{
+  "name": "customer_objection_themes",
+  "description": "Objections customers raised, grouped into themes, split by won and lost. Only requirements the extraction marked as an objection. Use for 'what do customers object to', 'what objections come up on lost deals', 'do architects object to different things than homeowners', 'which objections kill deals'. buyer_type and product_type are nullable dimensions taken from the FIRST value in the deal's list — a deal tagged as both Contractor and Architect is counted once, under Contractor, so these columns describe the deal's primary type rather than every type it carries. Do not present them as a complete breakdown by type. An objection appearing on won deals is not a problem — people buy after objecting; what matters is the lost-to-won ratio within a theme, not its raw count.",
+  "viewName": "vw_customer_objection_themes",
+  "params": [
+    { "name": "objection", "column": "objection_theme", "type": "text", "op": "contains",
+      "description": "Only objection themes matching this text, e.g. 'price', 'lead time'." },
+    { "name": "buyer_type", "column": "buyer_type", "type": "text", "op": "eq",
+      "description": "The deal's primary buyer type, lowercase — homeowner, contractor, architect." },
+    { "name": "product_type", "column": "product_type", "type": "text", "op": "eq",
+      "description": "The deal's primary product type, lowercase." },
+    { "name": "min_deals", "column": "deals", "type": "int", "op": "gte",
+      "description": "Only objections raised on at least this many deals." },
+    { "name": "min_lost", "column": "lost_ab", "type": "int", "op": "gte",
+      "description": "Only objections appearing on at least this many lost or abandoned deals." }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

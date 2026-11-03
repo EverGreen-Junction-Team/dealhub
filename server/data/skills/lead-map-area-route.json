@@ -1,0 +1,40 @@
+{
+  "name": "lead_map_area_route",
+  "description": "The lead map: enquiries split by UK postcode area AND how they arrived (website form, webchat, enquiries@ inbox, crittall email upload, created by hand), with deal counts, win rate and won value for each combination. Use for 'where do our web leads come from', 'which routes work in which areas', 'is webchat working outside London', 'lead map', 'enquiries by area and source'. Cells are thin by nature — splitting deals two ways at once shrinks every group, so an area with 40 deals across five routes averages eight per cell and a win rate from eight deals is noise. Read every cell against area_deals and route_deals, which carry the totals it sits inside, and prefer comparing whole areas or whole routes before quoting an individual cell. Do not add area_deals or route_deals up; the same value repeats across an area's or route's rows. 'created by hand' is a residual bucket, not a route anyone chose — phone calls, walk-ins, imports and deals with no contact record all land there, so treat it as unknown rather than as a channel. The route ladder is ordered, not exclusive: a contact with both a webchat and an enquiries@ enquiry counts as webchat only. Check pct_from_job_postcode — areas come from the deal's job postcode where there is one and the customer's billing address otherwise, and a low figure means the row describes where customers are billed rather than where the work is. Postcode areas also vary enormously in size, so compare win rates rather than deal counts. For area performance without the route split use conversion_by_area; for source performance without the geography use source_failure_stage.",
+  "viewName": "vw_lead_map_area_route",
+  "params": [
+    {
+      "name": "area",
+      "column": "area",
+      "type": "text",
+      "op": "eq",
+      "description": "Narrow to one postcode area by its letters, e.g. SW, B, M."
+    },
+    {
+      "name": "route",
+      "column": "route",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one intake route, e.g. webchat, website form, enquiries@."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only cells with at least this many deals. Important here — the two-way split makes cells small, and five is a reasonable floor before quoting a win rate."
+    },
+    {
+      "name": "min_area_deals",
+      "column": "area_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only areas with at least this many deals in total across all routes. Use to keep the map to areas with real volume."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 120,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

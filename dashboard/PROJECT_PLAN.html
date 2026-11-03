@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHL AI Assistant — Build Plan & Progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF8; --ink:#1C2326; --ink-soft:#566066; --steel:#6B7B85; --steel-soft:#A9B4BB;
+    --hair:#E6E3DD; --rust:#B5512E; --rust-soft:#F6EBE6; --green:#3F7A55; --green-soft:#E7F0E9;
+    --amber:#C8821E; --amber-soft:#FAF0DD; --blue:#3E6D96; --blue-soft:#E8EFF5;
+    --plum:#5B4A87; --plum-soft:#EFEAF6;
+    --disp:'Archivo',sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; margin:0;}
+  body{background:#F2F0EC; color:var(--ink); font-family:var(--disp); font-size:14.5px; line-height:1.6;}
+  .wrap{max-width:1000px; margin:0 auto; padding:40px 32px 72px;}
+
+  header.doc{border-bottom:3px solid var(--ink); padding-bottom:22px; margin-bottom:36px;}
+  .brand{display:flex; align-items:center; gap:11px; margin-bottom:16px;}
+  .bars{display:flex; gap:3px; align-items:flex-end; height:24px;}
+  .bars span{width:5px; border-radius:1px; background:var(--rust); height:13px;}
+  .bars span:nth-child(2){height:24px; background:#5C9BD5;}
+  .bars span:nth-child(3){height:18px; background:var(--green);}
+  .brand b{font-size:14px; font-weight:800;}
+  .brand i{font-family:var(--mono); font-size:10px; font-style:normal; color:var(--steel); letter-spacing:.05em;}
+  h1{font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.15; margin-bottom:14px;}
+  .lede{color:var(--ink-soft); margin-top:12px; max-width:760px; font-size:15px; line-height:1.55;}
+  .meta{display:flex; flex-wrap:wrap; gap:14px 24px; margin-top:16px;}
+  .meta .kv{font-family:var(--mono); font-size:11px; color:var(--steel); letter-spacing:.03em;}
+  .meta .kv b{color:var(--ink); font-weight:600; margin-right:6px;}
+
+  h2{font-size:21px; font-weight:800; letter-spacing:-.015em; margin:40px 0 12px; display:flex; align-items:baseline; gap:12px;}
+  h2 .num{font-family:var(--mono); font-size:11px; font-weight:600; color:var(--steel); letter-spacing:.06em; background:var(--paper); border:1px solid var(--hair); padding:3px 8px; border-radius:5px; align-self:center;}
+
+  p{margin:0 0 12px;} p.section-lede{color:var(--ink-soft); max-width:760px; margin-bottom:18px;}
+  code{font-family:var(--mono); font-size:12px; background:#F0EDE7; border:1px solid var(--hair); border-radius:4px; padding:1px 6px; color:var(--ink); white-space:nowrap;}
+  strong{color:var(--ink); font-weight:700;}
+
+  /* status pills */
+  .pill{display:inline-block; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:5px; vertical-align:1px;}
+  .pill.done{background:var(--green-soft); color:var(--green); border:1px solid #B9D4C2;}
+  .pill.next{background:var(--amber-soft); color:var(--amber); border:1px solid #EBD3A3;}
+  .pill.plan{background:var(--blue-soft); color:var(--blue); border:1px solid #C5D6E4;}
+
+  /* card grid */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0 8px;}
+  .grid.two{grid-template-columns:repeat(2,1fr);}
+  .card{background:var(--paper); border:1px solid var(--hair); border-radius:11px; padding:16px 18px; border-top:3px solid var(--steel-soft);}
+  .card.c-blue{border-top-color:var(--blue);} .card.c-rust{border-top-color:var(--rust);}
+  .card.c-green{border-top-color:var(--green);} .card.c-plum{border-top-color:var(--plum);}
+  .card .h{font-family:var(--mono); font-size:12px; font-weight:700; margin-bottom:4px;}
+  .card .d{font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
+
+  /* flow */
+  .flow{background:var(--paper); border:1px solid var(--hair); border-radius:12px; padding:22px; margin:18px 0;}
+  .flow h3{font-family:var(--mono); font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--steel); font-weight:600; margin-bottom:16px;}
+  .steps{display:flex; align-items:stretch; gap:0; flex-wrap:wrap;}
+  .step{flex:1 1 140px; background:#FFFFFE; border:1px solid var(--hair); border-radius:9px; padding:13px 14px; position:relative;}
+  .step .n{font-family:var(--mono); font-size:9.5px; font-weight:700; color:#fff; background:var(--ink); width:19px; height:19px; border-radius:5px; display:flex; align-items:center; justify-content:center; margin-bottom:8px;}
+  .step .t{font-weight:700; font-size:12.5px; margin-bottom:3px;}
+  .step .s{font-size:11.5px; color:var(--ink-soft); line-height:1.45;}
+  .arrow{align-self:center; color:var(--steel-soft); font-size:18px; padding:0 6px; flex:0 0 auto;}
+
+  /* table */
+  .tbl{background:var(--paper); border:1px solid var(--hair); border-radius:12px; overflow:hidden; margin:16px 0;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{font-family:var(--mono); font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--steel); font-weight:600; text-align:left; padding:10px 18px; background:#F7F5F1; border-bottom:1px solid var(--hair);}
+  tbody td{padding:11px 18px; border-bottom:1px solid var(--hair); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:nth-child(even){background:#FDFBF7;}
+  td.y{color:var(--green); font-weight:700;} td.n{color:var(--rust); font-weight:700;}
+
+  /* callouts */
+  .call{border-left:3px solid var(--blue); background:var(--blue-soft); padding:14px 18px; border-radius:0 8px 8px 0; margin:16px 0;}
+  .call.warn{border-left-color:var(--amber); background:var(--amber-soft);}
+  .call.good{border-left-color:var(--green); background:var(--green-soft);}
+  .call .label{display:block; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; margin-bottom:8px; color:var(--blue);}
+  .call.warn .label{color:var(--amber);} .call.good .label{color:var(--green);}
+  .call p:last-child{margin-bottom:0;}
+
+  /* checklist */
+  ul.clean{list-style:none; padding:0; margin:10px 0;}
+  ul.clean li{padding:8px 0 8px 28px; border-bottom:1px solid var(--hair); position:relative; font-size:13.5px;}
+  ul.clean li:last-child{border-bottom:none;}
+  ul.clean li::before{content:"✓"; position:absolute; left:2px; top:8px; color:var(--green); font-weight:800;}
+  ul.clean.todo li::before{content:"→"; color:var(--amber);}
+
+  .keynote{font-family:var(--mono); font-size:10.5px; color:var(--steel); margin-top:28px; line-height:1.7; letter-spacing:.02em; border-top:1px solid var(--hair); padding-top:18px;}
+
+  @media (max-width:820px){ .grid,.grid.two{grid-template-columns:1fr;} .arrow{display:none;} }
+  @media (max-width:560px){ .wrap{padding:24px 16px 48px;} h1{font-size:24px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="brand">
+    <div class="bars" aria-hidden="true"><span></span><span></span><span></span></div>
+    <b>MARKETPLACE</b> <i>· AI ASSISTANT PROJECT</i>
+  </div>
+  <h1>GHL AI Assistant — Build Plan &amp; Progress</h1>
+  <p class="lede">Giving the sales team a way to work across all three GoHighLevel sub-accounts
+  (BGD, Veritas, Omnia) in plain English — pull up contacts, check what's in a pipeline stage,
+  and update records — without clicking through the CRM, and without the cost of GHL's built-in Ask AI.</p>
+  <div class="meta">
+    <span class="kv"><b>Prepared for</b> Client review call</span>
+    <span class="kv"><b>Status</b> Foundation built · design locked</span>
+    <span class="kv"><b>Stack</b> Next.js / Node · Vercel</span>
+  </div>
+</header>
+
+<!-- ============ 1. TECH FOUNDATION ============ -->
+<h2><span class="num">01</span> The technical foundation</h2>
+<p class="section-lede">The application is built on a proven, production-grade stack — the same technology
+behind the ExportKit marketplace app — so it's fast, secure, and deploys automatically. Here's what
+has been set up and wired together.</p>
+
+<div class="grid">
+  <div class="card c-blue">
+    <div class="h">Frontend · Next.js</div>
+    <div class="d">A modern React (Next.js) application that embeds directly inside GoHighLevel as a menu page. Same framework used across our marketplace apps.</div>
+  </div>
+  <div class="card c-rust">
+    <div class="h">Backend · Node.js</div>
+    <div class="d">A Node.js service handles secure login verification and session management — the shared secret and account checks live here, never in the browser.</div>
+  </div>
+  <div class="card c-plum">
+    <div class="h">Database · Supabase</div>
+    <div class="d">A Supabase (Postgres) database with per-account isolation and access rules already in place, ready to store sessions and app data securely.</div>
+  </div>
+  <div class="card c-green">
+    <div class="h">Authentication</div>
+    <div class="d">Automatic, silent login inside GoHighLevel — the app identifies the exact sub-account and user, verifies them server-side, and issues a secure session.</div>
+  </div>
+  <div class="card c-blue">
+    <div class="h">Hosting · Vercel</div>
+    <div class="d">Deployed on Vercel with automatic builds on every code commit — no manual steps, and no vendor lock-in to a visual builder.</div>
+  </div>
+  <div class="card c-rust">
+    <div class="h">Per-account isolation</div>
+    <div class="d">One deployment per sub-account (BGD, Veritas, Omnia) — a request physically cannot reach the wrong account.</div>
+  </div>
+</div>
+
+<div class="flow">
+  <h3>How a request flows</h3>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div class="t">Sales team</div><div class="s">Asks in plain English inside ClickUp AI.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">2</div><div class="t">Our proxy</div><div class="s">Checks the action is allowed, strips branding, routes to the right account.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">3</div><div class="t">GoHighLevel</div><div class="s">Runs the approved action on that one sub-account only.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">4</div><div class="t">Answer back</div><div class="s">Result returned to the team — clean, no GHL branding.</div></div>
+  </div>
+</div>
+
+<!-- ============ 2. SECURITY ============ -->
+<h2><span class="num">02</span> Security model — two walls</h2>
+<p class="section-lede">GoHighLevel's new AI connection routes <em>everything</em> — including deletes and bulk
+messaging — through a single channel. So protection is enforced in two independent layers; if one
+had a flaw, the other still holds.</p>
+
+<div class="grid two">
+  <div class="card c-rust">
+    <div class="h">Outer wall · GoHighLevel</div>
+    <div class="d">The access token is granted only <strong>contacts + opportunities</strong> permissions. Nothing else is even reachable.</div>
+  </div>
+  <div class="card c-plum">
+    <div class="h">Inner wall · Our proxy</div>
+    <div class="d"><strong>Deny by default.</strong> Only an explicit approved list of actions passes — anything unrecognised, plus deletes and bulk SMS/email, is refused.</div>
+  </div>
+</div>
+
+<div class="call good">
+  <span class="label">Agreed scope</span>
+  <p>Contacts and opportunities — <strong>read and write</strong>. No deletes. No bulk SMS or email.
+  Enforced in the build, not just promised on paper. Final action list to be confirmed together before go-live.</p>
+</div>
+
+<!-- ============ 3. WHAT'S BUILT ============ -->
+<h2><span class="num">03</span> What's built so far <span class="pill done">Done</span></h2>
+<p class="section-lede">The hardest part of any embedded GHL app — logging in and knowing which sub-account
+you're in — is finished, tested, and building cleanly. This is the reusable foundation everything else sits on.</p>
+
+<ul class="clean">
+  <li><strong>Automatic sub-account login.</strong> When embedded in GoHighLevel, the app silently identifies the exact sub-account and user — no manual sign-in, no wrong-account risk.</li>
+  <li><strong>Secure session handling.</strong> Verified server-side against a shared secret; tokens auto-refresh and expire safely.</li>
+  <li><strong>Clean "Connected" screen.</strong> Confirms the live connection and shows the resolved account context — the base new features build on.</li>
+  <li><strong>Deployment-ready.</strong> Builds automatically on every code commit to Vercel — no manual steps, matching the same setup as the ExportKit marketplace app.</li>
+  <li><strong>Reusable starter.</strong> Stripped of the old analytics; documented so the next phase moves faster.</li>
+</ul>
+
+<div class="flow">
+  <h3>Login handshake (built &amp; working)</h3>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div class="t">Embed opens</div><div class="s">App loads inside the GHL menu as a page.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">2</div><div class="t">Ask GHL</div><div class="s">Securely requests who's logged in &amp; which account.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">3</div><div class="t">Verify</div><div class="s">Backend confirms identity, issues a session.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">4</div><div class="t">Ready</div><div class="s">Authenticated, account-aware, ready for features.</div></div>
+  </div>
+</div>
+
+<!-- ============ 4. LIVE VS HISTORY ============ -->
+<h2><span class="num">04</span> What the AI can answer — and what needs Phase 2</h2>
+<p class="section-lede">The live CRM connection is excellent for the "right now" questions. Historical trends are a
+separate data problem — which is exactly what the pipeline tracking tool (PipelinePulse) already handles.</p>
+
+<div class="tbl">
+  <table>
+    <thead><tr><th>Question type</th><th>Example</th><th>Covered by</th></tr></thead>
+    <tbody>
+      <tr><td>Current state</td><td>"Show contacts tagged hot lead" · "What's in Proposal Sent?" · "Mark this deal Won"</td><td class="y">Live connection — Phase 1</td></tr>
+      <tr><td>History &amp; trends</td><td>"How long do deals sit in each stage?" · "Conversion this quarter vs last?"</td><td class="n">PipelinePulse — Phase 2</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="call">
+  <span class="label">Why the split</span>
+  <p>GoHighLevel's connection only knows the <em>current</em> state of a record — it doesn't store how
+  things changed over time. That history is precisely what PipelinePulse was built to capture, so it comes in as an additive second phase.</p>
+</div>
+
+<!-- ============ 5. KEY FINDINGS ============ -->
+<h2><span class="num">05</span> Key technical findings</h2>
+<p class="section-lede">From going through GoHighLevel's AI documentation in detail before building — the groundwork that de-risks the rest.</p>
+<div class="grid two">
+  <div class="card c-green"><div class="h">✓ Creating deals is possible</div><div class="d">The current connection supports creating new opportunities — no workaround needed. (Confirming with client whether the team needs this.)</div></div>
+  <div class="card c-rust"><div class="h">! Deletes must be blocked by us</div><div class="d">The connection <em>does</em> expose deletes — so "no deletes" is enforced in our layer, not free from GHL.</div></div>
+  <div class="card c-plum"><div class="h">✓ No extra GHL cost</div><div class="d">The connection is free with the client's existing plan.</div></div>
+</div>
+
+<!-- ============ 6. NEXT STEPS ============ -->
+<h2><span class="num">06</span> Next steps <span class="pill next">Action</span></h2>
+<ul class="clean todo">
+  <li><strong>Build the UI from the design &amp; user-journey specs</strong> — once we receive the specs, we build directly from them onto this foundation. Full control over the code and how it behaves.</li>
+  <li><strong>Confirm: create new deals in scope?</strong> — decides the final approved-action list.</li>
+  <li><strong>Lock the exact action allowlist together</strong>, then build the three isolated sub-account proxies.</li>
+</ul>
+
+<div class="keynote">
+  FOUNDATION COMPLETE · SECURITY DESIGN LOCKED · AWAITING SCOPE CONFIRMATION<br>
+  Next.js / Node · deploys on commit to Vercel · three isolated sub-account proxies · deny-by-default action control
+</div>
+
+</div>
+</body>
+</html>

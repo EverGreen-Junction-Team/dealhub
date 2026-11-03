@@ -1,0 +1,33 @@
+{
+  "name": "which_sources_fail_at_which_stage",
+  "description": "Lead sources and how far their deals got before dying — split into those that never passed qualification, those that died before a quote, those lost at quote, and those lost at negotiation. Covers two views of 'source': what the SYSTEM recorded (which enquiry field was filled — website form, webchat, enquiries@ inbox, created by hand) and what a REP recorded in the lead source field. Use for 'which sources fail', 'where do leads from each source drop out', 'which lead source is worst', 'do website leads convert better than phone', 'which sources waste our time'. CRITICAL: a deal appears once in EACH split, so never add deals across both — report one split at a time and say which one you are reporting. When the two disagree for a source, that disagreement is worth mentioning: a deal the system logged as created by hand but a rep labelled Google Search was probably a phone call from an ad.",
+  "viewName": "vw_source_failure_stage",
+  "params": [
+    {
+      "name": "split",
+      "column": "split",
+      "type": "text",
+      "op": "contains",
+      "description": "Which view of source to report: 'system' for what the CRM recorded, 'rep' for what a rep entered. Almost always worth setting — the two are not comparable."
+    },
+    {
+      "name": "source",
+      "column": "source",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one source by name, e.g. 'webchat' or 'google'."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only sources with at least this many deals. Use to ignore one-off sources that cannot support a percentage."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

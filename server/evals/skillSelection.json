@@ -1,0 +1,137 @@
+{
+  "_comment": "Which SKILL a question should reach for. One case per line: the question a rep would type, and the tool we expect the model to call first. `alsoOk` lists tools that are defensible rather than wrong — a near-miss that still answers the question is not a failure, and marking it one would train us to write worse descriptions. `avoid` is the opposite: a tool that would answer plausibly and wrongly, which is the failure worth catching.",
+  "cases": [
+    {
+      "id": "forecast-month",
+      "q": "How much revenue will we close in October 2026?",
+      "expect": "skill_forecast_by_month",
+      "avoid": ["skill_forecast_growth", "skill_won_value_by_month"],
+      "why": "A future period. won_value_by_month is HISTORY — answering with it would report what was won, not what is expected."
+    },
+    {
+      "id": "forecast-open-value",
+      "q": "What is the total value of our open deals right now?",
+      "expect": "skill_forecast_summary",
+      "alsoOk": ["skill_forecast_breakdown"]
+    },
+    {
+      "id": "forecast-growth",
+      "q": "Is our forecast growing month on month?",
+      "expect": "skill_forecast_growth",
+      "avoid": ["skill_forecast_by_month"],
+      "why": "forecast_by_month has the months but no change columns — the model would have to subtract across rows, which is where it makes arithmetic errors."
+    },
+    {
+      "id": "forecast-by-rep",
+      "q": "Break the forecast down by rep — who has the most pipeline?",
+      "expect": "skill_forecast_breakdown"
+    },
+    {
+      "id": "forecast-by-status",
+      "q": "How many opportunities are open versus won versus lost?",
+      "expect": "skill_forecast_breakdown",
+      "alsoOk": ["skill_forecast_summary"]
+    },
+    {
+      "id": "forecast-deals-in-month",
+      "q": "Which deals make up the October forecast?",
+      "expect": "skill_forecast_deals",
+      "avoid": ["skill_forecast_by_month"],
+      "why": "They asked WHICH deals, not how much — a total answers a different question."
+    },
+    {
+      "id": "forecast-biggest",
+      "q": "What are the biggest deals in our pipeline?",
+      "expect": "skill_forecast_deals",
+      "alsoOk": ["search_deals"]
+    },
+    {
+      "id": "forecast-readiness",
+      "q": "Why can't we trust the forecast?",
+      "expect": "skill_forecast_readiness"
+    },
+    {
+      "id": "forecast-no-close-date",
+      "q": "How many open deals have no expected close date?",
+      "expect": "skill_forecast_readiness",
+      "alsoOk": ["skill_forecast_summary", "skill_forecast_deals"]
+    },
+    {
+      "id": "forecast-at-risk",
+      "q": "Which deals keep slipping?",
+      "expect": "skill_forecast_at_risk",
+      "avoid": ["skill_deals_gone_stagnant"],
+      "why": "Stagnant is 'nobody has spoken to it'. Slipping is 'the close date keeps moving'. A deal can be either without the other."
+    },
+    {
+      "id": "forecast-at-risk-value",
+      "q": "How much value is at risk from slipping deals?",
+      "expect": "skill_forecast_at_risk_summary",
+      "alsoOk": ["skill_forecast_at_risk"]
+    },
+    {
+      "id": "won-history",
+      "q": "How much did we win last month?",
+      "expect": "skill_won_value_by_month",
+      "avoid": ["skill_forecast_by_month"],
+      "why": "The mirror of forecast-month: this is history, and answering with the forecast view would report expectation as fact."
+    },
+    {
+      "id": "enquiry-volume",
+      "q": "Are enquiries up or down this year?",
+      "expect": "skill_enquiries_by_month"
+    },
+    {
+      "id": "stage-dropoff",
+      "q": "Which stage do we lose the most deals at?",
+      "expect": "skill_exact_pipeline_stage_where_customers_drop_off",
+      "alsoOk": ["skill_which_sources_fail_at_which_stage", "skill_stage_deals_sit_in_longest_before_lost"]
+    },
+    {
+      "id": "rep-performance",
+      "q": "Which rep closes best once a quote is out?",
+      "expect": "skill_rep_stage_conversion"
+    },
+    {
+      "id": "response-time",
+      "q": "Who is slowest to reply to customers?",
+      "expect": "skill_response_time_by_rep"
+    },
+    {
+      "id": "no-task",
+      "q": "Which open deals have nothing booked on them?",
+      "expect": "skill_open_deals_no_task_list",
+      "alsoOk": ["skill_open_deals_no_task_by_stage"]
+    },
+    {
+      "id": "lost-reasons",
+      "q": "Why are we losing deals?",
+      "expect": "skill_close_reason_list",
+      "alsoOk": ["skill_close_reason_fill_rate", "skill_exact_pipeline_stage_where_customers_drop_off"]
+    },
+    {
+      "id": "source-value",
+      "q": "Which lead source brings in the most revenue?",
+      "expect": "skill_closed_won_value_by_lead_source"
+    },
+    {
+      "id": "area",
+      "q": "Which postcode areas do we win most in?",
+      "expect": "skill_conversion_by_area"
+    },
+    {
+      "id": "trend-hygiene",
+      "q": "Has our no-task rate improved since last month?",
+      "expect": "skill_pipeline_trend",
+      "avoid": ["skill_open_deals_no_task_by_stage"],
+      "why": "The no-task view is a snapshot of TODAY. Only pipeline_trend has history, so answering from the snapshot would present one day as a trend."
+    },
+    {
+      "id": "single-deal",
+      "q": "Tell me about the Riverside Barn deal",
+      "expect": "search_deals",
+      "avoid": ["skill_forecast_deals"],
+      "why": "A named deal is a lookup, not an analytics question. A skill would return a filtered list and miss the messages and history."
+    }
+  ]
+}

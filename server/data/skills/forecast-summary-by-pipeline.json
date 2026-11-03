@@ -1,0 +1,22 @@
+{
+  "name": "forecast_summary_by_pipeline",
+  "description": "The forecast headline figures for ONE pipeline, or compared across pipelines: max potential revenue, expected (weighted) revenue, won revenue, open count, and the coverage figures that say how much of that pipeline the numbers describe. Use whenever a question names a pipeline — 'what's expected revenue for the Paul Tween pipeline', 'which pipeline has the most expected revenue', 'compare pipelines', 'how is the Marketing pipeline doing'. Use forecast_summary instead when no pipeline is named: that one is the account-wide total, and quoting a single pipeline's figure as the account's is the specific mistake this skill exists to prevent. The pipelines sum to the account total, so if they do not, a deal is sitting in '(no pipeline)' — which is a real row here, not an omission. READ pct_with_close_date BEFORE quoting expected_revenue: a pipeline where few open deals carry a close date produces an expected figure drawn from a fraction of it, and per-pipeline that is usually worse than the account average, not better. value_without_probability is open money contributing exactly £0 to expected_revenue because no probability is set on the deal or its stage — a setup gap, not a forecast of zero.",
+  "viewName": "vw_forecast_summary_by_pipeline",
+  "params": [
+    { "name": "pipeline", "column": "pipeline_name", "type": "text", "op": "contains",
+      "description": "Only pipelines whose name contains this text, e.g. 'Paul Tween', 'Marketing'. Leave out to compare every pipeline." },
+    { "name": "min_expected", "column": "expected_revenue", "type": "number", "op": "gte",
+      "description": "Only pipelines with at least this much expected revenue." },
+    { "name": "min_open_deals", "column": "open_opportunities", "type": "int", "op": "gte",
+      "description": "Only pipelines with at least this many open deals. Use to drop empty or near-empty pipelines from a comparison." },
+    { "name": "max_pct_with_close_date", "column": "pct_with_close_date", "type": "number", "op": "lte",
+      "description": "Only pipelines where at most this percentage of open deals carry a close date. Use to find which pipeline is dragging the forecast's coverage down." },
+    { "name": "min_value_without_probability", "column": "value_without_probability", "type": "number", "op": "gte",
+      "description": "Only pipelines carrying at least this much open value with no probability set anywhere." }
+  ],
+  "columns": [],
+  "orderBy": "expected_revenue DESC NULLS LAST",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

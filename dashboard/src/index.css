@@ -1,0 +1,69 @@
+/* Deal Hub tokens are scoped under [data-dealhub] so they don't leak
+   into the existing Ant Design dashboard chrome. Must come BEFORE @tailwind
+   because CSS @import has to precede other statements. */
+@import './styles/dealhub-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+/* The page body is the scroll container, which is what the sticky nav in
+   DealHubShell binds to. Deliberately NOT `overflow: auto` on #root — that
+   would make #root the scroller and stick the header to the top of that box
+   instead of the viewport, so it would scroll away inside the iframe. */
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #1f2328;
+  /* Subtle top-light gradient gives the page depth without distracting. */
+  background:
+    radial-gradient(1200px 420px at 50% -160px, #e9f0ff 0%, rgba(233,240,255,0) 70%),
+    #f5f7fb;
+  background-attachment: fixed;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #eef1f5; }
+::-webkit-scrollbar-thumb { background: #8a94a3; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #5b6472; }
+
+/* The PAGE scrollbar, wider and always shown. It is how a rep moves around a
+   long deal inside GHL's iframe, so it has to be easy to see and grab.
+   The thumb is the app's teal (--accent-teal, 4.6:1 on the track) rather
+   than a grey: a grey thumb on a grey track read as part of the page edge
+   and a client asked whether the bar existed at all. Inner scrollers
+   (dropdowns, modals, the timeline box) keep the slimmer bar above. */
+html { overflow-y: scroll; scrollbar-color: #0f7f8b #e6ebf0; scrollbar-width: auto; }
+html::-webkit-scrollbar { width: 14px; }
+html::-webkit-scrollbar-track { background: #e6ebf0; border-left: 1px solid #d5dce4; }
+html::-webkit-scrollbar-thumb {
+  background: #0f7f8b; border-radius: 8px;
+  border: 3px solid #e6ebf0; min-height: 48px;
+}
+html::-webkit-scrollbar-thumb:hover { background: #0b6671; }
+
+/* Recharts tooltip polish */
+.recharts-default-tooltip {
+  border-radius: 8px !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+}
+
+/* In the Expand modal, make the chart fill the tall body regardless of the
+   ResponsiveContainer's own height prop (and any wrapping flex div the view
+   uses, e.g. the donut + summary layout). */
+.chart-expanded,
+.chart-expanded > div {
+  height: 100% !important;
+}
+.chart-expanded .recharts-responsive-container {
+  height: 100% !important;
+  min-height: 100% !important;
+}

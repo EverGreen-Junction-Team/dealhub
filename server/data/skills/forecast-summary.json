@@ -1,0 +1,13 @@
+{
+  "name": "forecast_summary",
+  "description": "The forecast headline for the whole sub-account: max potential revenue, expected (probability-weighted) revenue, revenue already won, open deal count, and how much of the pipeline those figures actually describe. Use for 'what's our forecast', 'how much are we expecting to close', 'total value of open deals', 'how much is in the pipeline right now', 'what is our open pipeline worth', 'what's in the pipeline', 'what's our expected revenue this period', 'how is the forecast looking'. For a straight total of open deal value this is the skill — open_value is that figure, account-wide. Use forecast_breakdown instead only when the question asks for it split by stage, rep or pipeline. TWO CAVEATS MUST BE STATED EVERY TIME. First, pct_with_close_date: only deals with an expected close date appear in any period forecast, and that runs well under half here — so say what share the forecast can see before quoting any period figure. Second, pct_without_probability: a deal with no probability on either itself or its stage contributes NOTHING to expected revenue, so a low expected figure can mean unset probabilities rather than a weak pipeline — value_without_probability is the money hidden that way. max_potential_revenue deliberately includes won deals as well as open ones; quote open_value when the question is about live pipeline, or the two get conflated. Run forecast_readiness alongside this whenever the coverage figures look poor — it says exactly what to fix. IF THE QUESTION NAMES A PIPELINE, use forecast_summary_by_pipeline instead — this view is the account-wide total across every pipeline, and quoting it as one pipeline's figure overstates that pipeline by however many others exist.",
+  "viewName": "vw_forecast_summary",
+  "params": [],
+  "columns": [],
+  "orderBy": "open_opportunities DESC",
+  "rowLimit": 10,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

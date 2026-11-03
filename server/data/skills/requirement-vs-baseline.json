@@ -1,0 +1,22 @@
+{
+  "name": "requirement_vs_baseline",
+  "description": "Requirement themes with their lost rate set against the sub-account's OWN baseline lost rate, plus whether the deal moved stage after a rep replied. Use for 'what is actually blocking deals', 'which customer asks are roadblocks', 'what do customers ask for right before they go quiet'. THE TEST THIS VIEW EXISTS FOR: a theme is only a roadblock where its lost_rate_pct is ABOVE baseline_lost_rate_pct AND deals did not move after it was raised. Frequency alone proves nothing — the most-mentioned theme is usually just the most common thing customers say. Both numbers are on every row so the comparison needs no second query; state both when calling something a blocker. A theme below baseline is evidence AGAINST it being a problem, and worth saying so when someone assumes otherwise. moved_stage_after and no_move_after come from replies linked to that specific requirement; where both are 0 no rep reply was linked and the movement test cannot be applied — say that rather than reading 0 as 'never moved'. stage_at_time is the stage the deal was at when the customer said it, so the same theme appears on several rows, one per stage.",
+  "viewName": "vw_requirement_vs_baseline",
+  "params": [
+    { "name": "requirement", "column": "requirement_theme", "type": "text", "op": "contains",
+      "description": "Only requirement themes matching this text." },
+    { "name": "stage", "column": "stage_at_time", "type": "text", "op": "contains",
+      "description": "Only things said while the deal was at this stage." },
+    { "name": "min_asked", "column": "times_asked", "type": "int", "op": "gte",
+      "description": "Only themes asked on at least this many deals. A lost rate over 2 or 3 deals is noise." },
+    { "name": "min_lost_rate", "column": "lost_rate_pct", "type": "number", "op": "gte",
+      "description": "Only themes whose lost rate is at least this percentage. Compare against baseline_lost_rate_pct on the same row, never against a number from elsewhere." },
+    { "name": "min_no_move", "column": "no_move_after", "type": "int", "op": "gte",
+      "description": "Only themes where at least this many replies were followed by no stage movement." }
+  ],
+  "columns": [],
+  "orderBy": "lost_rate_pct DESC NULLS LAST",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

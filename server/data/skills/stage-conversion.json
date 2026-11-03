@@ -1,0 +1,33 @@
+{
+  "name": "conversion_rate_between_stages",
+  "description": "The funnel: how many deals reached each pipeline stage, how many carried on to the next, how many were eventually won from there, and how many died at that stage. Use for 'what is our conversion rate between stages', 'where does the funnel leak', 'what percentage get from quote to negotiation', 'how many deals make it past qualification', 'what are our stage to stage conversion rates'. Stage order comes from the pipeline itself, so it matches the board. An account running more than one pipeline gets one funnel per pipeline — report them separately, never averaged.",
+  "viewName": "vw_stage_conversion",
+  "params": [
+    {
+      "name": "pipeline",
+      "column": "pipeline",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one pipeline by name. Worth using when the account runs more than one."
+    },
+    {
+      "name": "stage",
+      "column": "stage",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name, e.g. 'quote'."
+    },
+    {
+      "name": "min_reached",
+      "column": "reached",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages at least this many deals reached. Use to ignore stages with too few deals to read a percentage from."
+    }
+  ],
+  "columns": [],
+  "orderBy": "stage_position",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

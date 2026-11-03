@@ -1,0 +1,16 @@
+{
+  "name": "stated_budget_coverage",
+  "description": "How many deals have a customer-stated budget at all, and the median stated budget against the median quoted value. Call this BEFORE stated_budget_vs_quote and before answering any question about price gaps or customer budgets — it is the denominator that says whether the detail is worth reading. price_limit_mentions counts deals where the customer raised a price limit; with_stated_amount counts the subset where an actual figure was captured, which is much smaller. If with_stated_amount is in single digits, say so plainly and report individual deals rather than any median — the median_stated_budget column exists so the number is visible, not so it can be quoted as representative. Comparing median_stated_budget against median_quoted_value is only meaningful when with_stated_amount is large enough to carry it, and on current data it is not.",
+  "viewName": "vw_stated_budget_coverage",
+  "params": [
+    { "name": "min_mentions", "column": "price_limit_mentions", "type": "int", "op": "gte",
+      "description": "Only accounts with at least this many price-limit mentions." },
+    { "name": "min_with_amount", "column": "with_stated_amount", "type": "int", "op": "gte",
+      "description": "Only accounts where at least this many deals captured an actual figure." }
+  ],
+  "columns": [],
+  "orderBy": "price_limit_mentions DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

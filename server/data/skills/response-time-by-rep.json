@@ -1,0 +1,33 @@
+{
+  "name": "response_time_by_rep",
+  "description": "How long each rep takes to answer a customer message — the typical time, the worst tenth, the share answered within an hour and within a day, and how many took over three days. Counts every customer message, not just the first on a contact. Use for 'how fast does each rep reply', 'who is slowest to respond', 'what is our team response time', 'is anyone leaving customers waiting', 'response time by person'. Only named people count — automated sends are excluded. Compare reps rather than quoting one figure alone, and note when a rep has few replies: a median from five messages is not a performance measure. A rep whose median is fast but whose p90 is days has most messages in hand and some forgotten, which is a different problem from being uniformly slow.",
+  "viewName": "vw_response_time_by_rep",
+  "params": [
+    {
+      "name": "rep",
+      "column": "rep",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep by name."
+    },
+    {
+      "name": "min_replies",
+      "column": "replies",
+      "type": "int",
+      "op": "gte",
+      "description": "Only reps with at least this many replies. Use to drop accounts with too few messages to judge."
+    },
+    {
+      "name": "slower_than_hours",
+      "column": "median_hours",
+      "type": "number",
+      "op": "gte",
+      "description": "Only reps whose typical reply took at least this many hours. Use for 'who is taking over a day to answer'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "replies DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

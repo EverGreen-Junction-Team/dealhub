@@ -1,0 +1,40 @@
+{
+  "name": "rep_stage_conversion",
+  "description": "Per-rep conversion across the pipeline: how many deals each holds, the won/lost/abandoned/open split, how many ever reached Quote Sent and Negotiation, win rate overall and among quoted deals, and average and total won value. Use for 'who is good at closing', 'conversion rate per rep', 'where does each rep lose deals', 'is this rep losing deals early or late', 'rep performance', 'who needs coaching on what'. Read pct_reach_quote against won_per_closed_quoted_pct — they are different skills and one win rate hides which is weak: high reach with low closing means deals are built and then lost; low reach with high closing means too few deals get far enough to quote. ALWAYS state the assignment caveat when ranking people: deals are not handed out at random, so a rep given larger or harder deals shows a worse closing rate and a higher average won value without being better or worse at selling — nothing in this data records why a deal went to whom. Say the deal count next to any percentage; a rate from a handful of deals is noise, and min_deals exists to set that floor deliberately. Rows are per GHL user account, not per person — someone holding several accounts appears several times and must not be described as several people. Skip rows where is_shared_account is true when ranking individuals (shared inboxes and unassigned deals), and note is_inactive_user rather than presenting a departed rep as current.",
+  "viewName": "vw_rep_stage_conversion",
+  "params": [
+    {
+      "name": "rep",
+      "column": "rep_account",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep account by name."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only accounts with at least this many deals. Use to drop accounts too small for a percentage to mean anything — five is a reasonable floor."
+    },
+    {
+      "name": "reach_quote_below_pct",
+      "column": "pct_reach_quote",
+      "type": "number",
+      "op": "lte",
+      "description": "Only accounts whose deals reach a quote at or below this rate. Use for 'whose deals die before a quote'."
+    },
+    {
+      "name": "closing_below_pct",
+      "column": "won_per_closed_quoted_pct",
+      "type": "number",
+      "op": "lte",
+      "description": "Only accounts winning at or below this rate once quoted. Use for 'who struggles to close'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

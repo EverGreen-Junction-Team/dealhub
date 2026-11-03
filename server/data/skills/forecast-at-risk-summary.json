@@ -1,0 +1,26 @@
+{
+  "name": "forecast_at_risk_summary",
+  "description": "How much is slipping, grouped into high, medium and low risk: deal counts, total value at risk, weighted value at risk, and the average and worst slip in each band. Use for 'how much is at risk', 'is our forecast slipping', 'how bad is the slippage', 'summary of at-risk deals'. Lead with value_at_risk rather than the deal count — twelve deals worth 400k slipping matters more than forty worth 9k, and the count alone inverts that. expected_at_risk is the probability-weighted figure, which is the more realistic exposure. For the individual deals behind these numbers use forecast_at_risk. Same limit applies: this counts only close-date changes that were recorded, so slippage predating change tracking is invisible.",
+  "viewName": "vw_forecast_slippage_summary",
+  "params": [
+    {
+      "name": "risk",
+      "column": "risk",
+      "type": "text",
+      "op": "eq",
+      "description": "Narrow to one band: high, medium or low."
+    },
+    {
+      "name": "min_value_at_risk",
+      "column": "value_at_risk",
+      "type": "number",
+      "op": "gte",
+      "description": "Only bands with at least this much value slipping."
+    }
+  ],
+  "columns": [],
+  "orderBy": "value_at_risk DESC",
+  "rowLimit": 10,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

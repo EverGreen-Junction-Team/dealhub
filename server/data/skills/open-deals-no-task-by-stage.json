@@ -1,0 +1,40 @@
+{
+  "name": "open_deals_no_task_by_stage",
+  "description": "Open deals with no next action booked, grouped by the stage they sit in, with the value at stake. Use for 'where do deals go quiet', 'which stage has deals with nothing booked', 'how much value has nobody scheduled', 'are we forgetting deals at a particular step'. Two counts, and choosing the right one matters: no_open_task_anywhere is the genuine chase list — nothing booked on the deal OR the customer — while plain no_open_task includes deals where the rep booked a call against the customer instead of the deal. Those are counted separately as task_on_contact_only and are a linkage problem, not neglect; never present them as forgotten deals or someone gets sent chasing work that is already scheduled. Lead with value_no_task_anywhere when the question is what to act on — it is money sitting still with nobody due to touch it. open_task_no_due_date counts deals whose task has no due date: never overdue by any test, and never will be, which is its own kind of unscheduled. Say the open-deal count next to any percentage; min_deals exists to set that floor deliberately, and a small stage where every deal is unbooked is a finding rather than noise. For the deals themselves rather than the counts, use open_deals_no_task_list. For the same fact broken down by rep instead of stage, use rep_process_discipline.",
+  "viewName": "vw_open_deals_no_task_by_stage",
+  "params": [
+    {
+      "name": "stage",
+      "column": "stage",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name."
+    },
+    {
+      "name": "min_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages with at least this many open deals."
+    },
+    {
+      "name": "min_value_at_risk",
+      "column": "value_no_task_anywhere",
+      "type": "number",
+      "op": "gte",
+      "description": "Only stages with at least this much value having nothing booked anywhere. Use for 'where is the real money sitting unattended'."
+    },
+    {
+      "name": "unbooked_above_pct",
+      "column": "pct_no_open_task",
+      "type": "number",
+      "op": "gte",
+      "description": "Only stages where at or above this share of deals have nothing booked. Use for 'which stages are worst'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "open_deals DESC",
+  "rowLimit": 40,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

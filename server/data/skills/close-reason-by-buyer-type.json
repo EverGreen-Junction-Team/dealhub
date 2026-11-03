@@ -1,0 +1,18 @@
+{
+  "name": "close_reason_by_buyer_type",
+  "description": "How many closed deals of each buyer type have a written close reason at all — coverage, not content. Use for 'do we know why we lose architects', 'which buyer types are we recording reasons for', 'how complete are our close reasons'. This view deliberately does NOT theme the reason text. Read close_reason_list for what the reasons say; this one answers whether there is enough written down for that to mean anything. Quote pct_lost_reason_written alongside any claim drawn from reason text for that buyer type — a theme built from reasons on a third of losses describes that third. buyer_type is the deal's PRIMARY type: a deal tagged Contractor and Architect is counted once, under Contractor, so these are not complete per-type totals. 'unknown' means no buyer type was ticked.",
+  "viewName": "vw_close_reason_by_buyer_type",
+  "params": [
+    { "name": "buyer_type", "column": "buyer_type", "type": "text", "op": "eq",
+      "description": "The deal's primary buyer type, lowercase, or 'unknown'." },
+    { "name": "min_closed", "column": "closed", "type": "int", "op": "gte",
+      "description": "Only buyer types with at least this many closed deals." },
+    { "name": "max_pct_written", "column": "pct_lost_reason_written", "type": "number", "op": "lte",
+      "description": "Only buyer types where at most this percentage of losses have a written reason. Use to find where recording is weakest." }
+  ],
+  "columns": [],
+  "orderBy": "closed DESC",
+  "rowLimit": 100,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

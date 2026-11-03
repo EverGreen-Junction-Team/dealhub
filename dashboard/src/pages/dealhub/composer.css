@@ -1,0 +1,235 @@
+/* Timeline composer (MessageComposer.jsx) — GHL's Conversations composer,
+ * docked under the Deal Hub timeline.
+ *
+ * Its own file, imported by the component, so none of the shared Deal Hub
+ * rules change. Collapsed it is one line; expanded it is a bordered card whose
+ * border turns sky while focused, with a gold wash in Internal Comment mode. */
+
+[data-dealhub] .pp-composer {
+  position: relative;
+  margin: 10px 16px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-family: var(--font-sans);
+}
+[data-dealhub] .pp-composer:focus-within { border-color: var(--accent-sky-text); }
+[data-dealhub] .pp-composer-comment { background: var(--tint-gold); border-color: var(--accent-gold-text); }
+[data-dealhub] .pp-composer-comment:focus-within { border-color: var(--accent-gold-text); }
+
+[data-dealhub] .pp-composer-collapsed {
+  display: flex; align-items: center;
+  height: 44px; padding: 0 6px 0 0;
+}
+[data-dealhub] .pp-composer-chan {
+  display: inline-flex; align-items: center; gap: 2px;
+  height: 100%; padding: 0 10px;
+  border: none; border-right: 1px solid var(--border-default);
+  background: transparent; color: var(--accent-sky-text); cursor: pointer;
+}
+[data-dealhub] .pp-composer-chan .ms { font-size: 19px; }
+[data-dealhub] .pp-composer .pp-composer-caret { font-size: 16px; color: var(--text-faint); }
+[data-dealhub] .pp-composer-placeholder {
+  flex: 1; height: 100%; padding: 0 12px; text-align: left;
+  border: none; background: transparent; cursor: text;
+  font-family: inherit; font-size: var(--text-md); color: var(--text-faint);
+}
+[data-dealhub] .pp-composer-send {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; min-width: 40px; padding: 0 12px;
+  border: none; border-radius: var(--radius-md);
+  background: var(--green-500); color: #fff; cursor: pointer;
+}
+[data-dealhub] .pp-composer-send .ms { font-size: 18px; }
+[data-dealhub] .pp-composer-send:disabled { opacity: 0.45; cursor: not-allowed; }
+[data-dealhub] .pp-composer-sending { font-weight: 700; letter-spacing: 1px; }
+[data-dealhub] .pp-composer-sent {
+  position: absolute; right: 64px; top: 50%; transform: translateY(-50%);
+  font-size: var(--text-sm); color: var(--accent-pine-text); pointer-events: none;
+}
+
+[data-dealhub] .pp-composer-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-default);
+}
+[data-dealhub] .pp-composer-tab {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 9px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer;
+  font-family: inherit; font-size: var(--text-sm); font-weight: 500; color: var(--text-muted);
+}
+[data-dealhub] .pp-composer-tab .ms { font-size: 16px; }
+[data-dealhub] .pp-composer-tab-on {
+  border-color: var(--border-default); background: var(--surface-card);
+  color: var(--accent-sky-text); font-weight: 600;
+}
+[data-dealhub] .pp-composer-comment .pp-composer-tab-on { color: var(--accent-gold-text); }
+[data-dealhub] .pp-composer-divider { width: 1px; height: 18px; background: var(--border-default); }
+[data-dealhub] .pp-composer-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0;
+  border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+}
+[data-dealhub] .pp-composer-icon .ms { font-size: 17px; }
+[data-dealhub] .pp-composer-icon:hover:not(:disabled) { background: var(--surface-hover); }
+
+[data-dealhub] .pp-composer-fields { border-bottom: 1px solid var(--border-default); }
+[data-dealhub] .pp-composer-row {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 36px; padding: 4px 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+[data-dealhub] .pp-composer-row:last-child { border-bottom: none; }
+[data-dealhub] .pp-composer-k {
+  flex: none; min-width: 44px;
+  font-size: var(--text-sm); color: var(--text-muted);
+}
+[data-dealhub] .pp-composer-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  max-width: 100%; height: 26px; padding: 0 8px 0 4px;
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  background: var(--surface-card); cursor: pointer;
+  font-family: inherit; font-size: var(--text-sm); color: var(--text-body);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+[data-dealhub] .pp-composer-chip:disabled { cursor: default; color: var(--text-body); }
+[data-dealhub] .pp-composer-avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--tint-gold); color: var(--accent-gold-text);
+  font-size: 9px; font-weight: 700;
+}
+[data-dealhub] .pp-composer-link {
+  border: none; background: transparent; cursor: pointer; padding: 0 4px;
+  font-family: inherit; font-size: var(--text-sm); color: var(--text-muted);
+}
+[data-dealhub] .pp-composer-link:hover { color: var(--accent-sky-text); }
+[data-dealhub] .pp-composer-input {
+  flex: 1; min-width: 0; height: 28px;
+  border: none; outline: none; background: transparent;
+  font-family: inherit; font-size: var(--text-md); color: var(--text-body);
+}
+[data-dealhub] .pp-composer-reply {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 6px 12px;
+  font-size: var(--text-sm); color: var(--text-muted);
+  background: var(--gray-25);
+}
+[data-dealhub] .pp-composer-reply .ms { font-size: 15px; color: var(--accent-sky-text); }
+
+[data-dealhub] .pp-composer-menuwrap { position: relative; display: inline-flex; min-width: 0; }
+/* Opens UPWARD from the header — the composer sits at the foot of the
+ * timeline, so a downward menu would run under the next panel. The address
+ * rows open downward, into the body below them. */
+[data-dealhub] .pp-composer-menu {
+  position: absolute; z-index: 45; top: calc(100% + 4px); left: 0;
+  min-width: 220px; max-height: 300px; overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  background: var(--surface-raised); box-shadow: var(--shadow-overlay);
+}
+[data-dealhub] .pp-composer-head .pp-composer-menu { top: auto; bottom: calc(100% + 4px); }
+[data-dealhub] .pp-composer-menuitem {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 8px 10px;
+  border: none; border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer; text-align: left;
+  font-family: inherit; font-size: var(--text-md); color: var(--text-body);
+}
+[data-dealhub] .pp-composer-menuitem:hover { background: var(--surface-hover); }
+[data-dealhub] .pp-composer-menuitem > .ms { font-size: 18px; color: var(--accent-sky-text); }
+[data-dealhub] .pp-composer-menulabel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+[data-dealhub] .pp-composer-sub { font-size: var(--text-sm); color: var(--text-faint); }
+[data-dealhub] .pp-composer-menuitem > .pp-composer-check { font-size: 17px; color: var(--accent-sky-text); }
+
+/* The note editor, borderless inside the composer card with its toolbar at
+ * the foot — GHL's layout. Scoped to the composer, so every other editor in
+ * the app is untouched. */
+[data-dealhub] .pp-composer-body .pp-editor {
+  display: flex; flex-direction: column-reverse;
+  border: none !important; border-radius: 0 !important; background: transparent !important;
+  /* The card's own border is the focus signal here — a second ring inside it
+     read as a field within a field. */
+  box-shadow: none !important;
+}
+/* The toolbar is the composer's LAST row on an email (column-reverse puts it
+ * under the text). Its own white background and bottom border painted square
+ * corners over the card's rounded ones and doubled its bottom edge — so here
+ * it is see-through, with the rule on top, dividing it from the text. */
+[data-dealhub] .pp-composer-body .pp-toolbar {
+  background: transparent;
+  border-bottom: none;
+  border-top: 1px solid var(--border-default);
+}
+[data-dealhub] .pp-composer-textarea {
+  display: block; width: 100%;
+  padding: 10px 12px;
+  border: none; outline: none; resize: vertical; background: transparent;
+  font-family: inherit; font-size: var(--text-md); line-height: 1.5; color: var(--text-body);
+}
+[data-dealhub] .pp-composer-large .pp-composer-textarea { min-height: 260px; }
+[data-dealhub] .pp-composer-foot {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border-default);
+}
+[data-dealhub] .pp-composer-status {
+  flex: 1; min-width: 0;
+  font-size: var(--text-sm); color: var(--text-muted);
+}
+[data-dealhub] .pp-composer-status-err { color: var(--status-stuck); }
+
+/* Channel icons in GHL's colours: blue mail, green WhatsApp, blue iMessage,
+ * amber SMS, grey eye for an internal comment. */
+[data-dealhub] .pp-composer .pp-composer-ico { flex: none; }
+[data-dealhub] .pp-composer .pp-composer-ico-email { color: #2470c2; }
+[data-dealhub] .pp-composer .pp-composer-ico-whatsapp { color: #25d366; }
+[data-dealhub] .pp-composer .pp-composer-ico-imessage { color: #1a8cff; }
+[data-dealhub] .pp-composer .pp-composer-ico-sms { color: #e8a317; }
+[data-dealhub] .pp-composer .pp-composer-ico-comment { color: var(--text-muted); }
+[data-dealhub] .pp-composer-comment .pp-composer-tab-on .pp-composer-ico-comment { color: var(--accent-gold-text); }
+
+/* Attachments — chips under the body, as in GHL. */
+[data-dealhub] .pp-composer-files {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 6px 12px 8px;
+}
+[data-dealhub] .pp-composer-file {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 280px; height: 28px; padding: 0 4px 0 8px;
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  font-size: var(--text-sm); color: var(--text-body);
+}
+[data-dealhub] .pp-composer-file > .ms { font-size: 15px; color: var(--text-muted); }
+[data-dealhub] .pp-composer-file-err { border-color: var(--status-stuck); }
+[data-dealhub] .pp-composer-file-err > .ms,
+[data-dealhub] .pp-composer-file-err .pp-composer-filesize { color: var(--status-stuck); }
+[data-dealhub] .pp-composer-filename { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-dealhub] .pp-composer-filesize { flex: none; color: var(--text-faint); }
+[data-dealhub] .pp-composer-fileremove {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0;
+  border: none; border-radius: 50%; background: transparent; cursor: pointer;
+  color: var(--text-muted);
+}
+[data-dealhub] .pp-composer-fileremove .ms { font-size: 14px; }
+[data-dealhub] .pp-composer-fileremove:hover { background: var(--surface-hover); }
+
+/* A reply box inside a thread card (EmailThreadCard), under its emails. */
+[data-dealhub] .pp-thread-reply .pp-composer { margin: 8px 12px 12px; }
+/* Send on the email formatting row: the row's own height, not the foot's. */
+[data-dealhub] .pp-composer .pp-toolbar .pp-composer-send { height: 28px; min-width: 36px; padding: 0 10px; }
+/* The card's border is the composer's focus signal (sky, or gold for an
+ * internal comment). The app-wide focus ring would draw a second, teal one
+ * around the text itself — the fields carry pp-focus-inherit, and the email
+ * editor's editable surface is opted out here. */
+[data-dealhub] .pp-composer .pp-editor-content:focus-visible { box-shadow: none; }
+
+/* Email To / CC / BCC (RecipientsField) as rows of the composer card: its own
+ * box border goes, so the rows read like From and Subject around them. */
+[data-dealhub] .pp-composer-recipients { border-bottom: 1px solid var(--border-default); }
+[data-dealhub] .pp-composer-recipients > div { border: none !important; border-radius: 0 !important; background: transparent !important; }

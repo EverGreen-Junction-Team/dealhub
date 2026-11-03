@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="How the PipelinePulse Deal Hub AI forms its answers, the safeguards against invented claims, and what the Control centre needs from you.">
+<!-- Standalone file: the artifact host supplies its own document skeleton, so
+     this wrapper exists for opening the file directly in a browser or
+     attaching it to an email. Everything else is identical. -->
+<title>Teaching the AI Your Business</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+</head>
+<body>
+<style>
+  /* ── Tokens ────────────────────────────────────────────────────────
+     Taken from the Deal Hub's own design system, so this document looks
+     like the product it describes. Neutrals are biased green rather than
+     pure grey. Light palette on bare :root; both dark paths redefine only
+     tokens, never component colours. */
+  :root {
+    --paper:        #faf9f6;
+    --card:        #ffffff;
+    --sunken:      #f2f4f1;
+    --ink:         #1f2430;
+    --ink-soft:    #4b515c;
+    --ink-faint:   #6f7680;
+    --rule:        #e2e6e0;
+    --rule-strong: #cdd4cb;
+
+    --pine:        #1f7a5c;
+    --pine-deep:   #124d39;
+    --pine-tint:   #e9f4f0;
+    --guard:       #b3243c;
+    --guard-tint:  #fbe9ee;
+    --gold:        #8a6508;
+    --gold-tint:   #faf3e0;
+
+    --shadow: 0 1px 2px rgba(31, 36, 48, .06);
+    --sans: 'Poppins', -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:        #14171b;
+      --card:        #1b1f24;
+      --sunken:      #22272c;
+      --ink:         #eef1ee;
+      --ink-soft:    #bcc4bd;
+      --ink-faint:   #8b938c;
+      --rule:        #2c3238;
+      --rule-strong: #3c444a;
+
+      --pine:        #6fc3a0;
+      --pine-deep:   #a8dcc5;
+      --pine-tint:   #17302a;
+      --guard:       #ff8fa3;
+      --guard-tint:  #38222a;
+      --gold:        #e3bd63;
+      --gold-tint:   #33291a;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:        #14171b;
+    --card:        #1b1f24;
+    --sunken:      #22272c;
+    --ink:         #eef1ee;
+    --ink-soft:    #bcc4bd;
+    --ink-faint:   #8b938c;
+    --rule:        #2c3238;
+    --rule-strong: #3c444a;
+
+    --pine:        #6fc3a0;
+    --pine-deep:   #a8dcc5;
+    --pine-tint:   #17302a;
+    --guard:       #ff8fa3;
+    --guard-tint:  #38222a;
+    --gold:        #e3bd63;
+    --gold-tint:   #33291a;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 72px 24px 96px;
+  }
+
+  /* ── Masthead ─────────────────────────────────────────────────── */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--pine);
+    margin: 0 0 20px;
+  }
+
+  h1 {
+    font-size: clamp(30px, 5.5vw, 42px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0 0 18px;
+  }
+
+  .standfirst {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .byline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: baseline;
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    letter-spacing: .02em;
+    color: var(--ink-faint);
+  }
+
+  /* ── Sections ─────────────────────────────────────────────────── */
+  section { margin-top: 56px; }
+
+  h2 {
+    font-size: 23px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0 0 14px;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 28px 0 8px;
+  }
+
+  p { margin: 0 0 16px; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--ink); font-weight: 600; }
+
+  /* ── The three-inputs diagram ─────────────────────────────────── */
+  .inputs {
+    display: grid;
+    gap: 12px;
+    margin: 28px 0 8px;
+  }
+
+  .input {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: start;
+    padding: 18px 20px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule-strong);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+  }
+  .input.theirs { border-left-color: var(--pine); }
+
+  .input-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: 3px;
+    white-space: nowrap;
+  }
+  .input.theirs .input-tag { color: var(--pine); }
+
+  .input-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 3px;
+  }
+  .input-body {
+    font-size: 14.5px;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .input-who {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: 3px 9px;
+    border-radius: 3px;
+    background: var(--sunken);
+    color: var(--ink-faint);
+  }
+  .input.theirs .input-who {
+    background: var(--pine-tint);
+    color: var(--pine-deep);
+  }
+
+  /* ── Comparison table ─────────────────────────────────────────── */
+  .compare-scroll { overflow-x: auto; margin: 26px 0; }
+
+  table {
+    width: 100%;
+    min-width: 480px;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+  caption {
+    caption-side: top;
+    text-align: left;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    padding-bottom: 10px;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  thead th:nth-child(3) { color: var(--pine); }
+  tbody th {
+    font-weight: 500;
+    color: var(--ink-soft);
+    width: 30%;
+  }
+  td:nth-child(3) {
+    background: var(--pine-tint);
+    color: var(--pine-deep);
+    font-weight: 500;
+  }
+
+  /* ── Guard-rail callout ───────────────────────────────────────── */
+  .guard {
+    margin: 26px 0;
+    padding: 20px 22px;
+    background: var(--guard-tint);
+    border-radius: 6px;
+    border-left: 3px solid var(--guard);
+  }
+  .guard h3 {
+    margin-top: 0;
+    color: var(--guard);
+  }
+  .guard p { margin-bottom: 0; font-size: 15px; }
+
+  /* ── Quote demonstration ──────────────────────────────────────── */
+  .demo {
+    margin: 24px 0;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .demo-row {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14.5px;
+  }
+  .demo-row:last-child { border-bottom: none; }
+  .demo-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: 3px;
+  }
+  .demo-quote {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .verdict-keep { color: var(--pine); font-weight: 600; }
+  .verdict-drop { color: var(--guard); font-weight: 600; }
+
+  /* ── Checklist ────────────────────────────────────────────────── */
+  .ask {
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 14px;
+  }
+  .ask li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+    padding: 18px 20px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+  }
+  .ask-n {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--pine);
+    padding-top: 2px;
+  }
+  .ask-title {
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .ask-body { font-size: 14.5px; line-height: 1.55; margin: 0; }
+  .ask-eg {
+    display: block;
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-faint);
+    padding-left: 12px;
+    border-left: 2px solid var(--rule-strong);
+  }
+
+  /* ── Pull statement ───────────────────────────────────────────── */
+  .pull {
+    margin: 44px 0;
+    padding: 26px 0;
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+    font-size: 21px;
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  a { color: var(--pine); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 520px) {
+    .wrap { padding: 48px 18px 72px; }
+    .input, .ask li { grid-template-columns: 1fr; gap: 8px; }
+    .demo-row { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">PipelinePulse · Deal Hub</p>
+  <h1>Teaching the AI your business</h1>
+  <p class="standfirst">
+    The Deal Hub can now read a deal's whole conversation and answer questions
+    about it. This explains where its answers come from, the safeguards that
+    stop it making things up — and the one part that only you can supply.
+  </p>
+  <p class="byline">
+    <span>August 2026</span>
+  </p>
+
+  <section>
+    <h2>Three things go into every answer</h2>
+    <p>
+      When a rep asks "what have we promised and not delivered?", the AI is
+      given exactly three things. Two of them we build and maintain. The third
+      is yours.
+    </p>
+
+    <div class="inputs">
+      <div class="input">
+        <span class="input-tag">01 · Rules</span>
+        <div>
+          <p class="input-name">How it must behave</p>
+          <p class="input-body">
+            Never guess. Quote your customer's actual words for every claim.
+            Read the conversation in order, so a later message overrides an
+            earlier one. Never confuse what you said with what they said.
+          </p>
+          <span class="input-who">Built and locked by us</span>
+        </div>
+      </div>
+
+      <div class="input">
+        <span class="input-tag">02 · Evidence</span>
+        <div>
+          <p class="input-name">The deal's conversation</p>
+          <p class="input-body">
+            Every email, SMS, WhatsApp message, call transcript and team note
+            attached to that one deal — in date order. Nothing from other
+            deals, nothing from other customers.
+          </p>
+          <span class="input-who">Synced from GoHighLevel</span>
+        </div>
+      </div>
+
+      <div class="input theirs">
+        <span class="input-tag">03 · Control centre</span>
+        <div>
+          <p class="input-name">What the words mean in your business</p>
+          <p class="input-body">
+            That "Decision criteria" means thermal performance and sightlines
+            against uPVC. That a Cortizo A38 screen is ten to twelve weeks.
+            That deposits are 40%. Things no amount of reading the thread
+            would reveal.
+          </p>
+          <span class="input-who">Only you can supply this</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Rules are not the same as the Control centre</h2>
+    <p>
+      This distinction matters, because it decides what is safe to change and
+      what isn't.
+    </p>
+
+    <div class="compare-scroll">
+      <table>
+        <caption>Two layers, two very different jobs</caption>
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Rules</th>
+            <th scope="col">Control centre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Question it answers</th>
+            <td>How should the AI behave?</td>
+            <td>What do these words mean here?</td>
+          </tr>
+          <tr>
+            <th scope="row">Example</th>
+            <td>"If the thread doesn't say it, answer <em>not found</em>."</td>
+            <td>"Metrics means payback and energy saving."</td>
+          </tr>
+          <tr>
+            <th scope="row">Who sets it</th>
+            <td>Us, in the software</td>
+            <td>You, in the app</td>
+          </tr>
+          <tr>
+            <th scope="row">Same for every business?</th>
+            <td>Yes — identical for all four sub-accounts</td>
+            <td>No — specific to how you sell</td>
+          </tr>
+          <tr>
+            <th scope="row">If it's wrong</th>
+            <td>The product is broken</td>
+            <td>Answers sound generic; you edit and re-run</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Put simply: <strong>the rules stop it lying. The Control centre stops it
+      sounding generic.</strong> That's why the rules aren't editable — not to
+      withhold control, but because those guarantees are the reason the output
+      can be trusted at all.
+    </p>
+  </section>
+
+  <section>
+    <h2>The safeguard worth understanding</h2>
+    <p>
+      The failure that would kill this product isn't a missed detail. It's one
+      confident, invented claim — a rep reads "you promised them a discount",
+      finds no such promise, and never trusts the panel again.
+    </p>
+    <p>
+      So the rule isn't a polite request in the instructions. It's enforced by
+      the software, after the AI answers and before anyone sees it:
+      <strong>every claim must carry your customer's exact words, and we check
+      them character by character against the real message.</strong>
+    </p>
+
+    <div class="demo">
+      <div class="demo-row">
+        <span class="demo-label">Message</span>
+        <span class="demo-quote">"Keep the whole glazing package under £30k including the garden room."</span>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">Claim A</span>
+        <span>
+          <span class="demo-quote">"under £30k including the garden room"</span><br>
+          <span class="verdict-keep">Shown</span> — those words are really in the message.
+        </span>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">Claim B</span>
+        <span>
+          <span class="demo-quote">"they want to stay around thirty thousand"</span><br>
+          <span class="verdict-drop">Discarded</span> — a fair summary, but not what
+          they wrote. It never reaches the screen.
+        </span>
+      </div>
+    </div>
+
+    <div class="guard">
+      <h3>Claim B is the important one</h3>
+      <p>
+        It isn't even wrong. We still throw it away. An answer nobody can check
+        is indistinguishable from one that's invented — and we would rather show
+        your reps less than have them doubt any of it.
+      </p>
+    </div>
+
+    <p>
+      Two more things follow from the same principle. Every answer states what
+      it read — <em>"Read 5 of 11 messages · 2 calls not transcribed"</em> — so
+      a thin answer explains itself instead of looking like a thin deal. And
+      every claim links back to the message it came from, so a rep can check it
+      in one click.
+    </p>
+  </section>
+
+  <div class="pull">
+    Anyone can buy the same AI. What makes it sound like your business
+    rather than a generic sales tool is the Control centre — and it's empty
+    today.
+  </div>
+
+  <section>
+    <h2>What we need from you</h2>
+    <p>
+      The Control centre is live in the app now, with four sections. Filled in,
+      it's the difference between an assistant that understands glazing and one
+      that guesses. Left empty, the AI still works — it just answers like it has
+      never seen a glazing quote before.
+    </p>
+    <p>
+      None of it needs to be perfect. Rough and specific beats polished and
+      vague, and it can be edited any time.
+    </p>
+
+    <ol class="ask">
+      <li>
+        <span class="ask-n">01</span>
+        <div>
+          <p class="ask-title">Your products and lead times</p>
+          <p class="ask-body">
+            What you sell and how long it takes. The AI quotes these to reps
+            and flags a promise it can't keep.
+            <span class="ask-eg">Cortizo A38 rear screens · 10–12 weeks · aluminium, slim sightlines</span>
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="ask-n">02</span>
+        <div>
+          <p class="ask-title">What the six qualification headings mean</p>
+          <p class="ask-body">
+            MEDDIC in your own words, so evidence is filed under the right
+            heading instead of a textbook one.
+            <span class="ask-eg">Economic buyer — who pays. Usually the homeowner, not the architect.</span>
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="ask-n">03</span>
+        <div>
+          <p class="ask-title">How you work</p>
+          <p class="ask-body">
+            Deposits, survey process, service area, guarantees — the things a
+            new rep would need telling in their first week.
+            <span class="ask-eg">Surveys are booked after a provisional quote is accepted. Deposits 40%.</span>
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="ask-n">04</span>
+        <div>
+          <p class="ask-title">Two or three emails you're proud of</p>
+          <p class="ask-body">
+            Paste real ones. When the AI drafts a reply it copies that voice —
+            so it sounds like your team, not like software. Used for drafting
+            only, never treated as facts about a customer.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+</div>
+</body>
+</html>

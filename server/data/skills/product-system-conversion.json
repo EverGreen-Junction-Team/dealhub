@@ -1,0 +1,40 @@
+{
+  "name": "product_system_conversion",
+  "description": "Deals, win rate and won value per product system — the brand or material (Crittall, Cortizo, Genosal), not the product shape. Use for 'which systems convert best', 'how does Crittall perform', 'which brands are we winning on', 'is this material worth stocking'. Same two rules as product_type_conversion apply. A deal ticked with several systems is counted under each, so these rows do not sum to the business total: take totals from account_deals, account_won and account_won_value, never by adding down the column. And quote pct_deals_with_system, because deals with no system ticked are absent from these rows entirely and every rate describes only the covered portion. Compare win rates rather than deal counts when ranking. For the product shape rather than the brand or material, use product_type_conversion — the two answer different questions and should not be mixed in one comparison.",
+  "viewName": "vw_product_system_conversion",
+  "params": [
+    {
+      "name": "system",
+      "column": "product_system",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one product system by name, e.g. crittall, cortizo."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only systems with at least this many deals. Use to drop those too small for a win rate to mean anything."
+    },
+    {
+      "name": "win_rate_below_pct",
+      "column": "won_per_closed_pct",
+      "type": "number",
+      "op": "lte",
+      "description": "Only systems winning at or below this rate."
+    },
+    {
+      "name": "min_won_value",
+      "column": "won_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only systems that have won at least this much."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 60,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

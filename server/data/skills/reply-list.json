@@ -1,0 +1,64 @@
+{
+  "name": "reply_list",
+  "description": "The rep replies themselves — one row per reply, with its text, when it was sent, whether the deal moved stage afterwards and how long that took. Use for 'show me replies that moved deals', 'what do our best replies say', 'give me examples of replies before a stage change'. This is a reading view: the value is in the wording, so quote it and name the deal. Do not generalise from a handful of replies into a rule about what works — a reply that preceded a stage move is one deal's story, and deal_moved_stage_after is correlation, not cause. under_15min_suspect = true means the stage move was recorded under 15 minutes after the reply, which is almost certainly an automated CRM transition rather than a customer reacting; exclude those when showing examples of replies that moved a deal. ALWAYS identify a deal by deal_name, never by opportunity_id. The id is in the data so a row can be looked up, not so it can be shown — an answer that reads \"2lVBs41TxfmKK8U03fIn said the price was too high\" is unusable to a rep, who cannot tell which customer that is without searching for the id. Say the deal name, and the owner when it helps.",
+  "viewName": "vw_reply_list",
+  "params": [
+    {
+      "name": "deal",
+      "column": "deal_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Only rows on deals whose name contains this text. Prefer this over opportunity_id — a rep knows the name."
+    },
+    {
+      "name": "moved_stage",
+      "column": "deal_moved_stage_after",
+      "type": "bool",
+      "op": "eq",
+      "description": "true for replies followed by a stage move, false for those not."
+    },
+    {
+      "name": "status",
+      "column": "status",
+      "type": "text",
+      "op": "eq",
+      "description": "won, lost, abandoned or open."
+    },
+    {
+      "name": "then_moved_to",
+      "column": "then_moved_to",
+      "type": "text",
+      "op": "contains",
+      "description": "Only replies followed by a move to this stage."
+    },
+    {
+      "name": "reply_contains",
+      "column": "rep_reply",
+      "type": "text",
+      "op": "contains",
+      "description": "Only replies whose text contains this, e.g. 'discount', 'lead time'."
+    },
+    {
+      "name": "exclude_suspect",
+      "column": "under_15min_suspect",
+      "type": "bool",
+      "op": "eq",
+      "description": "Pass false to exclude moves recorded under 15 minutes after the reply — those are almost certainly automated."
+    },
+    {
+      "name": "opportunity_id",
+      "column": "opportunity_id",
+      "type": "text",
+      "op": "eq",
+      "description": "Every reply on a single deal."
+    }
+  ],
+  "columns": [],
+  "orderBy": "rep_reply_at DESC NULLS LAST",
+  "rowLimit": 100,
+  "surfaces": [
+    "portfolio",
+    "deal"
+  ],
+  "isEnabled": true
+}

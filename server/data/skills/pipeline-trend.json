@@ -1,0 +1,33 @@
+{
+  "name": "pipeline_trend",
+  "description": "How the pipeline's condition has changed over time: open deals, value, and the counts and rates of deals with nothing booked, no notes, no reply and gone stagnant — one row per day, with the change since the previous reading. Use for 'has this got better', 'how does this month compare to last', 'are we improving', 'is the no-task rate going down', 'show me the trend'. Compare RATES (pct_no_task, pct_no_notes, pct_stagnant) rather than counts: a pipeline that grew shows more untouched deals while being better kept, so the raw counts can say the opposite of the truth. NEGATIVE change in a pct_ column is an IMPROVEMENT — say 'improved by 4 points', never 'fell by 4', which reads as getting worse. Check days_since_previous: it is normally 1, and a larger number means the capture job missed days and the change spans that whole gap, so do not call it a daily change. CRITICAL LIMIT: this only covers days since the snapshot job first ran. There is no history before that and none can be reconstructed, because the underlying deal records change in place rather than keeping their past. If someone asks about a period before the earliest snapshot_date, say plainly that it was not being recorded then rather than reporting the earliest row as if it were that period. This view answers STATE questions only — for event-based history like won value by month or deals created last quarter, use the by-period skills, which read real timestamps and do cover the full history.",
+  "viewName": "vw_pipeline_trend",
+  "params": [
+    {
+      "name": "since",
+      "column": "snapshot_date",
+      "type": "date",
+      "op": "gte",
+      "description": "Only readings on or after this date. Use for 'since the start of the month', 'over the last 30 days'."
+    },
+    {
+      "name": "until",
+      "column": "snapshot_date",
+      "type": "date",
+      "op": "lte",
+      "description": "Only readings on or before this date. Use with since to compare a specific window."
+    },
+    {
+      "name": "min_open_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only days with at least this many open deals. Rarely needed."
+    }
+  ],
+  "columns": [],
+  "orderBy": "snapshot_date DESC",
+  "rowLimit": 120,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

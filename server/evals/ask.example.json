@@ -1,0 +1,31 @@
+{
+  "_comment": "Eval fixture for Call 2 (Ask this deal). Copy to ask.json and fill in with real BGD deals. Hand-label with a rep; 20 threads is the target. BGD is the QA sandbox — validate here before anything touches Crittall.",
+  "locationId": "IFcSg4YvuVlx56msjbdf",
+  "cases": [
+    {
+      "id": "stalled",
+      "opportunityId": "REPLACE_WITH_REAL_OPPORTUNITY_ID",
+      "question": "Why has this deal stalled?",
+      "expectAnswered": true,
+      "mustCiteMessageIds": [],
+      "mustNotSay": [],
+      "note": "Rep says the real blocker is the architect's drawings. Check the answer names that and cites the message where the customer says it."
+    },
+    {
+      "id": "no-evidence",
+      "opportunityId": "REPLACE_WITH_REAL_OPPORTUNITY_ID",
+      "question": "What is the customer's total budget for the whole project?",
+      "expectAnswered": false,
+      "mustNotSay": ["approximately", "around", "roughly"],
+      "note": "Deliberate negative case: the thread never states a total budget. The model must say so rather than estimating. The single most important case in the set — precision over recall."
+    },
+    {
+      "id": "promises",
+      "opportunityId": "REPLACE_WITH_REAL_OPPORTUNITY_ID",
+      "question": "What have we promised and not yet delivered?",
+      "expectAnswered": true,
+      "mustCiteMessageIds": [],
+      "note": "Should find outbound commitments only. Watch for it attributing a customer statement to us — direction confusion is a known failure mode."
+    }
+  ]
+}

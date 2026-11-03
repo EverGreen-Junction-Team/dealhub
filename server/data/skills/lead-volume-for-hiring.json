@@ -1,0 +1,26 @@
+{
+  "name": "leads_required_for_new_sales_hire",
+  "description": "Monthly lead volume, wins and won value for the last four complete months, plus all-time conversion rate and average won value. Use for 'how many leads do we need to support a new hire', 'can we afford another salesperson', 'what is our lead to win rate', 'what is an average won deal worth', 'how many leads a month are we getting'. IMPORTANT: this gives the CRM inputs only. The full sum is (monthly rep cost + target contribution) divided by (won-per-lead x average won value x gross margin) — rep cost and gross margin are NOT in this database. Present the inputs, ask the rep for those two figures, and only then do the arithmetic. Never assume a salary or a margin.",
+  "viewName": "vw_lead_volume_for_hiring",
+  "params": [
+    {
+      "name": "month",
+      "column": "month",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one month, e.g. '2026-08'. Omit to see every month shown."
+    },
+    {
+      "name": "min_leads",
+      "column": "leads",
+      "type": "int",
+      "op": "gte",
+      "description": "Only months with at least this many leads. Rarely needed."
+    }
+  ],
+  "columns": [],
+  "orderBy": "month DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

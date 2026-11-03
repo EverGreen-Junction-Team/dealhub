@@ -1,0 +1,42 @@
+{
+  "name": "forecast_breakdown",
+  "description": "The forecast cut by status, by rep, by pipeline or by stage: open deals, open value, expected (weighted) revenue, won revenue, average probability and each group's share. Use for 'opportunities by status', 'how many are open vs won vs lost', 'how many deals in each status', 'split the pipeline by status', 'counts and value per stage', 'forecast by rep', 'who has the most pipeline', 'which rep will bring in the most', 'forecast by pipeline', 'where is the value sitting', 'which stage holds the most value', 'break the forecast down by owner'. ALWAYS set grouped_by to one of status, rep, pipeline or stage \u2014 the three cuts are stacked in one view and a deal appears once in EACH, so reading them together counts the same money three times. Say which cut you are reporting. pct_of_expected is the share within that cut only. Unassigned deals and unstaged deals appear as their own rows rather than being dropped: they usually carry real value and are the least likely to be worked, so never leave them out of a total. Check no_close_date per group \u2014 a rep with a large figure there has pipeline that appears in no month at all, which is a different problem from having a small forecast. The stage cut covers OPEN deals only, since a won deal's last stage says nothing about today's pipeline. The status cut is the default view people expect: Open, Won, Lost and Abandoned with their counts and values. Closed statuses show zero expected revenue by definition \u2014 a lost deal is not expected income \u2014 so report that as not applicable rather than as a forecast of nothing. For any question that asks for a COUNT split across several groups \u2014 statuses, reps, stages \u2014 use this rather than searching deals and counting: it returns every group in one row each, with value alongside, where a deal search returns a capped list of individual deals.",
+  "viewName": "vw_forecast_breakdown",
+  "params": [
+    {
+      "name": "grouped_by",
+      "column": "grouped_by",
+      "type": "text",
+      "op": "eq",
+      "description": "Which cut to report: 'status', 'rep', 'pipeline' or 'stage'. Always set this \u2014 the cuts must not be mixed. 'status' is the usual starting point."
+    },
+    {
+      "name": "group_value",
+      "column": "group_value",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep, pipeline or stage by name."
+    },
+    {
+      "name": "min_expected",
+      "column": "expected_value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only groups expecting at least this much weighted revenue."
+    },
+    {
+      "name": "min_open_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only groups with at least this many open deals."
+    }
+  ],
+  "columns": [],
+  "orderBy": "expected_value DESC",
+  "rowLimit": 60,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

@@ -1,0 +1,11 @@
+{
+  "name": "note_adoption",
+  "description": "Whether notes are used at all in this sub-account: how many exist, how many are linked to a deal rather than only a contact, how many different people write them, typical length, and when the last one was written. Use for 'do we use notes', 'is anyone writing notes', 'how good are our notes', and ALWAYS before quoting anything from open_deals_note_quality — it is the precondition for reading those numbers. At low adoption, 'most open deals have no notes' describes a team that does not use the feature, not reps failing to document, and the two call for opposite responses: one is a process decision, the other is a conversation with individuals. Check authors especially — one or two writers against a team of eight means notes are one person's habit rather than a process. Check pct_linked_to_deal too: notes written against a contact but not a deal never appear in any per-deal count, so a low figure means per-deal findings understate what has actually been written. Prefer median_full_len over median_body_len, since a note's content can sit in its title as well as its body.",
+  "viewName": "vw_note_adoption",
+  "params": [],
+  "columns": [],
+  "orderBy": "notes DESC",
+  "rowLimit": 10,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

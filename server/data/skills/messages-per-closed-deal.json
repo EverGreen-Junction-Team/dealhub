@@ -1,0 +1,26 @@
+{
+  "name": "messages_per_closed_deal",
+  "description": "Message volume on closed deals, split by outcome: how many messages the customer sent, how many a person sent back, and how many were automated — median and mean, for won, lost and abandoned separately. Use for 'how many messages does a won deal take', 'do we talk more to deals we win', 'how much conversation is in a lost deal', 'are we under-communicating', 'messages per deal'. Read it as a comparison between the three outcomes — a single figure means nothing, the gap between won and lost is the finding. Deals where the customer never sent a message are excluded from every average and reported separately as without_customer_msg: those are usually bad leads or bad numbers rather than short conversations, and leaving them in would drag the lost-deal averages toward zero and make it look like a messaging problem. Automated sends are counted separately and must never be described as replies — high automation with low human volume on lost deals means those customers were sequenced, not talked to. Messages are counted per customer, so a customer with several deals contributes the same count to each; check avg_deals_per_contact and say so when it is above 1.",
+  "viewName": "vw_messages_per_closed_deal",
+  "params": [
+    {
+      "name": "status",
+      "column": "status",
+      "type": "text",
+      "op": "eq",
+      "description": "Narrow to one outcome: won, lost or abandoned. Usually leave this off — the comparison between all three is the point."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only outcomes with at least this many closed deals. Use to drop a group too small for a median to mean anything."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 20,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

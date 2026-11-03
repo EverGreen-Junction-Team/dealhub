@@ -1,0 +1,40 @@
+{
+  "name": "open_deals_note_quality",
+  "description": "Open deals with no notes or only thin ones, grouped by the stage they sit in, with the value at stake. Use for 'which deals have nothing written about them', 'where are we not documenting', 'what happens if a rep leaves', 'are notes being kept up to date'. Run note_adoption first and say what it showed — at low adoption these counts describe a team that does not use notes rather than deals that were neglected, and chasing people for the second when it is the first wastes everyone's time. The thin threshold is 100 characters across title and body: a chosen number, not a measured standard, so present it as a choice rather than a benchmark. note_older_30d counts only deals that HAVE notes and have gone quiet — deals never documented are in no_notes instead, so the two do not overlap and neither includes the other. Lead with value_no_or_thin_notes when the question is what to act on: that is the money nobody but the current owner could pick up. median_chars_per_deal compares stages better than the raw counts, which move with how many deals sit in each stage. Say the open-deal count next to any percentage; min_deals exists to set that floor deliberately.",
+  "viewName": "vw_open_deals_note_quality_by_stage",
+  "params": [
+    {
+      "name": "stage",
+      "column": "stage",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name."
+    },
+    {
+      "name": "min_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages with at least this many open deals."
+    },
+    {
+      "name": "min_value_undocumented",
+      "column": "value_no_or_thin_notes",
+      "type": "number",
+      "op": "gte",
+      "description": "Only stages with at least this much value having nothing or almost nothing written. Use for 'where is the real money undocumented'."
+    },
+    {
+      "name": "no_notes_above_pct",
+      "column": "pct_no_notes",
+      "type": "number",
+      "op": "gte",
+      "description": "Only stages where at or above this share of deals have no notes. Use for 'which stages are worst documented'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "open_deals DESC",
+  "rowLimit": 40,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Message Sync — Fix Plan (v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF8; --ink:#1C2326; --ink-soft:#566066; --steel:#6B7B85; --steel-soft:#A9B4BB;
+    --hair:#E6E3DD; --rust:#B5512E; --rust-soft:#F6EBE6; --green:#3F7A55; --green-soft:#E7F0E9;
+    --amber:#C8821E; --amber-soft:#FAF0DD; --blue:#3E6D96; --blue-soft:#E8EFF5;
+    --disp:'Archivo',sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; margin:0;}
+  body{background:#F2F0EC; color:var(--ink); font-family:var(--disp); font-size:14.5px; line-height:1.6; padding:0;}
+  .wrap{max-width:900px; margin:0 auto; padding:40px 32px 72px;}
+
+  header.doc{border-bottom:3px solid var(--ink); padding-bottom:22px; margin-bottom:36px;}
+  .brand{display:flex; align-items:center; gap:11px; margin-bottom:16px;}
+  .bars{display:flex; gap:3px; align-items:flex-end; height:24px;}
+  .bars span{width:5px; border-radius:1px; background:var(--rust); height:13px;}
+  .bars span:nth-child(2){height:24px; background:#5C9BD5;}
+  .bars span:nth-child(3){height:18px; background:var(--green);}
+  .brand b{font-size:14px; font-weight:800; letter-spacing:-.01em;}
+  .brand i{font-family:var(--mono); font-size:10px; font-style:normal; color:var(--steel); letter-spacing:.05em;}
+  h1{font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.15; margin-bottom:14px;}
+  .version{display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.06em; padding:2px 8px; border-radius:4px; background:var(--ink); color:#fff; margin-left:8px; vertical-align:6px;}
+
+  .meta{display:flex; flex-wrap:wrap; gap:14px 24px; margin-top:14px;}
+  .meta .kv{font-family:var(--mono); font-size:11px; color:var(--steel); letter-spacing:.03em;}
+  .meta .kv b{color:var(--ink); font-weight:600; margin-right:6px;}
+  .meta .status{display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:5px; background:var(--green-soft); color:var(--green); border:1px solid #B9D4C2;}
+
+  .lede{color:var(--ink-soft); margin-top:12px; max-width:720px; font-size:15px; line-height:1.55;}
+
+  h2{font-size:22px; font-weight:800; letter-spacing:-.015em; margin:38px 0 12px; padding-top:6px; display:flex; align-items:baseline; gap:12px;}
+  h2 .num{font-family:var(--mono); font-size:11px; font-weight:600; color:var(--steel); letter-spacing:.06em; background:var(--paper); border:1px solid var(--hair); padding:3px 8px; border-radius:5px; align-self:center;}
+  h2:first-of-type{margin-top:0;}
+
+  h3{font-size:16px; font-weight:700; letter-spacing:-.01em; margin:22px 0 8px;}
+  h3.move{color:var(--rust); display:flex; align-items:baseline; gap:10px;}
+  h3.move .badge{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.06em; background:var(--rust); color:#fff; padding:3px 9px; border-radius:5px; text-transform:uppercase;}
+
+  p{margin:0 0 12px;}
+  strong{color:var(--ink); font-weight:700;}
+  em{color:var(--ink-soft);}
+
+  ul, ol{margin:0 0 14px 22px; padding:0;}
+  li{margin-bottom:6px; color:var(--ink-soft);}
+  li strong{color:var(--ink);}
+
+  code{font-family:var(--mono); font-size:12px; background:#F0EDE7; border:1px solid var(--hair); border-radius:4px; padding:1px 6px; color:var(--ink); white-space:nowrap;}
+  pre{font-family:var(--mono); font-size:12px; background:var(--ink); color:#E9ECEC; padding:14px 16px; border-radius:8px; overflow-x:auto; margin:12px 0; line-height:1.55;}
+  pre code{background:none; border:none; color:#E9ECEC; padding:0;}
+
+  hr{border:none; border-top:1px solid var(--hair); margin:32px 0;}
+
+  /* callouts */
+  .call{border-left:3px solid var(--rust); background:var(--rust-soft); padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .call.warn{border-left-color:var(--amber); background:var(--amber-soft);}
+  .call.info{border-left-color:var(--blue); background:var(--blue-soft);}
+  .call.good{border-left-color:var(--green); background:var(--green-soft);}
+  .call p:last-child{margin-bottom:0;}
+  .call .label{display:block; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; margin-bottom:8px;}
+  .call.warn .label{color:var(--amber);}
+  .call .label{color:var(--rust);}
+  .call.info .label{color:var(--blue);}
+  .call.good .label{color:var(--green);}
+
+  /* example cards */
+  .example{background:var(--paper); border:1px solid var(--hair); border-radius:10px; padding:16px 20px; margin-bottom:14px; border-left:3px solid var(--steel);}
+  .example h4{font-size:14.5px; font-weight:700; margin-bottom:8px; letter-spacing:-.01em;}
+  .example p{margin-bottom:8px; font-size:13.5px; color:var(--ink-soft); line-height:1.6;}
+  .example p:last-child{margin-bottom:0;}
+  .example .date{font-family:var(--mono); font-size:11px; color:var(--steel); font-weight:600; margin-left:8px;}
+
+  /* signoff — approved state */
+  .signoff{background:var(--paper); border:1px solid var(--hair); border-radius:12px; padding:22px 26px; margin-top:20px;}
+  .signoff h2{margin-top:0;}
+  .checklist{list-style:none; margin:0; padding:0;}
+  .checklist li{display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair); margin:0;}
+  .checklist li:last-child{border-bottom:none;}
+  .checklist .box{flex:none; width:18px; height:18px; border:2px solid var(--green); border-radius:4px; margin-top:2px; background:var(--green); position:relative;}
+  .checklist .box::after{content:''; position:absolute; left:4px; top:0px; width:6px; height:11px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);}
+  .checklist .txt{font-size:14px; color:var(--ink); line-height:1.5;}
+  .checklist .txt strong{display:block; margin-bottom:2px;}
+  .checklist .txt .sub{color:var(--ink-soft); font-size:13px;}
+
+  /* sweep steps */
+  .steps{counter-reset:step; margin:14px 0; padding:0; list-style:none;}
+  .steps li{position:relative; padding-left:38px; margin-bottom:10px; counter-increment:step; color:var(--ink-soft);}
+  .steps li::before{content:counter(step); position:absolute; left:0; top:0; width:26px; height:26px; background:var(--rust); color:#fff; font-family:var(--mono); font-size:12px; font-weight:700; border-radius:50%; display:flex; align-items:center; justify-content:center;}
+  .steps li strong{color:var(--ink);}
+
+  /* changes banner */
+  .changes{background:var(--ink); color:#E9ECEC; border-radius:12px; padding:20px 24px; margin:0 0 32px;}
+  .changes h3{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#F0C98A; margin-bottom:12px;}
+  .changes ul{list-style:none; margin:0; padding:0;}
+  .changes li{padding:6px 0; font-size:13.5px; line-height:1.55; color:#DDE4E6; margin:0;}
+  .changes li strong{color:#F0C98A; font-weight:600;}
+  .changes code{background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.14); color:#E9ECEC;}
+
+  @media (max-width:760px){
+    .wrap{padding:24px 18px 48px;}
+    h1{font-size:24px;}
+    .meta{gap:8px 18px;}
+  }
+  @media print{
+    body{background:#fff;}
+    .wrap{max-width:none; padding:20px 30px;}
+    h2{page-break-after:avoid;}
+    .example, .call, .signoff, .changes{page-break-inside:avoid;}
+    .changes{background:#fff; color:#000; border:2px solid #000;}
+    .changes h3{color:#000;}
+    .changes li{color:#000;}
+    .changes li strong{color:#000;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="brand">
+    <div class="bars" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div><b>Vaultsuite</b>&ensp;<i>plan · sync fix</i></div>
+  </div>
+  <h1>Message Sync — Fix Plan<span class="version">v2</span></h1>
+  <p class="lede">Some outbound emails are missing from Supabase, even though they exist in GHL. This document lays out what's happening, what we'll change, and how James's 21 Jul feedback reshaped the approach.</p>
+  <div class="meta">
+    <span class="kv"><b>Status</b><span class="status">Approved · build proceeds</span></span>
+    <span class="kv"><b>Version</b>v2 · 21 Jul 2026</span>
+    <span class="kv"><b>Author</b>Vaultsuite Team</span>
+  </div>
+</header>
+
+<section class="changes">
+  <h3>What changed in v2 vs v1 — per James's feedback</h3>
+  <ul>
+    <li><strong>Scheduled sweep, not live webhook sync.</strong> Nothing downstream needs real-time — day-old data is fine. Sweep runs every 12 hours, on contacts with recent activity only.</li>
+    <li><strong>Move 3 (safety net) dropped.</strong> The sweep IS the widened fetch made permanent — no interim patch needed.</li>
+    <li><strong>NULL-opportunity linking runs inside the sweep</strong>, not on stage change. Stalled deals don't move stage — resolving NULLs on stage change would have inherited the same bug.</li>
+    <li><strong>Multi-open-deal contacts parked with hard AI exclusion.</strong> Where a contact has 2+ open deals sharing a live thread, no MEDDIC extraction writes until we have a proper attribution answer. <code>thread_id</code> still captured as the path out.</li>
+    <li><strong>Verification defined.</strong> "No gaps" means a manual message-count check GHL vs Supabase passes, not just absence of complaints.</li>
+    <li><strong>Failure alerting added.</strong> Silent no-sweep-ran is the real risk — we alert if a run fails or if last-successful goes stale.</li>
+    <li><strong>Baselines dependency flagged.</strong> Eduarda re-runs quote-silence + follow-up baselines after BGD backfill — auto-ack goes live after that. BGD backfill is on the critical path.</li>
+  </ul>
+</section>
+
+<h2><span class="num">01</span>What we have today</h2>
+<p>Everything a rep does in GHL — creating a deal, moving it through stages, sending messages, marking it won or lost — flows into Supabase. From there it feeds the analytics, the pipeline views, and the monthly review.</p>
+<p>There are four things we currently track per deal, one Supabase table each:</p>
+<ul>
+  <li><strong><code>contacts</code></strong> — who the customer is (name, email, phone, source, UTM tags, gclid, custom fields)</li>
+  <li><strong><code>opportunities</code></strong> — the deal itself (name, pipeline, stage, value, owner, MEDDIC fields, product info, custom fields)</li>
+  <li><strong><code>stage_history</code></strong> — every time a deal moves stage, we record <code>entered_at</code> and <code>left_at</code> — one row per stage session, plus the open row where <code>current_stage = true</code></li>
+  <li><strong><code>messages</code></strong> — the emails, WhatsApp, SMS and calls between the rep and the customer, linked to the contact and (when known) to the opportunity + the stage_history row it fell inside</li>
+</ul>
+<p>The first three (<code>contacts</code>, <code>opportunities</code>, <code>stage_history</code>) sync live and reliably. Every time something changes in GHL, we hear about it and update Supabase within seconds.</p>
+<div class="call">
+  <span class="label">The problem</span>
+  <p>The problem is with <code>messages</code>.</p>
+</div>
+
+<h2><span class="num">02</span>How messages currently get into Supabase</h2>
+<p>Today, messages don't sync on their own. We only fetch them <strong>when a deal changes stage.</strong> When Brad moves a deal from "Initial Contact" to "Quote Sent", the system asks GHL for all the messages sent during that stage, and stores them.</p>
+<p>This works when reps are moving deals through the pipeline regularly. It breaks in two situations:</p>
+
+<h3>Situation A — The rep sends a message but doesn't move the stage</h3>
+<p>Very common. Follow-up emails don't usually cause a stage change. If Brad sends a chase email while the deal sits in "Quote Sent", we never get told to fetch it. The email exists in GHL, but it's invisible to us until the deal eventually moves again — which could be weeks, or never.</p>
+
+<h3>Situation B — GHL creates a new email thread that we're not looking at</h3>
+<p>When a customer's enquiry is handed over to a different rep, GHL sometimes creates a brand new conversation thread. Our fetch may not know about the new thread yet, so it looks only at the old one and misses the new messages.</p>
+
+<h2><span class="num">03</span>Two real examples we've confirmed</h2>
+
+<div class="example">
+  <h4>Danilo Bardella<span class="date">16 Jul</span></h4>
+  <p>Brad sent Danilo an email on Thursday 16 Jul at 12:07 UK time. GHL registered activity on Danilo's record one minute later, so we know the email went through GHL. But it never made it to Supabase. There's no message row for it. The deal probably didn't move stage that day, so nothing triggered a fetch.</p>
+</div>
+
+<div class="example">
+  <h4>Yusuf Lala<span class="date">10 Jul</span></h4>
+  <p>Brad sent Yusuf a handover email on Friday 10 Jul at 12:48 UK time — the "Chris has passed me your enquiry, could we arrange a call" message. Yusuf later replied on 13 Jul saying "Thanks for getting back to me, I'm free tomorrow morning" — clearly a reply to the missing email. But the original email from Brad isn't in Supabase. Seven other emails in the same conversation synced fine; only the 10 Jul one is missing. Most likely: the handover started a new email thread that the fetch didn't know to look at.</p>
+</div>
+
+<h2><span class="num">04</span>Why this matters</h2>
+<p>If outbound emails are missing, everything downstream is wrong:</p>
+<ul>
+  <li><strong>Speed-to-lead numbers</strong> look worse than reality — the deal looks unanswered when Brad has in fact replied</li>
+  <li><strong>Follow-up counts</strong> under-report rep activity</li>
+  <li><strong>"Gone quiet" reports</strong> flag active deals as abandoned</li>
+  <li><strong>The AI extraction pass planned next</strong> will read incomplete conversations and miss things the customer said (budget, timeline, decision maker)</li>
+  <li><strong>The monthly revenue review</strong> shows lower activity than actually happened</li>
+</ul>
+<div class="call warn">
+  <span class="label">Bottom line</span>
+  <p>The fix has to land before the AI extraction goes live. Garbage in, garbage out.</p>
+</div>
+
+<h2><span class="num">05</span>What we'll change — scheduled sweep replaces the stage-triggered fetch</h2>
+<p>Nothing downstream needs real-time message sync. The clocks, reviews and extraction pass all work fine on day-old data. Speed-to-lead is measured from message timestamps, not sync time. So a scheduled sweep is the right tool — simpler than webhooks, self-reconciling, no missed-event risk.</p>
+
+<h3 class="move"><span class="badge">Move 1</span>Scheduled sweep</h3>
+<p>A cron job runs every 12 hours (noon + midnight UK). Each run:</p>
+<ol class="steps">
+  <li><strong>Find contacts with recent activity</strong> — any contact where <code>updated_at</code> moved in the last 12 hours (matching the sweep window). This keeps us inside GHL's rate limits — we don't sweep every contact every run, only the active ones.</li>
+  <li><strong>For each of those contacts</strong>, fetch all messages from GHL across every conversation the contact has (both passes — default channels + explicit email pass, because GHL silently drops emails without the flag).</li>
+  <li><strong>Insert new messages</strong> using <code>ON CONFLICT (location_id, message_id) DO NOTHING</code> — anything we already have is skipped; anything new lands.</li>
+  <li><strong>Run the opportunity-linking pass</strong> for every message with <code>opportunity_id = NULL</code> (see Move 2).</li>
+  <li><strong>Log a summary and alert on failure</strong> (see §9).</li>
+</ol>
+
+<div class="call info">
+  <span class="label">Why this fixes both real examples</span>
+  <ul style="margin:8px 0 0 22px;">
+    <li><strong>Danilo</strong> (no stage change): sweep runs 12h later regardless, picks up the missing email</li>
+    <li><strong>Yusuf</strong> (handover to new thread): sweep re-queries all of the contact's conversations from scratch each time, so a newly-created thread is discovered on the next run</li>
+  </ul>
+</div>
+<p><strong>Trade-off vs live sync:</strong> worst case a message is 12 hours late reaching Supabase. Acceptable — no downstream deliverable needs faster.</p>
+
+<h3 class="move"><span class="badge">Move 2</span>Opportunity linking, inside the sweep</h3>
+<p>When a message arrives, we always know the <code>contact_id</code>. GHL does not always tell us which <code>opportunity_id</code> the message belongs to — a contact can have multiple deals in the pipeline (e.g. a homeowner asking about both bifolds and rooflights). We handle it in three passes, all inside the sweep:</p>
+<ol>
+  <li><strong>Single-deal contacts</strong> — if the contact has exactly one open opportunity, link every message from that contact to it.</li>
+  <li><strong>Multi-deal contacts — HARD EXCLUSION</strong> — where a contact has 2+ open opportunities sharing a live email thread, we do NOT link. Timestamps alone can't tell which deal a message belongs to, and mis-attribution on the bigger deals breaks trust in the whole system. Messages are still stored (contact-only), but the AI extraction pass is instructed to skip these contacts entirely — no MEDDIC extraction writes to deals sharing a live thread until we have a proper attribution answer.</li>
+  <li><strong>Historical link-fill</strong> — for any message with <code>opportunity_id = NULL</code> where a stage window can be reconstructed from <code>stage_history</code>, link it if the timestamp falls inside a known <code>[entered_at, left_at]</code> window on a single opportunity. This catches messages that came in when the contact had multiple deals but only one had activity in that time.</li>
+</ol>
+<p>The <code>thread_id</code> column (see §7) is the path out of the multi-deal problem long-term — once we can group by thread, we can eventually attribute cleanly. For now it just gets captured, not used for linking.</p>
+
+<h3>Old fetch removed after verification</h3>
+<p>The current stage-triggered message fetch is removed only after the sweep has run cleanly for a week and verification (§8) passes. Stage-change events continue to update the <code>opportunities</code> row and open/close <code>stage_history</code> rows — they just stop fetching messages.</p>
+
+<h2><span class="num">06</span>Historical gap — filling in what's already missing</h2>
+<p>Once the sweep is running cleanly, we do a one-time backfill for messages that are missing from <code>messages</code> but exist in GHL. Same shape as the sweep, but with a much wider time window — we ask GHL for every conversation on every contact, from contact creation to now, and insert anything not already there. The <code>messages</code> table already has a unique index on <code>(location_id, message_id)</code>, so nothing gets duplicated — re-runs are safe.</p>
+<p>Same opportunity-linking rules from Move 2 apply during backfill. Multi-deal contacts stay excluded from AI attribution.</p>
+<p>Takes about 15 minutes per business (Crittall, BGD, Veritas, Omnia). No downtime.</p>
+
+<div class="call good">
+  <span class="label">Order + critical path</span>
+  <p><strong>BGD first</strong> — it's your QA sandbox. You and Eduarda spot-check a few contacts against GHL to confirm the missing emails have now appeared. Then we run it on Crittall, Veritas, Omnia in sequence.</p>
+  <p>Eduarda re-runs the quote-silence and follow-up baselines against the corrected data after BGD's backfill passes spot-check. Auto-acknowledgement goes live after that. So the <strong>BGD backfill is on the critical path</strong> — we'll flag the moment it's done.</p>
+</div>
+
+<h2><span class="num">07</span>Extra improvement — track email threads properly</h2>
+<p>While we're changing the message sync, one more thing worth adding: each email carries a <strong>thread ID</strong> (the equivalent of a subject line group in Gmail). We don't currently store it. Adding a <code>thread_id</code> column to <code>messages</code> (nullable — only emails have it, SMS/WhatsApp/calls stay NULL) means:</p>
+<ul>
+  <li>Reconstruct email chains in the correct order for the AI extraction later</li>
+  <li>Detect handovers (a new <code>thread_id</code> started by a different rep) — the Yusuf case would have been visible for exactly this reason</li>
+  <li><strong>Long-term path out of the multi-open-deal attribution problem</strong> — once we can group by thread, we can eventually attribute correctly across contacts with 2+ live deals</li>
+</ul>
+<p>Small addition, ships alongside the sweep.</p>
+
+<h2><span class="num">08</span>Verification before we retire the old fetch</h2>
+<p>"No gaps" is a positive test, not the absence of complaints. Before the stage-triggered fetch is removed:</p>
+<ul>
+  <li>Pick a sample of BGD contacts across single-deal and multi-deal</li>
+  <li>For each, count messages in GHL UI vs <code>SELECT COUNT(*) FROM messages WHERE contact_id = ...</code></li>
+  <li><strong>The counts must match.</strong> Any mismatch is a gap; investigate before the removal ships.</li>
+  <li>Repeat the check ~one week after the sweep goes live.</li>
+</ul>
+<p>Only after a clean verification does Move 1 replace the old fetch as source of truth.</p>
+
+<h2><span class="num">09</span>Failure alerting</h2>
+<p>With a scheduled job, the silent failure mode is real — the sweep doesn't run, nobody notices until the Tuesday review shows stale data. We'll add:</p>
+<ul>
+  <li>A "last successful sweep at" timestamp written on every completed run</li>
+  <li>An email alert to the Vaultsuite team if a run fails, throws, or takes longer than 2× normal duration</li>
+  <li>A "no sweep in last 24 hours" alert if the last-successful timestamp goes stale</li>
+</ul>
+<p>Simple, deterministic, catches the silent-failure case James called out.</p>
+
+<h2><span class="num">10</span>Multi-open-deal contacts — homework</h2>
+<p>James asked how many BGD contacts have 2+ open opportunities at once. That number decides how hard we work on the attribution problem later.</p>
+<p>We'll run this SQL once the plan is approved and share the number:</p>
+<pre><code>SELECT COUNT(DISTINCT contact_id) AS multi_open_deal_contacts
+FROM opportunities
+WHERE location_id = 'IFcSg4YvuVlx56msjbdf'
+  AND status = 'open'
+  AND is_deleted = false
+GROUP BY contact_id
+HAVING COUNT(*) &gt;= 2;</code></pre>
+<p>Plus a spot-check: for the top 5 such contacts, list the opportunity names + monetary values, so we can see whether these are the "bigger deals" James suspects.</p>
+
+<h2><span class="num">11</span>What we're NOT doing in this fix</h2>
+<p>To be clear about scope — these are all Phase 2 work:</p>
+<ul>
+  <li>Call transcription (Whisper on recorded calls)</li>
+  <li>The nightly AI extraction pass (MEDDIC + evidence)</li>
+  <li>Full contact → opportunity attribution for multi-open-deal contacts</li>
+  <li>GCLID plumbing back to Google Ads</li>
+  <li>Extending the analytics views with AI fields, three whys, forecast</li>
+</ul>
+<p>This document is only about <strong>fixing message sync</strong> so those Phase 2 pieces have clean data to work with.</p>
+
+<section class="signoff">
+<h2><span class="num">12</span>Sign-off — approved 21 Jul</h2>
+<p style="color:var(--ink-soft); margin-bottom:16px;">James's reply approved the plan on this basis. Build proceeds. Any deviation from below requires re-approval before shipping.</p>
+<ul class="checklist">
+  <li><span class="box"></span><span class="txt"><strong>Scheduled sweep instead of live webhook sync</strong><span class="sub">12h cadence, contacts filtered by recent activity.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>Move 3 (safety net) dropped</strong><span class="sub">Sweep IS the widened fetch made permanent.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>NULL-opportunity linking runs inside the sweep</strong><span class="sub">Not on stage change — stalled deals would inherit the original bug.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>Multi-open-deal contacts parked with hard AI exclusion</strong><span class="sub"><code>thread_id</code> still captured as the path out.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>Week-1 verification: manual message-count check GHL vs Supabase must pass</strong><span class="sub">Not just absence of complaints.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>Backfill order: BGD → Crittall → Veritas → Omnia</strong><span class="sub">Eduarda + James spot-check on BGD before rolling to the other three.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>Failure alerting added</strong><span class="sub">Sweep silently not running is the real risk — we alert on it.</span></span></li>
+  <li><span class="box"></span><span class="txt"><strong>BGD backfill flagged the moment it's done</strong><span class="sub">Baselines critical path — auto-ack goes live after Eduarda re-runs against corrected data.</span></span></li>
+</ul>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "rep_process_discipline",
+  "description": "Three separate CRM habits measured on each rep's open deals: what share have a next action booked, what share have a note written, and what share have the customer's messages linked to the deal. Use for 'who keeps the CRM up to date', 'are reps booking follow-ups', 'which deals are being neglected', 'is anyone letting deals sit', 'who needs chasing on process'. NEVER average these into one discipline score or rank reps by a combined figure — the three measure different things and a rep who books every next action but writes no notes is organised and quiet, not half-compliant. Report them apart. pct_with_linked_msgs is NOT a rep habit and must never be used to coach anyone: GHL's association resolver decides whether a conversation attaches to a deal, and it depends on the customer having one open deal rather than several, so a rep handling repeat customers scores low whatever they do — describe it as how well the data is joined up. pct_with_next_action is the one genuinely worth acting on. Say the open-deal count next to any percentage; min_open_deals exists to set that floor deliberately. Rows are per GHL user account, not per person — someone with several accounts appears several times and must not be described as several people. Unowned open deals are excluded from the rates because no one's habits are being measured, but unassigned_open_deals counts them and they are the deals least likely to be worked at all — mention them when it is non-zero. Note is_inactive_user rather than presenting a departed rep as current.",
+  "viewName": "vw_rep_process_discipline",
+  "params": [
+    {
+      "name": "rep",
+      "column": "rep_account",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep account by name."
+    },
+    {
+      "name": "min_open_deals",
+      "column": "open_deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only accounts with at least this many open deals. Use to drop accounts too small for a percentage to mean anything — five is a reasonable floor."
+    },
+    {
+      "name": "next_action_below_pct",
+      "column": "pct_with_next_action",
+      "type": "number",
+      "op": "lte",
+      "description": "Only accounts booking a next action on at or below this share of their open deals. Use for 'who is not booking follow-ups'."
+    },
+    {
+      "name": "notes_below_pct",
+      "column": "pct_with_a_note",
+      "type": "number",
+      "op": "lte",
+      "description": "Only accounts writing notes on at or below this share of their open deals."
+    }
+  ],
+  "columns": [],
+  "orderBy": "open_deals DESC",
+  "rowLimit": 50,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

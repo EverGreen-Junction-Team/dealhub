@@ -1,0 +1,35 @@
+{
+  "name": "stage_deals_sit_in_longest_before_lost",
+  "description": "For deals that were lost or abandoned, the stage each one sat in longest before it closed — with how many stalled there, the lost/abandoned split, how long a typical one sat, and how many died the same day they arrived. Use for 'where do deals lose momentum', 'which stage do deals sit in too long', 'where are deals stalling', 'what stage do deals go quiet in'. This is the stage a deal spent the most TIME in, which is not always the stage it was in when it closed — for that, use the drop-off skill instead.",
+  "viewName": "vw_stall_stage_before_close",
+  "params": [
+    {
+      "name": "stage",
+      "column": "stage_name",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one stage by name, e.g. 'quote'. Omit to see every stage."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only stages where at least this many deals stalled. Useful for ignoring one-off stages."
+    },
+    {
+      "name": "min_median_days",
+      "column": "median_days",
+      "type": "number",
+      "op": "gte",
+      "description": "Only stages where the typical deal sat at least this many days. Use for 'where are deals sitting for weeks'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 50,
+  "surfaces": [
+    "portfolio"
+  ],
+  "isEnabled": true
+}

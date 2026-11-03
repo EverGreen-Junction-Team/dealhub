@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GHL → Supabase Webhook Integration — Implementation</title>
+<style>
+  :root {
+    --blue: #0969da;
+    --green: #1f883d;
+    --purple: #8250df;
+    --yellow: #bf8700;
+    --red: #cf222e;
+    --bg: #fdfdfd;
+    --panel: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #57606a;
+    --code-bg: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  html { color: var(--text); background: var(--bg); }
+  body {
+    margin: 0 auto;
+    max-width: 1080px;
+    padding: 48px 40px 80px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+    text-rendering: optimizeLegibility;
+  }
+  @media (max-width: 780px) { body { padding: 24px 16px; font-size: 15px; } }
+  h1 {
+    font-size: 2.1em;
+    margin: 0 0 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  h2 {
+    font-size: 1.5em;
+    margin: 2.4em 0 0.6em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 20px;
+  }
+  h3 { font-size: 1.2em; margin: 1.6em 0 0.4em; color: var(--text); scroll-margin-top: 20px; }
+  h4 { font-size: 1.02em; margin: 1.2em 0 0.3em; color: var(--muted); }
+  p { margin: 0.6em 0; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { color: #1f2328; }
+  code {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.85em;
+    white-space: nowrap;
+  }
+  pre {
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.45;
+    margin: 1em 0;
+  }
+  pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    white-space: pre;
+    font-size: inherit;
+  }
+  .subtitle { color: var(--muted); font-size: 1.05em; margin-top: 0; }
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0 28px;
+    font-size: 0.92em;
+    color: var(--muted);
+  }
+  .meta strong { color: var(--text); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 0.3em 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--panel); font-weight: 600; }
+  tr:nth-child(2n) td { background: var(--panel); }
+  td code, th code { background: white; }
+  .callout {
+    border-left: 4px solid var(--blue);
+    background: #ddf4ff;
+    padding: 10px 14px;
+    margin: 1em 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.95em;
+  }
+  .callout.note    { border-left-color: var(--blue);   background: #ddf4ff; }
+  .callout.warn    { border-left-color: var(--yellow); background: #fff8e5; }
+  .callout.success { border-left-color: var(--green);  background: #dafbe1; }
+  .callout.danger  { border-left-color: var(--red);    background: #ffebe9; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* TOC */
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin: 16px 0 28px;
+  }
+  .toc h3 { margin: 0 0 8px; font-size: 0.95em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .toc ol { columns: 2; margin: 0; padding-left: 18px; font-size: 0.93em; }
+  @media (max-width: 700px) { .toc ol { columns: 1; } }
+  .toc li { margin: 0.15em 0; break-inside: avoid; }
+
+  /* Status pills */
+  .pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.78em;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .pill.live    { background: #dafbe1; color: var(--green); border: 1px solid var(--green); }
+  .pill.pending { background: #fff8e5; color: var(--yellow); border: 1px solid var(--yellow); }
+  .pill.future  { background: #f6f8fa; color: var(--muted); border: 1px solid var(--border); }
+
+  /* Flow diagram */
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 1.5em 0;
+  }
+  .diagram-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; align-items: stretch; }
+  .node {
+    background: white;
+    border: 1.5px solid var(--blue);
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+    flex: 1 1 160px;
+    max-width: 220px;
+    min-width: 140px;
+  }
+  .node .nt { font-weight: 600; font-size: 0.94em; }
+  .node .ns { color: var(--muted); font-size: 0.82em; line-height: 1.35; margin-top: 3px; }
+  .node.ghl  { border-color: var(--green); }
+  .node.app  { border-color: var(--blue); }
+  .node.db   { border-color: var(--purple); }
+  .node.cdn  { border-color: var(--yellow); }
+  .down-arrow {
+    width: 2px; height: 24px; background: #6e7781;
+    margin: 6px auto; position: relative;
+  }
+  .down-arrow::after {
+    content: ""; position: absolute; bottom: -1px; left: -5px;
+    width: 0; height: 0;
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-top: 9px solid #6e7781;
+  }
+  .arrow-label {
+    text-align: center; color: var(--muted); font-size: 0.78em;
+    font-style: italic; margin: 2px 0;
+  }
+
+  /* Case timeline */
+  .timeline { border-left: 3px solid var(--border); padding-left: 18px; margin: 1em 0; }
+  .timeline-item { margin: 12px 0; position: relative; }
+  .timeline-item::before {
+    content: ""; position: absolute; left: -26px; top: 7px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: white; border: 3px solid var(--blue);
+  }
+  .timeline-item.fire::before { border-color: var(--red); background: var(--red); }
+  .timeline-item.win::before { border-color: var(--green); background: var(--green); }
+  .timeline-item.idle::before { border-color: var(--muted); }
+  .timeline-item .when { font-weight: 600; font-size: 0.92em; }
+  .timeline-item .what { color: var(--muted); font-size: 0.9em; margin-top: 2px; }
+
+  /* Footer */
+  .doc-footer {
+    text-align: center; color: var(--muted); font-size: 0.85em;
+    margin-top: 3em; padding-top: 1em; border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<h1>Opportunity Stage History</h1>
+<p class="subtitle">Implementation snapshot, data model, behaviour cases, and SQL query library</p>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#summary">Executive summary</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#webhooks">Webhook subscriptions</a></li>
+    <li><a href="#schema">Database schema (7 tables)</a></li>
+    <li><a href="#cases">Behaviour cases</a></li>
+    <li><a href="#enrichment">Enrichment + data cleaning</a></li>
+    <li><a href="#queries">SQL query library</a></li>
+    <li><a href="#ops">Operational notes</a></li>
+    <li><a href="#nextsteps">Next steps</a></li>
+  </ol>
+</div>
+
+<h2 id="summary">1. Executive summary</h2>
+
+<p>A private GoHighLevel marketplace app installed on your sub-account receives every opportunity-related event in real time, enriches it with conversation data, contact details and custom fields, then writes structured rows into a self-hosted Postgres database (Supabase) running on a dedicated EU server.</p>
+
+<p>The end state is a queryable history of every pipeline movement, every message exchanged in each stage, and every contact / opportunity custom field — without ever exporting a CSV manually. SQL queries on top answer the analytics questions you raised: stage velocity, conversion funnels, per-sales-manager segmentation, message delivery rates, and stage-by-stage comparisons.</p>
+
+<div class="callout success">
+  <p><strong>What's live today:</strong> webhook ingestion, 7-table schema, real-time stage history, message capture with delivery status, contact / opportunity custom fields, daily orphan sweep, HTTPS via custom domain.</p>
+</div>
+
+<h2 id="architecture">2. Architecture</h2>
+
+<div class="diagram">
+  <div class="diagram-row">
+    <div class="node ghl">
+      <div class="nt">GoHighLevel</div>
+      <div class="ns">your sub-account fires 7 opportunity webhooks + lifecycle events</div>
+    </div>
+    <div class="node cdn">
+      <div class="nt">Cloudflare</div>
+      <div class="ns">edge TLS termination<br/><code>app.pipelineegj.com</code></div>
+    </div>
+    <div class="node app">
+      <div class="nt">Private App</div>
+      <div class="ns">webhook receiver · OAuth · enrichment · cleaning · writer</div>
+    </div>
+    <div class="node db">
+      <div class="nt">Supabase Postgres</div>
+      <div class="ns">7 tables · RLS multi-tenant<br/>EU (Germany)</div>
+    </div>
+  </div>
+  <div class="down-arrow"></div>
+  <div class="arrow-label">SQL queries (see section 7)</div>
+  <div class="diagram-row">
+    <div class="node" style="border-color: var(--text);">
+      <div class="nt">Your analytics layer</div>
+      <div class="ns">SQL clients, BI tools, LLMs — anything that speaks Postgres</div>
+    </div>
+  </div>
+</div>
+
+<h4>Infrastructure</h4>
+<table>
+  <thead><tr><th>Component</th><th>Where</th><th>Specs</th></tr></thead>
+  <tbody>
+    <tr><td>App + Database server (Server + self-hosted Supabase</td><td>Netcup Nuremberg, Germany</td><td>Ubuntu 22.04 · Postgres 17 · 2 cores · 4 GB RAM · 60 GB SSD</td></tr>
+    <tr><td>HTTPS / DNS</td><td>Cloudflare (free tier)</td><td>Tunnel from app server → Cloudflare edge cert auto-renews</td></tr>
+    <tr><td>Process manager</td><td>PM2 on the server</td><td>auto-restart, log rotation, survives reboot</td></tr>
+  </tbody>
+</table>
+
+<h2 id="webhooks">3. Webhook subscriptions</h2>
+
+<p>GoHighLevel pushes seven opportunity-related events to a single URL: <code>https://app.pipelineegj.com/webhooks/ghl</code>. Each event is dispatched to a different code path. Three events affect <em>stage history</em>, four are <em>metadata-only</em>.</p>
+
+<table>
+  <thead>
+    <tr><th>Event</th><th>Triggers what</th><th>Writes <code>opportunities</code>?</th><th>Writes <code>stage_history</code>?</th><th>Fetches messages?</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>OpportunityCreate</code></td><td>New opp created</td><td>✅ insert</td><td>✅ open first row</td><td>❌ (empty window)</td></tr>
+    <tr><td><code>OpportunityStageUpdate</code></td><td>Stage transition</td><td>✅ refresh</td><td>✅ close prior + open new</td><td>✅ messages from closing stage</td></tr>
+    <tr><td><code>OpportunityDelete</code></td><td>Opp deleted</td><td>✅ <code>is_deleted = true</code></td><td>✅ close current row</td><td>❌</td></tr>
+    <tr><td><code>OpportunityUpdate</code></td><td>Generic edit (custom field, name, etc.)</td><td>✅ refresh</td><td>❌</td><td>❌</td></tr>
+    <tr><td><code>OpportunityStatusUpdate</code></td><td>open → won / lost / abandoned</td><td>✅ <code>status</code> refresh</td><td>❌</td><td>❌</td></tr>
+    <tr><td><code>OpportunityAssignedToUpdate</code></td><td>Owner reassigned</td><td>✅ <code>assigned_to</code> refresh</td><td>❌</td><td>❌</td></tr>
+    <tr><td><code>OpportunityMonetaryValueUpdate</code></td><td>$ value edited</td><td>✅ <code>monetary_value</code> refresh</td><td>❌</td><td>❌</td></tr>
+    <tr><td><code>INSTALL</code> / <code>UNINSTALL</code></td><td>App installed / removed</td><td>n/a</td><td>n/a</td><td>n/a — token storage only</td></tr>
+  </tbody>
+</table>
+
+<div class="callout note">
+  <p>Every webhook is RSA-signature verified against GoHighLevel's published public key before processing. Duplicate deliveries are deduped via a <code>processed_events</code> table that uniques on <code>webhookId</code>.</p>
+</div>
+
+<h2 id="schema">4. Database schema (7 tables)</h2>
+
+<p>Four customer-data tables (with Row-Level Security per <code>location_id</code>) and three operational tables. Every row carries <code>location_id</code> so multi-tenant separation is enforced at the database level.</p>
+
+<h3>4.1 <code>contacts</code> <span class="pill live">Live</span></h3>
+<p>One row per GHL contact per sub-account. UTM / Google-ads fields promoted to dedicated columns for fast filtering; everything else lives in JSONB.</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>What it stores</th></tr></thead>
+  <tbody>
+    <tr><td><code>location_id, contact_id</code></td><td>TEXT (PK)</td><td>Composite primary key</td></tr>
+    <tr><td><code>gclid, gbraid, wbraid, gad_source</code></td><td>TEXT</td><td>Promoted Google-ads attribution</td></tr>
+    <tr><td><code>utm_source, _medium, _campaign, _content, _term</code></td><td>TEXT</td><td>Promoted UTM tracking</td></tr>
+    <tr><td><code>marketing_consent</code></td><td>BOOLEAN</td><td>Consent flag</td></tr>
+    <tr><td><code>custom_fields</code></td><td>JSONB</td><td>Everything else, keyed by GHL <code>fieldKey</code> (e.g. <code>contact.pincode</code>)</td></tr>
+    <tr><td><code>imported_at, updated_at</code></td><td>TIMESTAMPTZ</td><td>Audit timestamps</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 <code>opportunities</code> <span class="pill live">Live</span></h3>
+<p>One row per opportunity. Live state — reflects current values at the time of the last webhook. Includes "first stage" snapshot so you can always answer "where did this deal start?".</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>What it stores</th></tr></thead>
+  <tbody>
+    <tr><td><code>location_id, opportunity_id</code></td><td>TEXT (PK)</td><td>Composite primary key</td></tr>
+    <tr><td><code>contact_id</code></td><td>TEXT (FK)</td><td>Links to <code>contacts</code></td></tr>
+    <tr><td><code>name, pipeline_id, pipeline_name</code></td><td>TEXT</td><td>Identification</td></tr>
+    <tr><td><code>current_stage_id, current_stage_name</code></td><td>TEXT</td><td>LIVE — refreshed every event</td></tr>
+    <tr><td><code>first_stage_id, first_stage_name</code></td><td>TEXT</td><td>SNAPSHOT — written once on creation, never updated. Lets you answer "what stage did this deal start in?"</td></tr>
+    <tr><td><code>status</code></td><td>TEXT</td><td><code>open</code> / <code>won</code> / <code>lost</code> / <code>abandoned</code></td></tr>
+    <tr><td><code>monetary_value</code></td><td>NUMERIC(12,2)</td><td>Current £ value</td></tr>
+    <tr><td><code>assigned_to, assigned_to_name</code></td><td>TEXT</td><td>GHL user id + human name (for sales-manager filtering)</td></tr>
+    <tr><td><code>meddic_1 … meddic_10</code></td><td>TEXT</td><td>Promoted MEDDIC qualification fields</td></tr>
+    <tr><td><code>client_type, product_system, product_type, postcode</code></td><td>TEXT</td><td>Promoted Crittall-specific custom fields</td></tr>
+    <tr><td><code>first_contact_method, lead_source_opportunity, inquiry</code></td><td>TEXT</td><td>Promoted lead-attribution fields</td></tr>
+    <tr><td><code>custom_fields</code></td><td>JSONB</td><td>Everything else, keyed by GHL <code>fieldKey</code></td></tr>
+    <tr><td><code>is_ghost, is_deleted</code></td><td>BOOLEAN</td><td>Synthesized vs. real, deleted flag</td></tr>
+    <tr><td><code>created_at_ghl</code></td><td>TIMESTAMPTZ</td><td>GHL's own creation timestamp</td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 <code>stage_history</code> <span class="pill live">Live</span></h3>
+<p>Append-only log. One row per (opportunity × stage occupancy). Three transitions on the same opp = three rows. This is the SOURCE OF TRUTH for time-in-stage and conversion analytics.</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>What it stores</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID (PK)</td><td>Stable row id — referenced by <code>messages</code></td></tr>
+    <tr><td><code>location_id, opportunity_id, contact_id</code></td><td>TEXT</td><td>Foreign keys to opportunities + contacts</td></tr>
+    <tr><td><code>stage_id, stage_name</code></td><td>TEXT</td><td>Pipeline stage at this occupancy</td></tr>
+    <tr><td><code>pipeline_id, pipeline_name</code></td><td>TEXT</td><td>For multi-pipeline analytics</td></tr>
+    <tr><td><code>entered_at</code></td><td>TIMESTAMPTZ</td><td>When the opp entered this stage</td></tr>
+    <tr><td><code>left_at</code></td><td>TIMESTAMPTZ</td><td>When it left (NULL = still here)</td></tr>
+    <tr><td><code>in_stage_duration_seconds</code></td><td>INTEGER</td><td>Computed on close (<code>left_at − entered_at</code>)</td></tr>
+    <tr><td><code>current_stage</code></td><td>BOOLEAN</td><td><code>true</code> on the open row; <code>false</code> on closed rows</td></tr>
+    <tr><td><code>deleted, ghost_opportunity</code></td><td>BOOLEAN</td><td>Mark deletion-close + synthesized rows</td></tr>
+    <tr><td><code>product_system, product_type</code></td><td>TEXT</td><td>Per-stage snapshot of those fields (in case they change mid-pipeline)</td></tr>
+    <tr><td><code>custom_fields_snapshot</code></td><td>JSONB</td><td>Snapshot of all opp custom fields at the moment of this transition</td></tr>
+    <tr><td><code>triggered_by</code></td><td>TEXT</td><td><code>opportunity_created</code> / <code>opportunity_stage_updated</code> / <code>opportunity_deleted</code> / <code>daily_sweep</code></td></tr>
+  </tbody>
+</table>
+
+<h3>4.4 <code>messages</code> <span class="pill live">Live</span></h3>
+<p>Every conversation message (SMS, Email, WhatsApp, Call, Webchat, etc.), linked to the stage_history row it occurred IN via <code>stage_history_id</code>.</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>What it stores</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID (PK)</td><td>Stable row id</td></tr>
+    <tr><td><code>location_id, contact_id, opportunity_id</code></td><td>TEXT</td><td>FKs</td></tr>
+    <tr><td><code>stage_history_id</code></td><td>UUID (FK)</td><td>Which stage_history row this message belongs to</td></tr>
+    <tr><td><code>message_id, conversation_id</code></td><td>TEXT</td><td>GHL-side identifiers (UNIQUE on message_id prevents dupes)</td></tr>
+    <tr><td><code>message_timestamp</code></td><td>TIMESTAMPTZ</td><td>When GHL says it was sent / received</td></tr>
+    <tr><td><code>message_body</code></td><td>TEXT</td><td>CLEANED — emails: headers/footers stripped, body preserved; SMS/WhatsApp: icons stripped</td></tr>
+    <tr><td><code>message_body_raw</code></td><td>TEXT</td><td>Original unmodified body, for audit</td></tr>
+    <tr><td><code>message_direction</code></td><td>TEXT</td><td><code>inbound</code> / <code>outbound</code></td></tr>
+    <tr><td><code>message_channel</code></td><td>TEXT</td><td><code>SMS</code> / <code>EMAIL</code> / <code>WHATSAPP</code> / <code>CALL</code> / etc.</td></tr>
+    <tr><td><code>message_status</code></td><td>TEXT</td><td><code>delivered</code> / <code>failed</code> / <code>read</code> / <code>sent</code> / etc. — GHL's delivery state</td></tr>
+    <tr><td><code>is_call</code></td><td>BOOLEAN</td><td>Convenience for filtering call records</td></tr>
+  </tbody>
+</table>
+
+<h3>4.5 <code>installs</code> <span class="pill live">Live</span> · internal</h3>
+<p>OAuth credentials + lifecycle anchors. One row per installed sub-account.</p>
+<table>
+  <thead><tr><th>Column</th><th>What it stores</th></tr></thead>
+  <tbody>
+    <tr><td><code>location_id</code> (PK)</td><td>GHL sub-account id</td></tr>
+    <tr><td><code>access_token, refresh_token, token_expires_at, scopes</code></td><td>OAuth state — auto-refreshed every 23 hours</td></tr>
+    <tr><td><code>installed_at, tracking_started_at</code></td><td>FIRST install (immutable) — anchor for forward-only tracking</td></tr>
+    <tr><td><code>reinstalled_at</code></td><td>MOST RECENT reinstall (after an uninstall)</td></tr>
+    <tr><td><code>uninstalled_at</code></td><td>Set on uninstall; tokens cleared at the same time</td></tr>
+  </tbody>
+</table>
+
+<h3>4.6 <code>pending_opportunities</code> <span class="pill live">Live</span> · internal</h3>
+<p>Orphan queue. When an opp is created we add a row here; when it later moves stage / status / anything, we remove it. The daily sweep cron runs at 03:00 UTC and emits a synthetic <code>stage_history</code> row for anything still in the queue past a 10-minute cool-off — so opportunities that have been sitting since creation still appear in your data.</p>
+
+<h3>4.7 <code>processed_events</code> <span class="pill live">Live</span> · internal</h3>
+<p>Idempotency log. Every incoming webhook's <code>webhookId</code> is inserted before processing; the UNIQUE constraint deduplicates GHL's retry deliveries silently. Rows TTL'd to 14 days.</p>
+
+<h2 id="cases">5. Behaviour cases</h2>
+
+<p>Concrete examples of what lands in each table for the most common real-world scenarios.</p>
+
+<h3>5.1 New opportunity created (no messages yet)</h3>
+<div class="timeline">
+  <div class="timeline-item"><div class="when">T1 — GHL fires <code>OpportunityCreate</code></div>
+    <div class="what">→ <code>contacts</code>: 1 row inserted/refreshed<br/>→ <code>opportunities</code>: 1 row inserted (current_stage_name + first_stage_name = "Initial contact made")<br/>→ <code>stage_history</code>: 1 row opened (entered_at=T1, current_stage=true)<br/>→ <code>messages</code>: 0 (window is empty)<br/>→ <code>pending_opportunities</code>: 1 row queued</div>
+  </div>
+</div>
+
+<h3>5.2 Stage transition (after exchanging messages)</h3>
+<div class="timeline">
+  <div class="timeline-item"><div class="when">T1 — opp created at the "Initial contact made" stage</div>
+    <div class="what">stage_history row1 opens with stage_name = "Initial contact made"</div>
+  </div>
+  <div class="timeline-item idle"><div class="when">T1 → T5 — 6 messages exchanged</div>
+    <div class="what">No webhook fires for messages alone — our DB stays unchanged</div>
+  </div>
+  <div class="timeline-item fire"><div class="when">T5 — GHL fires <code>OpportunityStageUpdate</code> ("Initial contact made" → "Qualified")</div>
+    <div class="what">→ We fetch all messages exchanged in the window [T1, T5]<br/>→ All 6 messages persisted, each linked to <strong>row1</strong> (the closing stage)<br/>→ row1 closed: left_at=T5, in_stage_duration_seconds = T5−T1<br/>→ row2 opened: entered_at=T5, stage="Qualified"<br/>→ Removed from orphan opportunities — some communication happened, so the deal is no longer "stuck since creation"</div>
+  </div>
+</div>
+
+<h3>5.3 Status change without stage movement</h3>
+<p>E.g. you mark an opp <code>lost</code> directly without moving it through stages.</p>
+<div class="timeline">
+  <div class="timeline-item"><div class="when">T8 — GHL fires <code>OpportunityStatusUpdate</code> (status: open → lost)</div>
+    <div class="what">→ <code>opportunities.status</code> refreshed to "lost"<br/>→ <code>stage_history</code>: <strong>no new row</strong> (stage didn't change)<br/>→ <code>messages</code>: not refreshed (metadata-only event)</div>
+  </div>
+</div>
+
+<h3>5.4 Custom field / monetary value / assignment edits</h3>
+<p>Any time you edit an opp in GHL without moving it, the corresponding metadata-only webhook fires.</p>
+<table>
+  <thead><tr><th>Edit</th><th>Webhook</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td>£ value changed</td><td><code>OpportunityMonetaryValueUpdate</code></td><td><code>opportunities.monetary_value</code> refreshed</td></tr>
+    <tr><td>Owner reassigned</td><td><code>OpportunityAssignedToUpdate</code></td><td><code>opportunities.assigned_to</code> + <code>assigned_to_name</code> refreshed</td></tr>
+    <tr><td>Custom field edited</td><td><code>OpportunityUpdate</code></td><td>Full row refreshed including <code>custom_fields</code> JSONB</td></tr>
+  </tbody>
+</table>
+
+<h3>5.5 Orphan opportunity (created but never moved)</h3>
+<div class="timeline">
+  <div class="timeline-item"><div class="when">T1 — opp created</div>
+    <div class="what">row added to pending_opportunities</div>
+  </div>
+  <div class="timeline-item idle"><div class="when">T1 + 24h — opp still sitting, no stage move, no edits</div>
+    <div class="what">Daily sweep cron at 03:00 UTC notices the orphan</div>
+  </div>
+  <div class="timeline-item win"><div class="when">Cron run</div>
+    <div class="what">→ Synthetic stage_history row emitted with <code>triggered_by = 'daily_sweep'</code><br/>→ Row removed from pending_opportunities (notified at most once)</div>
+  </div>
+</div>
+
+<h3>5.6 Opportunity deleted</h3>
+<div class="timeline">
+  <div class="timeline-item fire"><div class="when">T10 — GHL fires <code>OpportunityDelete</code></div>
+    <div class="what">→ <code>opportunities.is_deleted = true</code><br/>→ Currently-open stage_history row closed with <code>deleted = true</code>, left_at = T10<br/>→ Historical analytics rows (previous stages + messages) are PRESERVED — only marked deleted, not removed</div>
+  </div>
+</div>
+
+<h2 id="enrichment">6. Enrichment + data cleaning</h2>
+
+<h3>6.1 Custom fields keyed by <code>fieldKey</code></h3>
+<p>JSONB keys use the full GHL <code>fieldKey</code> (e.g. <code>contact.pincode</code>, <code>opportunity.meddic_1</code>). That's GHL's canonical identifier — stable across renames in the GHL UI, no ambiguity between contact and opp fields with the same short name.</p>
+
+<pre><code>// Example contacts.custom_fields JSONB:
+{
+  "contact.pincode": "SW1A 1AA",
+  "contact.utm_source": "google",
+  "contact.gclid": "Cj0KCQiA..."
+}
+
+// Example opportunities.custom_fields JSONB:
+{
+  "opportunity.product_system": "Crittall",
+  "opportunity.product_type": "Bifold Door",
+  "opportunity.meddic_1": "Champion identified"
+}</code></pre>
+
+<h3>6.2 Message body cleaning</h3>
+<table>
+  <thead><tr><th>Channel</th><th>What we strip</th><th>What we keep</th></tr></thead>
+  <tbody>
+    <tr><td>Email (HTML)</td><td>Outer <code>&lt;html&gt;</code> / <code>&lt;head&gt;</code>, all <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code> blocks, tracking pixels, common unsubscribe footers, all <code>style</code> and <code>class</code> attributes</td><td>Everything inside <code>&lt;body&gt;</code> with semantic HTML preserved (links, images, structure)</td></tr>
+    <tr><td>SMS / WhatsApp</td><td>Emoji icons (so reactions become readable text), GHL UI placeholders like <code>&gt;AUDIO&lt;</code> or <code>&gt;IMAGE&lt;</code></td><td>All real text — including reaction phrases like "Reacted to" minus the emoji</td></tr>
+  </tbody>
+</table>
+<p>The <code>message_body_raw</code> column keeps the unmodified original so any "this body looks wrong" reports can be audited against the source for the first month.</p>
+
+<h2 id="queries">7. SQL query library</h2>
+
+<p>Practical queries for the use cases you raised. Run them directly in the Supabase SQL editor or any Postgres client connected to the database.</p>
+
+<h3>7.1 Pipeline velocity — average time in each stage</h3>
+<pre><code>SELECT
+  stage_name,
+  COUNT(*) FILTER (WHERE NOT current_stage) AS completed_occupancies,
+  ROUND(AVG(in_stage_duration_seconds) FILTER (WHERE NOT current_stage) / 3600.0, 1) AS avg_hours,
+  ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY in_stage_duration_seconds)
+        FILTER (WHERE NOT current_stage) / 3600.0, 1) AS median_hours,
+  ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY in_stage_duration_seconds)
+        FILTER (WHERE NOT current_stage) / 3600.0, 1) AS p95_hours
+FROM stage_history
+GROUP BY stage_name
+ORDER BY avg_hours DESC NULLS LAST;</code></pre>
+
+<h3>7.2 Stalled deals — opps stuck in a stage longer than N days</h3>
+<pre><code>SELECT
+  o.name                                      AS opportunity_name,
+  o.assigned_to_name                          AS owner,
+  sh.stage_name                               AS stuck_in,
+  sh.entered_at,
+  EXTRACT(EPOCH FROM (now() - sh.entered_at)) / 86400 AS days_stuck,
+  o.monetary_value
+FROM stage_history sh
+JOIN opportunities o
+  ON o.location_id = sh.location_id AND o.opportunity_id = sh.opportunity_id
+WHERE sh.current_stage = true
+  AND o.is_deleted = false
+  AND sh.entered_at &lt; now() - interval '7 days'
+ORDER BY days_stuck DESC;</code></pre>
+
+<h3>7.3 Conversion funnel — stage-to-stage drop-off</h3>
+<pre><code>WITH stage_entries AS (
+  SELECT stage_name, COUNT(*) AS entered
+  FROM stage_history
+  GROUP BY stage_name
+)
+SELECT
+  stage_name,
+  entered,
+  ROUND(100.0 * entered / MAX(entered) OVER (), 1) AS pct_of_top_stage
+FROM stage_entries
+ORDER BY entered DESC;</code></pre>
+
+<h3>7.4 Win rate by starting stage</h3>
+<pre><code>SELECT
+  first_stage_name,
+  COUNT(*)                                          AS total_opps,
+  COUNT(*) FILTER (WHERE status = 'won')            AS won,
+  COUNT(*) FILTER (WHERE status = 'lost')           AS lost,
+  COUNT(*) FILTER (WHERE status = 'open')           AS still_open,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'won') / NULLIF(COUNT(*), 0), 1) AS win_pct
+FROM opportunities
+WHERE is_deleted = false
+GROUP BY first_stage_name
+ORDER BY win_pct DESC NULLS LAST;</code></pre>
+
+<h3>7.5 Per-sales-manager — performance comparison</h3>
+<pre><code>SELECT
+  o.assigned_to_name,
+  COUNT(*)                                          AS opps_owned,
+  COUNT(*) FILTER (WHERE o.status = 'won')          AS won,
+  ROUND(AVG(o.monetary_value), 2)                   AS avg_deal_size,
+  SUM(o.monetary_value) FILTER (WHERE o.status = 'won')  AS won_revenue,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE o.status = 'won') / NULLIF(COUNT(*), 0), 1) AS win_pct
+FROM opportunities o
+WHERE o.is_deleted = false AND o.assigned_to_name IS NOT NULL
+GROUP BY o.assigned_to_name
+ORDER BY won_revenue DESC NULLS LAST;</code></pre>
+
+<h3>7.6 Cross-user comparison at the SAME stage</h3>
+<p>"How do User A and User B compare at the Negotiation stage?"</p>
+<pre><code>SELECT
+  o.assigned_to_name,
+  COUNT(*)                                                          AS deals_at_stage,
+  ROUND(AVG(EXTRACT(EPOCH FROM (now() - sh.entered_at)) / 86400), 1) AS avg_days_in_stage,
+  COUNT(m.id)                                                       AS msgs_exchanged
+FROM stage_history sh
+JOIN opportunities o
+  ON o.location_id = sh.location_id AND o.opportunity_id = sh.opportunity_id
+LEFT JOIN messages m ON m.stage_history_id = sh.id
+WHERE sh.stage_name = 'Negotiation'
+  AND sh.current_stage = true
+  AND o.is_deleted = false
+GROUP BY o.assigned_to_name
+ORDER BY deals_at_stage DESC;</code></pre>
+
+<h3>7.7 Filter by opportunity type — only "Closed Won" deals</h3>
+<pre><code>SELECT
+  o.name, o.assigned_to_name, o.monetary_value,
+  o.current_stage_name, o.first_stage_name,
+  o.created_at_ghl, o.updated_at
+FROM opportunities o
+WHERE o.status = 'won'
+  AND o.is_deleted = false
+ORDER BY o.updated_at DESC;</code></pre>
+
+<h3>7.8 Messages per stage — "what did we say to this customer in stage X?"</h3>
+<pre><code>SELECT
+  sh.stage_name,
+  m.message_timestamp,
+  m.message_direction,
+  m.message_channel,
+  m.message_status,
+  LEFT(m.message_body, 200) AS body_preview
+FROM messages m
+JOIN stage_history sh ON sh.id = m.stage_history_id
+WHERE sh.opportunity_id = 'OPP_ID_HERE'
+ORDER BY m.message_timestamp;</code></pre>
+
+<h3>7.9 Message delivery rate per stage (outbound SMS only)</h3>
+<pre><code>SELECT
+  sh.stage_name,
+  COUNT(*)                                                 AS sent,
+  COUNT(*) FILTER (WHERE m.message_status = 'delivered')   AS delivered,
+  COUNT(*) FILTER (WHERE m.message_status = 'failed')      AS failed,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE m.message_status = 'delivered')
+        / NULLIF(COUNT(*), 0), 1)                          AS delivery_pct
+FROM messages m
+JOIN stage_history sh ON sh.id = m.stage_history_id
+WHERE m.message_direction = 'outbound'
+  AND m.message_channel = 'SMS'
+GROUP BY sh.stage_name
+ORDER BY sent DESC;</code></pre>
+
+<h3>7.10 Compare conversations across stages for one customer</h3>
+<p>"How does my conversation with Chris Spilsbury in Sales Qualified compare to in Negotiation?"</p>
+<pre><code>SELECT
+  sh.stage_name,
+  sh.entered_at,
+  sh.left_at,
+  COUNT(m.id) FILTER (WHERE m.message_direction = 'inbound')  AS inbound,
+  COUNT(m.id) FILTER (WHERE m.message_direction = 'outbound') AS outbound,
+  MIN(m.message_timestamp) AS first_msg,
+  MAX(m.message_timestamp) AS last_msg
+FROM stage_history sh
+LEFT JOIN messages m ON m.stage_history_id = sh.id
+WHERE sh.opportunity_id = 'OPP_ID_HERE'
+GROUP BY sh.id, sh.stage_name, sh.entered_at, sh.left_at
+ORDER BY sh.entered_at;</code></pre>
+
+<h3>7.11 Lost opportunity analysis — where in the funnel they died</h3>
+<pre><code>SELECT
+  o.first_stage_name                AS started_in,
+  o.current_stage_name              AS lost_at,
+  COUNT(*)                          AS opps_lost,
+  ROUND(AVG(EXTRACT(EPOCH FROM (o.updated_at - o.created_at_ghl)) / 86400), 1) AS avg_days_alive
+FROM opportunities o
+WHERE o.status = 'lost' AND o.is_deleted = false
+GROUP BY o.first_stage_name, o.current_stage_name
+ORDER BY opps_lost DESC;</code></pre>
+
+<h3>7.12 Custom-field filter — opps for a specific product line</h3>
+<pre><code>SELECT
+  o.name, o.current_stage_name, o.status, o.monetary_value,
+  o.custom_fields-&gt;&gt;'opportunity.product_system' AS product_system,
+  o.custom_fields-&gt;&gt;'opportunity.product_type'   AS product_type
+FROM opportunities o
+WHERE o.custom_fields-&gt;&gt;'opportunity.product_system' = 'Crittall'
+  AND o.is_deleted = false
+ORDER BY o.monetary_value DESC NULLS LAST;</code></pre>
+
+<h3>7.13 UTM attribution — which sources convert best</h3>
+<pre><code>SELECT
+  c.utm_source,
+  c.utm_campaign,
+  COUNT(DISTINCT o.opportunity_id)                                              AS opps,
+  COUNT(DISTINCT o.opportunity_id) FILTER (WHERE o.status = 'won')              AS won,
+  SUM(o.monetary_value) FILTER (WHERE o.status = 'won')                         AS won_revenue,
+  ROUND(100.0 * COUNT(DISTINCT o.opportunity_id) FILTER (WHERE o.status = 'won')
+        / NULLIF(COUNT(DISTINCT o.opportunity_id), 0), 1)                       AS win_pct
+FROM contacts c
+JOIN opportunities o
+  ON o.location_id = c.location_id AND o.contact_id = c.contact_id
+WHERE c.utm_source IS NOT NULL
+  AND o.is_deleted = false
+GROUP BY c.utm_source, c.utm_campaign
+ORDER BY won_revenue DESC NULLS LAST;</code></pre>
+
+<h3>7.14 Full opportunity timeline — single deal, full history</h3>
+<pre><code>SELECT
+  sh.stage_name,
+  sh.entered_at,
+  sh.left_at,
+  sh.in_stage_duration_seconds / 3600.0    AS hours_in_stage,
+  sh.current_stage,
+  sh.triggered_by,
+  (SELECT COUNT(*) FROM messages m WHERE m.stage_history_id = sh.id) AS messages
+FROM stage_history sh
+WHERE sh.opportunity_id = 'OPP_ID_HERE'
+ORDER BY sh.entered_at;</code></pre>
+
+<h2 id="ops">8. Operational notes</h2>
+
+<h3>8.1 Multi-tenant isolation</h3>
+<p>Every row in <code>contacts</code>, <code>opportunities</code>, <code>stage_history</code>, and <code>messages</code> has a <code>location_id</code> column with Postgres Row-Level Security enabled. The app sets <code>app.location_id</code> as a session variable before each transaction; even a forgotten <code>WHERE</code> clause cannot leak data across sub-accounts.</p>
+
+<h3>8.2 Security</h3>
+<ul>
+  <li><strong>Webhook signatures:</strong> every incoming webhook is RSA-verified against GHL's published public key. Unsigned/invalid requests get a 401.</li>
+  <li><strong>OAuth tokens:</strong> access tokens auto-refresh every 23 hours; refresh tokens rotate. Tokens are blanked on uninstall.</li>
+  <li><strong>HTTPS only:</strong> all traffic terminates at Cloudflare's edge with an auto-renewing TLS certificate.</li>
+  <li><strong>Logging:</strong> Bearer tokens and other secrets are explicitly redacted from logs.</li>
+</ul>
+
+<h3>8.3 EU data residency</h3>
+<p>All processing + storage happens on a single EU-region (Germany) server in Netcup Nuremberg. Cloudflare's edge serves the TLS handshake from the nearest EU PoP. No customer data leaves the EU at any point.</p>
+
+<h3>8.4 Reliability</h3>
+<table>
+  <thead><tr><th>What might go wrong</th><th>How the system handles it</th></tr></thead>
+  <tbody>
+    <tr><td>Server unexpectedly restarts</td><td>The app comes back up automatically within seconds — no manual intervention needed, also after a full server reboot.</td></tr>
+    <tr><td>GoHighLevel sends the same event twice (their retries)</td><td>We recognise duplicates and ignore the second copy. Your database never has double rows.</td></tr>
+    <tr><td>Authentication token expires</td><td>We renew it in the background before it expires. You never notice.</td></tr>
+    <tr><td>Brief network hiccup or GHL outage</td><td>The event is still recorded with whatever data we received; the next event fills in any missing details automatically.</td></tr>
+    <tr><td>A webhook gets lost (rare)</td><td>A daily safety-net process catches anything that slipped through, so nothing is permanently missed.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="nextsteps">9. Next steps</h2>
+
+<h3>9.1 Database backups <span class="pill pending">Pending</span></h3>
+<p>Enable daily automatic backups of the Supabase database so a full point-in-time restore is always available. Two layers, used together:</p>
+<ul>
+  <li><strong>VM-level snapshot</strong> — taken automatically by the hosting provider every night, retained for at least 7 days.</li>
+  <li><strong>Database dump to off-site storage</strong> — a daily Postgres dump uploaded to an EU-region storage bucket as a second copy, in case the entire VM is ever lost.</li>
+</ul>
+<p>Together, this means even a worst-case loss of the entire server still has a clean recovery path within 24 hours of any incident.</p>
+
+<h3>9.2 Stalled opportunities — your input needed <span class="pill pending">Decision needed</span></h3>
+<p>The system already detects two kinds of stalled opportunities:</p>
+<ul>
+  <li><strong>Orphan opportunities</strong> — created but never moved to another stage</li>
+  <li><strong>Stuck deals</strong> — in the same stage for more than 7 days</li>
+</ul>
+<p>Right now this data is queryable in the database but no notification is sent.</p>
+<p><strong>What would you like us to do with these stalled opportunities?</strong> One option we'd suggest — open to alternatives:</p>
+<ul>
+  <li>Daily digest email to you and/or sales managers</li>
+</ul>
+<p>Let us know what works best for your team and we'll build accordingly.</p>
+
+<div class="callout note">
+  <p><strong>How to read this document going forward:</strong> Sections 1–6 describe what's built and how it behaves. Section 7 is the daily-use reference — bookmark it, run the queries against your live data, and let us know when you want a query added that isn't there yet.</p>
+</div>
+
+<div class="doc-footer">
+  Vaultsuite Team &nbsp;·&nbsp; GHL → Supabase Webhook Integration &nbsp;·&nbsp; Internal client document
+</div>
+
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "open_deals_no_task_list",
+  "description": "The individual open deals with no next action booked — deal name, stage, owner, contact, value and how long it has been open — biggest value first. Use for 'which deals have nothing booked', 'give me the list to chase', 'show me the forgotten deals', 'what needs a follow-up booked'. Check open_tasks_on_contact before presenting any deal as forgotten: above zero means somebody HAS scheduled something, just against the customer rather than this deal, so it is a linkage fix rather than a chase — say so rather than listing it as neglected. Deals open a long time with nothing booked and a high value are the strongest case for chasing; lead with those. For the counts by stage rather than the list, use open_deals_no_task_by_stage.",
+  "viewName": "vw_open_deals_no_task_list",
+  "params": [
+    {
+      "name": "min_value",
+      "column": "value",
+      "type": "number",
+      "op": "gte",
+      "description": "Only deals worth at least this much. Use for 'the big ones with nothing booked'."
+    },
+    {
+      "name": "min_days_open",
+      "column": "days_open",
+      "type": "int",
+      "op": "gte",
+      "description": "Only deals open at least this many days. Use for 'anything sitting over a month with nothing booked'."
+    },
+    {
+      "name": "owner",
+      "column": "owner",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one rep by name."
+    },
+    {
+      "name": "stage",
+      "column": "stage",
+      "type": "text",
+      "op": "contains",
+      "description": "Only deals sitting in this stage."
+    }
+  ],
+  "columns": [],
+  "orderBy": "value DESC NULLS LAST",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

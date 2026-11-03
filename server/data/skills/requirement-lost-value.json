@@ -1,0 +1,20 @@
+{
+  "name": "requirement_lost_value",
+  "description": "What customers asked for, grouped into themes, with the money lost on deals where they asked. Use for 'what are customers asking for that we lose on', 'what requirements come up on lost deals', 'where are we losing money', 'what do customers want that we do not do'. Read `offered` before answering a question about what we do NOT offer: it comes from a classification table that is currently EMPTY, so every row reads 'not yet classified'. That means this view cannot today say whether we offer something — only that a requirement recurs and carries lost value. Saying 'we do not offer X' from this data would be invention. lost_value sums the deal value of lost and abandoned deals where the theme appeared; it is the value of deals that mentioned it, NOT value lost BECAUSE of it — a deal has many requirements and one outcome. Use requirement_quotes to read what was actually said before quoting a theme to anyone.",
+  "viewName": "vw_requirement_lost_value",
+  "params": [
+    { "name": "requirement", "column": "requirement_theme", "type": "text", "op": "contains",
+      "description": "Only requirement themes matching this text." },
+    { "name": "min_lost", "column": "lost_ab", "type": "int", "op": "gte",
+      "description": "Only themes appearing on at least this many lost or abandoned deals." },
+    { "name": "min_lost_value", "column": "lost_value", "type": "number", "op": "gte",
+      "description": "Only themes where lost and abandoned deals mentioning it total at least this much." },
+    { "name": "min_deals", "column": "deals", "type": "int", "op": "gte",
+      "description": "Only themes appearing on at least this many deals of any status." }
+  ],
+  "columns": [],
+  "orderBy": "lost_value DESC NULLS LAST",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

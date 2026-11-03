@@ -1,0 +1,24 @@
+{
+  "name": "requirement_by_buyer_product",
+  "description": "What customers asked for, grouped into themes, cut by the deal's buyer type, product system and product type, with win rate and won value. Use for 'what do architects want that homeowners do not', 'what do customers ask for on Heritage deals', 'what does each buyer type care about', 'which requirements come with the best win rate'. This covers ALL requirements, not just objections — 1,188 of 1,334 requirements in the data are neutral asks that customer_objection_themes cannot see, so use this one for 'what do they want' and that one for 'what do they push back on'. as_objection on each row says how many of those deals raised the theme as pushback rather than a plain request. win_rate_pct is computed over CLOSED deals only, so a theme on mostly-open deals shows a rate drawn from few outcomes — check deals against won + lost_ab before trusting it. buyer_type, product_system and product_type are the deal's FIRST tagged value: a deal tagged Contractor and Architect is counted once, under Contractor. They are not complete per-type totals, and 'unknown' means nothing was tagged.",
+  "viewName": "vw_requirement_by_buyer_product",
+  "params": [
+    { "name": "requirement", "column": "requirement_theme", "type": "text", "op": "contains",
+      "description": "Only requirement themes matching this text." },
+    { "name": "buyer_type", "column": "buyer_type", "type": "text", "op": "eq",
+      "description": "The deal's primary buyer type, lowercase — homeowner, contractor, architect — or 'unknown'." },
+    { "name": "product_system", "column": "product_system", "type": "text", "op": "eq",
+      "description": "The deal's primary product system, lowercase, or 'unknown'." },
+    { "name": "product_type", "column": "product_type", "type": "text", "op": "eq",
+      "description": "The deal's primary product type, lowercase, or 'unknown'." },
+    { "name": "min_deals", "column": "deals", "type": "int", "op": "gte",
+      "description": "Only themes appearing on at least this many deals. A theme on 2 deals is an anecdote; raise this to find patterns." },
+    { "name": "min_win_rate", "column": "win_rate_pct", "type": "number", "op": "gte",
+      "description": "Only themes whose win rate across closed deals is at least this percentage." }
+  ],
+  "columns": [],
+  "orderBy": "deals DESC",
+  "rowLimit": 200,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

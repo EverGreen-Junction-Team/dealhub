@@ -1,0 +1,33 @@
+{
+  "name": "forecast_readiness",
+  "description": "What is stopping the forecast being accurate: deals with no expected close date, no probability, no value, or a close date that has already passed — with how many deals and how much value each issue affects, and which forecast figure it breaks. Use for 'why is the forecast wrong', 'can we trust the forecast', 'what's missing from our forecast data', 'fix the forecast', and ALWAYS before presenting forecast numbers as reliable. Lead with the consequence column rather than the field name: '214 deals have no close date' matters because those deals appear in no month and no quarter, not because a field is empty. Prefer value_affected over the deal count when recommending what to fix first — twenty deals worth 400k matter more than eighty worth 12k. The close-date gap is usually the biggest and is worth naming as the single highest-value fix, because it is what makes period forecasting work at all.",
+  "viewName": "vw_forecast_readiness",
+  "params": [
+    {
+      "name": "issue",
+      "column": "issue",
+      "type": "text",
+      "op": "contains",
+      "description": "Narrow to one issue, e.g. 'close date' or 'probability'."
+    },
+    {
+      "name": "min_deals",
+      "column": "deals",
+      "type": "int",
+      "op": "gte",
+      "description": "Only issues affecting at least this many deals."
+    },
+    {
+      "name": "min_value",
+      "column": "value_affected",
+      "type": "number",
+      "op": "gte",
+      "description": "Only issues affecting at least this much deal value. Use for 'what's the most expensive gap'."
+    }
+  ],
+  "columns": [],
+  "orderBy": "value_affected DESC",
+  "rowLimit": 20,
+  "surfaces": ["portfolio"],
+  "isEnabled": true
+}

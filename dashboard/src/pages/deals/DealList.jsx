@@ -133,7 +133,12 @@ function Row({ deal, hidden, selected, onToggleSelect, onOpenDeal, onOpenInHub, 
           style={{ width: 17, height: 17, accentColor: 'var(--brand-primary)', cursor: 'pointer' }}
         />
       </td>
-      <td style={{ ...TD, minWidth: 200, maxWidth: 260 }}>
+      {/* The deal name is the way into the Deal hub; the rest of the row
+          still opens the deal's own page. */}
+      <td
+        style={{ ...TD, minWidth: 200, maxWidth: 260 }}
+        onClick={toHub ? (e) => { e.stopPropagation(); toHub() } : undefined}
+      >
         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',

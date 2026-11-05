@@ -4,8 +4,8 @@ import DealBoard, { mergeStages } from '../deals/DealBoard'
 import PipelineStrip from '../deals/PipelineStrip'
 import DealList from '../deals/DealList'
 import { useAuth } from '../../context/AuthContext'
-import DealFilters from '../deals/DealFilters'
-import { OwnerFilter } from '../shared/ListFilters'
+import SaveViewButton, { SavedViewSelect, STATUS_OPTIONS } from '../deals/DealFilters'
+import { OwnerFilter, TagFilter, useTags } from '../shared/ListFilters'
 import DealEditPage from '../deals/DealEditPage'
 import ViewSwitch from '../shared/ViewSwitch'
 import { savedViewsAPI } from '../../api/deals'
@@ -144,6 +144,9 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
   // longer matches what was saved — so the toolbar offers "Update <name>"
   // rather than only "Save view" under a new name.
   const [dirtyView, setDirtyView] = useTabState('deals', 'dirtyView', null)
+  // Read here so the Tag field — label included — is left off the toolbar on
+  // an account with no tags; TagFilter alone would leave its label orphaned.
+  const tags = useTags()
 
 
 
@@ -314,8 +317,9 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [views])
 
-  // `withFilters`: the Filters panel saves its DRAFT and applies it in the
-  // same click, and `filters` here has not caught up yet — so it passes them.
+  // `withFilters`: lets a caller save filters it is applying in the same
+  // click, before `filters` here has caught up. The toolbar's Save view saves
+  // what is already applied, so it omits it.
   const saveView = useCallback(async (name, withFilters) => {
     try {
       const r = await savedViewsAPI.save({
@@ -530,11 +534,12 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
     <Shell maxWidth="none">
       {/* THE FIGMA HEADER: a solid green band with the title and count, then
           ONE grey row of labelled fields — Search, Pipeline, Stage, Owner,
-          Sort — with Filters, the view switch and Add deal on the right.
+          Status, Tag, Sort, Saved view — then Save view, with the view switch
+          and Add deal on the right.
 
-          Tag, Status and the saved views moved into the Filters panel: the
-          design has no room for them on the row, and they are reached for
-          far less often than the five fields that are there. */}
+          Status, Tag and the saved views used to sit in a Filters side panel;
+          the client asked for them on the row (Nov 2026), so the row wraps
+          on narrower screens rather than hiding them. */}
       <Panel
         icon="sell"
         title="Deals"
@@ -625,6 +630,37 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
               />
             </ToolbarField>
 
+            {/* Status and Tag moved out of the Filters side panel (client
+                request, Nov 2026) and apply on change, like Stage and Owner. */}
+            <ToolbarField label="Status">
+              <Select
+                aria-label="Status"
+                value={filters.status || 'open'}
+                onChange={(v) => {
+                  setFilters({ ...filters, status: v })
+                  setDirtyView(activeViewId)
+                }}
+                options={STATUS_OPTIONS}
+                popupClassName="pp-menu"
+                popupMatchSelectWidth={false}
+                style={{ width: 140 }}
+                styles={{ root: { height: 36 } }}
+              />
+            </ToolbarField>
+
+            {tags.length > 0 && (
+              <ToolbarField label="Tag">
+                <TagFilter
+                  bare
+                  value={filters.tag || ''}
+                  onChange={(v) => {
+                    setFilters({ ...filters, tag: v || undefined })
+                    setDirtyView(activeViewId)
+                  }}
+                />
+              </ToolbarField>
+            )}
+
             <ToolbarField label="Sort">
               {/* Server-side, and only on the keys the cursor can anchor to —
                   see DealTable. Newest / largest first. */}
@@ -640,31 +676,30 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
               />
             </ToolbarField>
 
+            <ToolbarField label="Saved view">
+              <SavedViewSelect
+                views={views}
+                activeViewId={activeViewId}
+                onSelectView={applyView}
+              />
+            </ToolbarField>
+            <SaveViewButton
+              views={views}
+              dirtyViewId={dirtyView}
+              onSaveView={saveView}
+              onDeleteView={deleteView}
+              onUpdateView={(id) => {
+                const v = views.find((x) => x.id === id)
+                if (v) saveView(v.name)
+              }}
+            />
+
             {/* Display and create, pushed right — away from everything that
                 changes WHICH deals are shown. */}
             <span style={{
               marginLeft: 'auto',
               display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)'
             }}>
-              <DealFilters
-                filters={filters}
-                onChange={(next) => {
-                  setFilters(next)
-                  // EDITED, not abandoned: keeping the view's id is what lets
-                  // the panel offer "Update <name>".
-                  setDirtyView(activeViewId)
-                }}
-                views={views}
-                activeViewId={activeViewId}
-                dirtyViewId={dirtyView}
-                onSelectView={applyView}
-                onSaveView={saveView}
-                onDeleteView={deleteView}
-                onUpdateView={(id) => {
-                  const v = views.find((x) => x.id === id)
-                  if (v) saveView(v.name)
-                }}
-              />
               <ViewSwitch
                 value={view}
                 onChange={setView}

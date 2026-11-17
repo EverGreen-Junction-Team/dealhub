@@ -103,6 +103,27 @@ event type it does not handle at **warn** with the full payload, so it will
 show up as itself rather than vanishing into the generic unrecognised-type
 line. That log is how the assumption gets disproved; check it first.
 
+**Writing back.** The operations calendar moves, reassigns and cancels
+appointments through `services/ghlAppointmentWrite.js`, called from
+`routes/appointments.js` — never from the AI, which proposes into
+`ai_actions` and waits for a human (`server/AI_WRITE_FRAMEWORK.md`), and
+never through the MCP connector. The write goes to GHL and the
+`AppointmentUpdate` webhook writes our row, the way contacts work; nothing
+in that path touches `appointments` directly.
+
+> **Customers are not emailed.** GHL's `toNotify` fires the calendar's
+> confirmation and reschedule notifications at the contact, and we send it
+> explicitly `false` on every call rather than relying on GHL's default,
+> which is to notify. The two mistakes are not symmetrical: a move that
+> should have emailed someone can be followed by an email a minute later, and
+> a dispatcher tidying next week's board cannot unsend fifty. It is a
+> parameter, not a constant, so switching it on is a decision rather than a
+> code change — and it is open question 4 in the client's decision brief.
+
+The calendar's own availability rules are likewise respected rather than
+overridden: a drop outside working hours is refused by GHL and the board
+shows GHL's reason, instead of silently booking a surveyor into a Sunday.
+
 **Timezones.** `startTime` and `endTime` arrive as ISO 8601 *with* a UTC
 offset, so `TIMESTAMPTZ` stores the right instant with no parsing of ours.
 What that does not give you is a time of day — "9am" is a fact about a place.

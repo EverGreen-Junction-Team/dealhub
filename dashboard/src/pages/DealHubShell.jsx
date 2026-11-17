@@ -7,6 +7,7 @@ import InsightsTab from './tabs/InsightsTab'
 import BusinessesTab from './tabs/BusinessesTab'
 import ContactsTab from './tabs/ContactsTab'
 import TasksTab from './tabs/TasksTab'
+import CalendarTab from './tabs/CalendarTab'
 import NotesTab from './tabs/NotesTab'
 import ControlCentreTab from './tabs/ControlCentreTab'
 import HomeTab from './tabs/HomeTab'
@@ -43,6 +44,10 @@ const TABS = [
   { id: 'deals',      label: 'Deals',        icon: 'sell' },
   { id: 'contacts',   label: 'Contacts',     icon: 'group' },
   { id: 'tasks',      label: 'Tasks',        icon: 'task_alt' },
+  // After Tasks, before Notes: the calendar is the other half of
+  // "what has to happen" — a task is work with a deadline, an
+  // appointment is work with a time and a person already on it.
+  { id: 'calendar',   label: 'Calendar',     icon: 'calendar_month' },
   { id: 'notes',      label: 'Notes',        icon: 'sticky_note_2' },
   { id: 'control',    label: 'Control panel', icon: 'tune' }
 ]
@@ -507,6 +512,11 @@ export default function DealHubShell() {
             // one — the same handler the Businesses roll-up already uses.
             onOpenBusiness={openBusiness}
           />
+        )}
+        {/* The board's cards open the deal they belong to, the same
+            cross-tab jump tasks and notes already use. */}
+        {activeTab === 'calendar' && (
+          <CalendarTab onOpenDeal={openDeal} />
         )}
         {activeTab === 'notes' && (
           <NotesTab

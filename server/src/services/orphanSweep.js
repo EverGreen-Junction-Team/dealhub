@@ -14,6 +14,7 @@ import { syncOpportunitiesForAllInstalls } from './opportunitiesSync.js';
 import { syncConversationProvidersAllInstalls } from './conversationProvidersSync.js';
 import { syncCallMediaForAllInstalls } from './callRecordingSync.js';
 import { syncAllTasks } from './tasksSync.js';
+import { syncAllAppointments } from './appointmentsSync.js';
 import { recordSyncRun, purgeOldSyncRuns } from './syncRunLog.js';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
@@ -227,6 +228,19 @@ export function startOrphanSweepCron() {
     // reconciliation sweep that catches anything the webhooks dropped.
     try { await syncAllTasks(); }
     catch (err) { logger.error({ err }, 'tasksSync: scheduled run failed'); }
+    // AFTER usersSync, contactsSync and opportunitiesSync, and for all three
+    // of their reasons at once: an appointment resolves its owner's name
+    // against `users`, FK-references `contacts`, and derives its deal from
+    // the contact's open opportunities. Running it here means a booking made
+    // today is named, linked and attributed on this run rather than the next.
+    //
+    // THIS IS ALSO THE ONLY PATH BLOCKED TIME HAS. HighLevel documents no
+    // webhook for blocked slots, so a rep's blocked-out travel reaches this
+    // database on this line or not at all — which makes a quiet failure here
+    // show up as a calendar full of bookings and no gaps, rather than as a
+    // missing feature. Hence the loud log inside, not just here.
+    try { await syncAllAppointments(); }
+    catch (err) { logger.error({ err }, 'appointmentsSync: scheduled run failed'); }
 
     // Create-time deal picks whose webhook never arrived (migration 069).
     // Normally consumed within a second; anything still here an hour later
@@ -280,5 +294,5 @@ export function startOrphanSweepCron() {
     try { await purgeOldSyncRunsWithLog(); }
     catch (err) { logger.error({ err }, 'cleanup.syncRuns: scheduled run failed'); }
   });
-  logger.info({ cron: config.orphanSweepCron }, 'daily cron scheduled (orphanSweep + processed_events purge + ghl_raw purge + tags + custom fields + pipelines + users + businesses + contacts + opportunities + tasks + conversation providers + sync_runs purge; callRecordingSync + messagesSync paused per client request)');
+  logger.info({ cron: config.orphanSweepCron }, 'daily cron scheduled (orphanSweep + processed_events purge + ghl_raw purge + tags + custom fields + pipelines + users + businesses + contacts + opportunities + tasks + appointments + conversation providers + sync_runs purge; callRecordingSync + messagesSync paused per client request)');
 }

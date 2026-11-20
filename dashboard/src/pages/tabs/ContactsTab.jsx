@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext'
 import { OwnerFilter, TagFilter } from '../shared/ListFilters'
 import ContactDetail from '../contacts/ContactDetail'
 import ContactCreatePanel from '../contacts/ContactCreatePanel'
+import { usePageScrollMemory } from '../../hooks/useScrollMemory'
 
 
 // Contacts tab — every contact in this location.
@@ -33,6 +34,10 @@ export default function ContactsTab({
   // Switch to another tab — the contact record's "All tasks →" / "All notes →".
   onOpenTab
 }) {
+  // Where you were down the page, restored on the way back —
+  // the filters were already remembered, the position was not.
+  usePageScrollMemory('contacts')
+
   // Which contact's record is open. Null = the grid. Local navigation within
   // this tab, except when another tab hands us a contact to open (a contact
   // chip on a task or note) — openContactId is that entry point.

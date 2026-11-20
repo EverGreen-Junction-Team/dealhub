@@ -133,6 +133,33 @@ t('every list page persists which view it was left on', () => {
   }
 })
 
+console.log('where you were ON the page')
+
+t('every list page restores its scroll position', () => {
+  // The filters were remembered and the POSITION was not, so coming back
+  // put the right rows on screen and then showed you the top of them. On a
+  // long list that is the same work as re-applying a filter.
+  for (const [name, src] of [
+    ['deals', deals], ['contacts', contacts], ['tasks', tasksTab],
+    ['notes', notes], ['businesses', businesses]
+  ]) {
+    assert.match(src, new RegExp(`usePageScrollMemory\\('${name}'\\)`),
+      `${name} does not restore its scroll position`)
+  }
+})
+
+t('the boards that scroll sideways remember how far across', () => {
+  // The pipeline board and the calendar are both much wider than the
+  // screen. Scrolling to the fifth stage, opening a deal and coming back to
+  // the first stage is the complaint this answers.
+  const board = readFileSync(join(here, '..', '..', 'deals', 'DealBoard.jsx'), 'utf8')
+  const cal = readFileSync(join(here, '..', '..', 'calendar', 'ResourceBoard.jsx'), 'utf8')
+  assert.match(board, /useElementScrollMemory\('deals', 'board'\)/)
+  assert.match(board, /ref=\{boardScroll\}/)
+  assert.match(cal, /useElementScrollMemory\('calendar', 'board'\)/)
+  assert.match(cal, /ref=\{boardScroll\}/)
+})
+
 console.log('the Deal hub')
 
 t('the Deal / People / Media rail is remembered', () => {

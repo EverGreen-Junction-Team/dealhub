@@ -17,6 +17,7 @@ import DealGridCard from '../deals/DealGridCard'
 import {
   Shell, SearchInput, StateMessage, DealCardsSkeleton, LoadMore, Panel
 } from '../shared/ListChrome'
+import { usePageScrollMemory } from '../../hooks/useScrollMemory'
 
 // Deals tab — one card per open deal, each showing the facts a rep scans for,
 // the contacts on the deal, and an Edit expander.
@@ -55,6 +56,10 @@ function ToolbarField({ label, children }) {
 }
 
 export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, onOpenTab, initialEditDealId = null }) {
+  // Where you were down the page, restored on the way back —
+  // the filters were already remembered, the position was not.
+  usePageScrollMemory('deals')
+
   // Which view. Persisted because it is a working preference, not a
   // navigation step: a rep who works the board should not be handed the list
   // again every time they come back to this tab.

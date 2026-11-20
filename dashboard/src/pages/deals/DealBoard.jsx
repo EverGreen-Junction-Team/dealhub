@@ -3,6 +3,7 @@ import { dealsAPI } from '../../api/deals'
 import { formatMoney } from '../../utils/money'
 import { Bar, SkeletonStyles, DealPill } from '../shared/ListChrome'
 import { NotSet } from '../dealhub/FieldCard'
+import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 
 // The pipeline as a board: one column per stage, deals as cards.
 //
@@ -567,6 +568,10 @@ export default function DealBoard({
   // just excluded.
   focusColumn
 }) {
+  // Scrolled across to the fifth stage, stepped into a deal, came
+  // back — this is what stops you landing on the first stage again.
+  const boardScroll = useElementScrollMemory('deals', 'board')
+
   const [moveError, setMoveError] = useState(null)
   // stageId -> reload fn, so a move can refresh exactly the two columns it
   // touched rather than the whole board.
@@ -626,7 +631,8 @@ export default function DealBoard({
       {/* Horizontal scroll lives HERE, not on the page: the board is wider
           than the viewport by design and the rest of the page must not move
           sideways. ONE scrollbar now, not one per pipeline. */}
-      <div style={{
+      <div
+        ref={boardScroll} style={{
         display: 'flex', gap: 'var(--space-3)',
         overflowX: 'auto', overflowY: 'hidden',
         paddingBottom: 'var(--space-2)',

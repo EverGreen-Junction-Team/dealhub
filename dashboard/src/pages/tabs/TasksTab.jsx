@@ -21,6 +21,7 @@ import {
   RichBody, formatDate, formatDue, relativeTime
 } from '../shared/ListChrome'
 import { LinkedRecords } from '../shared/LinkedRecords'
+import { usePageScrollMemory } from '../../hooks/useScrollMemory'
 
 // Tasks — v5.
 //
@@ -119,6 +120,10 @@ function TaskSearch({ value, onChange }) {
 }
 
 export default function TasksTab({ onOpenDeal, onOpenContact, onOpenBusiness }) {
+  // Where you were down the page, restored on the way back —
+  // the filters were already remembered, the position was not.
+  usePageScrollMemory('tasks')
+
   // Remembered across tab switches — see useTabState. Clicking a task through
   // to its deal and coming back used to reset this to 'all'.
   const [dueFilter, setDueFilter] = useTabState('tasks', 'dueFilter', 'all')

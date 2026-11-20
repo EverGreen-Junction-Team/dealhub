@@ -18,6 +18,7 @@ import ConfirmDialog from '../shared/ConfirmDialog'
 import BusinessGridCard from '../businesses/BusinessGridCard'
 import BusinessList from '../businesses/BusinessList'
 import BusinessTasksPanel from '../businesses/BusinessTasksPanel'
+import { usePageScrollMemory } from '../../hooks/useScrollMemory'
 
 // A toolbar field with its label stacked ABOVE it — the Figma row's shape,
 // shared with the Deals header.
@@ -49,6 +50,10 @@ export default function BusinessesTab({
   // never sees, so it has to be reported for Back to work.
   onNavigate
 }) {
+  // Where you were down the page, restored on the way back —
+  // the filters were already remembered, the position was not.
+  usePageScrollMemory('businesses')
+
   const [q, setQ] = useTabState('businesses', 'q', '')
   // Plain state, not useTabState — see ContactsTab for why. Leaving the tab
   // and returning should land on the list, not reopen the last record.

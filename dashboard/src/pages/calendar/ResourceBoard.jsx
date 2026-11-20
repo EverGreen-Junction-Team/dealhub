@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
+import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
   groupIntoCells, cellKey, minutesForDrop, isRealMove, movePatch,
@@ -48,6 +49,10 @@ export default function ResourceBoard({
   // What is being dragged, and where it was grabbed. Held in a ref rather
   // than state: it changes during a drag and re-rendering the whole board on
   // every dragover would make the drag stutter.
+  // A twelve-column board is mostly off-screen. Scrolling across to find a
+  // rep and then opening a deal should not send you back to the first column.
+  const boardScroll = useElementScrollMemory('calendar', 'board')
+
   const dragging = useRef(null)
   // The cell the pointer is currently over, which IS state — it is the drop
   // highlight, and the rep needs to see where the card will land.
@@ -140,7 +145,7 @@ export default function ResourceBoard({
   }, [zone, onMove])
 
   return (
-    <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+    <div ref={boardScroll} style={{ overflowX: 'auto', overflowY: 'visible' }}>
       <div style={{ display: 'flex', minWidth: 'fit-content' }}>
         {/* The hour gutter. Sticky, so the times stay readable when a board
             with eight reps is scrolled sideways. */}

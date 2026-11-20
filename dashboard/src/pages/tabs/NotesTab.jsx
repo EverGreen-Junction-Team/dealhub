@@ -18,6 +18,7 @@ import {
   AttachmentCount
 } from '../shared/ListChrome'
 import { LinkedRecords } from '../shared/LinkedRecords'
+import { usePageScrollMemory } from '../../hooks/useScrollMemory'
 
 // Notes — v5.
 //
@@ -33,6 +34,10 @@ import { LinkedRecords } from '../shared/LinkedRecords'
 // from the body's first block — see splitNote.
 
 export default function NotesTab({ onOpenDeal, onOpenContact, onOpenBusiness }) {
+  // Where you were down the page, restored on the way back —
+  // the filters were already remembered, the position was not.
+  usePageScrollMemory('notes')
+
   // Contact / deal filters. useTabState, not plain state: stepping out to a
   // deal or a contact and back should not discard them.
   const [filters, setFilters] = useTabState('notes', 'filters', {})

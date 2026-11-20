@@ -157,6 +157,20 @@ export function useTabState(page, key, initial) {
 }
 
 /**
+ * Read a page's remembered value without subscribing to it.
+ *
+ * For things that are not React state — a scroll offset, say, which is read
+ * once on mount and written from an event handler. Going through useTabState
+ * for those would re-render the page on every scroll frame to update a
+ * number nothing renders.
+ */
+export function getTabState(page, key, fallback = undefined) {
+  ensureCurrentLocation()
+  const id = `${page}:${key}`
+  return store.has(id) ? store.get(id) : fallback
+}
+
+/**
  * Set a page's remembered value from OUTSIDE it — before switching to that
  * tab, so it mounts already showing it. The Contacts list's "View note" uses
  * this to open Notes filtered to the contact with the note in the reader.

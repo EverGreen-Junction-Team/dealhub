@@ -72,6 +72,36 @@ const HUB_TYPE_SCALE = {
   '--text-2xl': '20px'
 }
 
+// And the whole tab renders at 85%.
+//
+// ── TWO LEVERS, AND THEY COMPOUND ────────────────────────────────────
+//
+// This is deliberate rather than a leftover. They do different jobs:
+//
+//   HUB_TYPE_SCALE  fixes a PROPORTION problem — three headings that were
+//                   oversized relative to everything around them, at any
+//                   size. Shrinking the tab uniformly would never correct
+//                   that; the value would just be too big more quietly.
+//   HUB_ZOOM        fixes a DENSITY problem — the hub puts four panels side
+//                   by side and you scroll for things that should be in view
+//                   together.
+//
+// Because they multiply, the effective sizes are what matter:
+//
+//   deal value    34 → 30 → 25.5px
+//   deal name     24 → 20 → 17px
+//   body text     14 → 14 → 11.9px
+//   field labels  11 → 11 →  9.4px   ← the floor; watch this one
+//
+// 0.85, not the 0.75 tried before: at 0.75 the labels landed near 8px, which
+// is past comfortable reading, and they are the first thing to break because
+// they are already the smallest type here. 9.4px is tight but legible.
+//
+// If more density is wanted, reduce row padding and heights rather than
+// either of these — both of them take the labels down with everything else,
+// and they have no room left.
+const HUB_ZOOM = 0.85
+
 // Chip presentation order — keep the fixed order across deals so users
 // don't hunt for a channel that moved position. We just skip channels
 // that don't exist on the current deal.
@@ -1158,7 +1188,7 @@ export default function DealHubTab({
   }
 
   return (
-    <div style={HUB_TYPE_SCALE}>
+    <div style={{ ...HUB_TYPE_SCALE, zoom: HUB_ZOOM }}>
       {/* The OPPORTUNITY row that sat here is gone. Its switcher IS the
           toolbar's SEARCH control now — keeping both would be two ways to do
           one thing, one of them outside the card it changes, and the empty

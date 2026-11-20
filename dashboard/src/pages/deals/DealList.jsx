@@ -133,12 +133,12 @@ function Row({ deal, hidden, selected, onToggleSelect, onOpenDeal, onOpenInHub, 
           style={{ width: 17, height: 17, accentColor: 'var(--brand-primary)', cursor: 'pointer' }}
         />
       </td>
-      {/* The deal name is the way into the Deal hub; the rest of the row
-          still opens the deal's own page. */}
-      <td
-        style={{ ...TD, minWidth: 200, maxWidth: 260 }}
-        onClick={toHub ? (e) => { e.stopPropagation(); toHub() } : undefined}
-      >
+      {/* No handler of its own any more: the whole ROW opens the Deal hub,
+          so the name cell intercepting the click to send it to the same
+          place was doing nothing but hiding that fact. It used to matter,
+          when the row opened the deal's editor and only the name reached
+          the hub. */}
+      <td style={{ ...TD, minWidth: 200, maxWidth: 260 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',

@@ -880,9 +880,15 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           sort={sort}
           dir={sortDir}
           focusStage={filters.stageId || undefined}
-          // The row opens the deal's own page; the chips' menus carry the
-          // ways to the hub, the contact and the business.
-          onOpenDeal={setOpenDealId}
+          // The row opens the DEAL HUB, the same as a board card and a grid
+          // card. All three views answer a click the same way now — which is
+          // the point: which view you happen to be in should not change what
+          // clicking a deal means.
+          //
+          // The deal's own editor is NOT stranded by this. It is reached from
+          // "Edit full record" inside the hub, which is the natural order
+          // anyway: look at the deal, then edit it.
+          onOpenDeal={onOpenDeal}
           onOpenInHub={onOpenDeal}
           onOpenContact={onOpenContact}
           onOpenBusiness={onOpenBusiness}

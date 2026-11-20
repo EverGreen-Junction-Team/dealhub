@@ -136,11 +136,35 @@ export default function DealGridCard({
       borderRadius: 'var(--radius-md)',
       overflow: 'hidden'
     }}>
-      <header style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '12px 14px',
-        borderBottom: '1px solid var(--border-default)'
-      }}>
+      {/* THE HEADER opens the Deal hub, not the whole card.
+          
+          Board cards take a click anywhere on their face, and a grid card
+          cannot: everything below this bar is an inline editor. A card-wide
+          handler would fire on the way to changing a field, so picking a
+          product system would navigate away instead — the control would be
+          unusable.
+
+          So the clickable part is the title bar, which is also where the
+          list view puts it. The pill beside the title goes to the same
+          place; a click on it bubbles here and lands identically. */}
+      <header
+        onClick={onOpenInHub ? () => onOpenInHub(deal.id) : undefined}
+        role={onOpenInHub ? 'button' : undefined}
+        tabIndex={onOpenInHub ? 0 : undefined}
+        onKeyDown={onOpenInHub ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onOpenInHub(deal.id)
+          }
+        } : undefined}
+        aria-label={onOpenInHub ? `Open ${name} in the Deal hub` : undefined}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 14px',
+          borderBottom: '1px solid var(--border-default)',
+          cursor: onOpenInHub ? 'pointer' : 'default'
+        }}
+      >
         <h3 title={name} style={{
           flex: 1, minWidth: 0, margin: 0,
           fontSize: 'var(--text-lg)', fontWeight: 600, letterSpacing: '-0.01em',

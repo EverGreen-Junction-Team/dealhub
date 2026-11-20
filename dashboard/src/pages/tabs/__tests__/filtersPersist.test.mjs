@@ -80,6 +80,41 @@ t('Businesses remembers its sort and search', () => {
   assert.ok(remembered(businesses, 'q'), 'businesses search')
 })
 
+console.log('"All owners" must survive leaving the page')
+
+t('the owner seed is remembered, not re-run on every mount', () => {
+  // THE REPORTED BUG. Switch the owner filter to All owners, visit another
+  // tab, come back — and you were on your own deals again.
+  //
+  // Two things combined. The guard was a useRef, which is recreated on every
+  // mount, and the shell unmounts tabs. It then tested `assignedTo ===
+  // undefined`, which cannot distinguish "All owners" from "never chosen":
+  // the picker sends '' for All, the filter stores `v || undefined`, and
+  // JSON.stringify drops an undefined key from the snapshot entirely.
+  //
+  // So the fact of having seeded has to be REMEMBERED. Inferring it from the
+  // value is what could not work.
+  for (const [name, src] of [['deals', deals], ['contacts', contacts]]) {
+    assert.match(
+      src, new RegExp(`useTabState\\('${name}',\\s*'ownerSeeded'`),
+      `${name} must remember that it seeded the owner`
+    )
+    assert.ok(
+      !/const ownerSeeded = useRef\(/.test(src),
+      `${name} must not use a ref — it is recreated on every mount`
+    )
+  }
+})
+
+t('the seed still only fills an owner nobody has chosen', () => {
+  // The guard that stops it overwriting a real choice has to stay. Without
+  // it, a first mount in a session would stamp the signed-in user over a
+  // restored filter or an applied saved view.
+  for (const src of [deals, contacts]) {
+    assert.match(src, /if \(filters\.assignedTo === undefined\)/)
+  }
+})
+
 console.log('the view switchers')
 
 t('every list page persists which view it was left on', () => {

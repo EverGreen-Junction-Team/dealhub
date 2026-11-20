@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Select } from 'antd'
 import DealBoard, { mergeStages } from '../deals/DealBoard'
 import PipelineStrip from '../deals/PipelineStrip'
@@ -123,15 +123,33 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
   // translation step that can drift.
   const [filters, setFilters] = useTabState('deals', 'filters', {})
 
-  // Owner defaults to the signed-in user and the choice sticks — see the same
-  // block in ContactsTab. Seeded once, and only if nothing was chosen, so a
-  // rep who switches to All owners is not put back on their own deals.
+  // Owner defaults to the signed-in user, ONCE PER SESSION.
+  //
+  // ── THE BUG THIS FIXES ───────────────────────────────────────────────
+  //
+  // The guard used to be a useRef plus "is assignedTo undefined". Both
+  // halves failed together on a tab switch:
+  //
+  //   1. a ref is recreated on every mount, and the shell unmounts tabs, so
+  //      coming back always re-ran the seed;
+  //   2. "All owners" IS undefined — the picker sends '' and the filter
+  //      stores `v || undefined` — and JSON.stringify drops an undefined
+  //      key entirely, so the saved snapshot had no assignedTo at all.
+  //
+  // So "I chose All owners" and "I have never chosen" were the same state,
+  // and the seed could not tell them apart. A rep who switched to All
+  // owners, looked at another tab and came back was put on their own deals
+  // again — exactly what the old comment here claimed would not happen.
+  //
+  // Remembering the SEEDING rather than inferring it from the value is what
+  // separates the two. It also stops the seed clobbering a saved view that
+  // deliberately carries no owner.
   const { session } = useAuth()
-  const ownerSeeded = useRef(false)
+  const [ownerSeeded, setOwnerSeeded] = useTabState('deals', 'ownerSeeded', false)
   useEffect(() => {
-    if (ownerSeeded.current) return
+    if (ownerSeeded) return
     if (!session?.user?.id) return
-    ownerSeeded.current = true
+    setOwnerSeeded(true)
     if (filters.assignedTo === undefined) {
       setFilters({ ...filters, assignedTo: session.user.id })
     }

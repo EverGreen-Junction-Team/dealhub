@@ -114,15 +114,25 @@ export default function ContactsTab({
   // useTabState, so switching to All owners survives a tab switch and a reload
   // rather than snapping back to Mine on every visit.
   //
-  // Seeded once, and only when nothing has been chosen yet — re-applying the
-  // default on later renders would undo the rep's own choice, and re-applying
-  // it after they picked "All owners" would look like the control was broken.
+  // Seeded once PER SESSION, not per mount.
+  //
+  // The second half of that sentence is the fix. The guard was a useRef, and
+  // the shell unmounts tabs — so coming back re-ran the seed. It then asked
+  // "is assignedTo undefined", which cannot tell "All owners" from "never
+  // chosen": the picker sends '' for All, the filter stores `|| undefined`,
+  // and JSON.stringify drops an undefined key from the saved snapshot.
+  //
+  // So picking All owners, visiting another tab and coming back put the rep
+  // back on their own contacts — which is exactly what this comment used to
+  // promise would not happen. Remembering that we seeded, rather than
+  // inferring it from the value, is what tells the two apart.
+  // Same block in DealsTab.
   const { session } = useAuth()
-  const ownerSeeded = useRef(false)
+  const [ownerSeeded, setOwnerSeeded] = useTabState('contacts', 'ownerSeeded', false)
   useEffect(() => {
-    if (ownerSeeded.current) return
+    if (ownerSeeded) return
     if (!session?.user?.id) return
-    ownerSeeded.current = true
+    setOwnerSeeded(true)
     if (filters.assignedTo === undefined) {
       setFilters({ ...filters, assignedTo: session.user.id })
     }

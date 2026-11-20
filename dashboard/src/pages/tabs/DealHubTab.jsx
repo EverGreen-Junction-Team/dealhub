@@ -28,47 +28,49 @@ import { Truncate } from '../shared/ListChrome'
 //   • Filter chips (people + channels + inclusion) narrow the timeline
 //     client-side per rule 7 — never a round-trip.
 
-// How much of its natural size the Deal hub renders at.
+// The Deal hub's own type scale: the three oversized headings, 4px smaller.
 //
-// ── WHY ──────────────────────────────────────────────────────────────
+// ── WHAT THIS REPLACED, AND WHY ──────────────────────────────────────
 //
-// Reps said this screen reads as "too zoomed in": the value, the deal name
-// and the field rows are all sized for a page of their own, and the hub puts
-// four of those panels side by side. You end up scrolling for things that
-// should be in view at once — which is the opposite of what a hub is for.
+// This was `zoom: 0.75` on the root — one number that shrank the whole tab
+// in proportion. It solved the complaint (the hub reads as too zoomed in)
+// and created a worse one: zoom scales EVERYTHING, so the field labels went
+// with it. Those are already the smallest type here at 11px, and at 0.75
+// they landed near 8px, which is past comfortable reading — especially
+// inside the GHL iframe, where the browser may be scaled again on top.
 //
-// ── WHY ONE ZOOM AND NOT A HUNDRED SMALLER NUMBERS ───────────────────
+// The hub was never uniformly too big. Three things are much too big and
+// the rest was fine, so only those three move now:
 //
-// The alternative was to walk DealSection and its neighbours and shrink each
-// font, padding and row height by hand. That is roughly a hundred values
-// across several files, every one a chance to knock something out of
-// alignment, and it would have to be done again the next time someone wants
-// it a bit smaller.
+//   --text-display  34 → 30   the deal VALUE (DealSection)
+//   --text-3xl      28 → 24   the Ask Deal answer heading
+//   --text-2xl      24 → 20   the deal NAME (DealSection)
 //
-// This is one number, it scales everything in proportion so nothing can drift
-// relative to anything else, and it is trivial to tune or revert.
+// Everything else — body text, field values, labels — renders at its normal
+// size again, which is BIGGER than it was under the zoom.
 //
-// ── WHY `zoom` AND NOT `transform: scale()` ──────────────────────────
+// ── WHY CSS VARIABLES AND NOT EDITED FONT SIZES ──────────────────────
 //
-// They look the same and behave completely differently. `transform` paints
-// the element smaller but leaves its layout box at full size, so the hub
-// would keep reserving the space it used to fill and leave a large gap below
-// itself — and hit-testing drifts away from where things are drawn. `zoom`
-// reflows: the layout genuinely happens at the smaller size, clicks land
-// where they look, and text stays crisply hinted rather than being resampled.
+// Overriding the tokens on this element re-points every `var(--text-2xl)`
+// inside the hub at once, without touching the files that use them. The
+// same tokens keep their normal values everywhere else in the app, so the
+// Deals, Tasks and Contacts tabs are untouched. One place to tune, and
+// nothing to keep in step.
 //
-// Worth knowing: antd renders dropdowns and date pickers into a portal on
-// `body`, outside this element, so menus open at NORMAL size. That is the
-// behaviour we want — a shrunken menu would be harder to read for no benefit
-// — but it does mean a popover will look slightly larger than the control
-// that opened it.
+// NOT CHANGED, deliberately:
+//   --text-xl   PanelHead's title and a QualificationSection icon. At 18px
+//               it is the step between a heading and body text; dropping it
+//               to 14 would flatten it into the body and shrink an icon with
+//               it. The panel headings were not what anybody complained about.
 //
-// 0.75 after trying 0.85, which was still read as too large. Raise it toward
-// 1 for bigger text, lower it for more on screen. Below about 0.7 the field
-// labels — already the smallest type here, at --text-xs — stop being
-// comfortably readable, so that is roughly the floor rather than a hard
-// limit.
-const HUB_ZOOM = 0.75
+// If the hub still reads too large, the next lever is row padding and
+// heights — not shrinking this type further, which is how the labels became
+// unreadable the first time.
+const HUB_TYPE_SCALE = {
+  '--text-display': '30px',
+  '--text-3xl': '24px',
+  '--text-2xl': '20px'
+}
 
 // Chip presentation order — keep the fixed order across deals so users
 // don't hunt for a channel that moved position. We just skip channels
@@ -1156,7 +1158,7 @@ export default function DealHubTab({
   }
 
   return (
-    <div style={{ zoom: HUB_ZOOM }}>
+    <div style={HUB_TYPE_SCALE}>
       {/* The OPPORTUNITY row that sat here is gone. Its switcher IS the
           toolbar's SEARCH control now — keeping both would be two ways to do
           one thing, one of them outside the card it changes, and the empty

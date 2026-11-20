@@ -1722,8 +1722,9 @@ function InlineText({
   // The money field reads "£1,250" and edits "1250"; every other caller
   // omits this and shows `value` itself.
   display = undefined,
-  // The deal name renders at --text-3xl; the value at --text-display. The
-  // input has to match or the swap resizes the card.
+  // The deal name renders at --text-2xl; the value at --text-display. The
+  // input has to match or the swap resizes the card. (Both are re-pointed a
+  // step smaller for this tab only — see HUB_TYPE_SCALE in DealHubTab.)
   fontSize = 'var(--text-lg)', fontWeight = 600, placeholder,
   // Numeric fields get a prefix and a mono face.
   prefix = null, mono = false,

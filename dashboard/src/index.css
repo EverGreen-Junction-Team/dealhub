@@ -9,6 +9,47 @@
 
 * { box-sizing: border-box; }
 
+/* ── THE WHOLE APP RENDERS AT 85% ───────────────────────────────────────
+ *
+ * On BODY, not on the React root, and that is the whole point of it being
+ * here rather than in a component's style object.
+ *
+ * This app portals a great deal of its UI to document.body — 17 call sites
+ * at the last count: every modal, the Copilot sidebar, the settings and
+ * memory dialogs, the contact create panel, the business picker, the filter
+ * popovers, the deal pill menus. Ant Design portals its own dropdowns and
+ * date pickers there too. All of that is a SIBLING of #root, not a child, so
+ * a zoom on the React tree missed every one of them: the page scaled and its
+ * dialogs did not.
+ *
+ * body is the one element that is an ancestor of both.
+ *
+ * `zoom`, not `transform: scale()`. Transform paints smaller but leaves the
+ * layout box at full size, so the page would reserve space it no longer
+ * fills and clicks would drift from where things are drawn. Zoom reflows:
+ * layout happens at the smaller size and hit-testing stays correct.
+ *
+ * THE FLOOR IS 0.85. The smallest type in the app is --text-xs at 11px, the
+ * uppercase field labels, and at 0.85 they land at 9.4px — tight but
+ * legible. 0.75 was tried and put them near 8px, which is past comfortable
+ * reading, especially inside the GHL iframe where the browser may already be
+ * scaled. For more density, reduce padding and row heights instead; this
+ * number takes the labels down with everything else and they have no room.
+ *
+ * Anything measuring itself in VIEWPORT UNITS has to divide by this. Inside
+ * a zoomed element `100vh` resolves in the element's own coordinate space
+ * and is then scaled, so it paints at 85% of the screen and leaves a strip
+ * of bare page below it. `calc(100vh / var(--app-zoom))` gives back a box
+ * that covers the real viewport once scaled — see DealHubShell and Screens.
+ */
+:root { --app-zoom: 0.85; }
+body { zoom: var(--app-zoom); }
+
+/* The one thing zoom cannot reach is the page behind body. If any rounding
+ * leaves a sliver uncovered at the bottom edge, it shows this rather than
+ * the browser's white — the same flat colour the body gradient settles to. */
+html { background: #f5f7fb; }
+
 /* The page body is the scroll container, which is what the sticky nav in
    DealHubShell binds to. Deliberately NOT `overflow: auto` on #root — that
    would make #root the scroller and stick the header to the top of that box

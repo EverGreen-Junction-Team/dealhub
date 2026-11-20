@@ -13,7 +13,7 @@ export function LoadingScreen({ message = 'Connecting to your sub-account…' })
     <div
       data-dealhub
       style={{
-        height: '100%', minHeight: '100vh',
+        height: '100%', minHeight: 'calc(100vh / var(--app-zoom))',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         gap: 'var(--space-5)',
@@ -96,7 +96,7 @@ export function ErrorScreen({ error }) {
     <div
       data-dealhub
       style={{
-        height: '100%', minHeight: '100vh',
+        height: '100%', minHeight: 'calc(100vh / var(--app-zoom))',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 'var(--space-5)',
         background: 'var(--surface-page)'

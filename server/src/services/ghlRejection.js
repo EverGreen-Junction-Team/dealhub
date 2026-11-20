@@ -34,6 +34,24 @@ export function looksMissing(detail) {
   return /not\s*found|does\s*not\s*exist|no\s*such/i.test(detail || '');
 }
 
+// Does this read as "that is not an id I recognise"?
+//
+// A DIFFERENT FAILURE FROM BOTH OF THE OTHERS, and it was being shown as the
+// generic "check the values and try again" — which sent a rep hunting
+// through a form whose fields were all perfectly valid.
+//
+// GHL answers `{"message":"The task id is invalid.","statusCode":400}` when
+// the id does not even have the shape of one of its ids. It is not a
+// validation error about the rep's input and it is not a deleted record: it
+// means the id WE hold for that row is not one the CRM can act on, so no
+// amount of retrying or correcting fields will ever work. The record has to
+// be dealt with in the CRM, and somebody should find out how we came to
+// store that id.
+export function looksUnknownId(detail) {
+  return /\bid\b[^.]{0,30}\b(is\s+)?(invalid|not\s+valid|malformed)\b/i.test(detail || '')
+    || /invalid\s+(\w+\s+)?id\b/i.test(detail || '');
+}
+
 /**
  * Build the user-facing message for a rejected write.
  *
@@ -65,6 +83,16 @@ export function rejectionMessage(noun, detail, { action = 'change' } = {}) {
       missing,
       status: 404,
       message: `That ${noun} no longer exists in your CRM — it may have been deleted`
+    };
+  }
+  // The id itself is not one the CRM recognises. Retrying cannot help and
+  // there are no values to correct, so say so rather than implying either.
+  if (looksUnknownId(detail)) {
+    return {
+      missing: false,
+      status: 422,
+      message: `Your CRM does not recognise this ${noun} — it has to be `
+        + `changed in the CRM, and this one needs looking into`
     };
   }
   return {

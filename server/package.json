@@ -142,7 +142,8 @@
     "cp:tick": "node src/scripts/cpTick.js",
     "test:cp": "node --test src/conversationPoint/__tests__/conversationPoint.test.mjs",
     "test:appointments": "node src/services/__tests__/appointmentPayload.test.mjs",
-    "test:apptwrite": "node src/services/__tests__/appointmentWrite.test.mjs"
+    "test:apptwrite": "node src/services/__tests__/appointmentWrite.test.mjs",
+    "probe:task": "node src/scripts/probeTask.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

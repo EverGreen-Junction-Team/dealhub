@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operations Calendar — Decision Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF8; --ink:#1C2326; --ink-soft:#566066; --steel:#6B7B85;
+    --hair:#E6E3DD; --rust:#B5512E; --green:#3F7A55; --green-soft:#E7F0E9;
+    --amber:#C8821E; --amber-soft:#FAF0DD; --blue:#3E6D96; --blue-soft:#E8EFF5;
+    --disp:'Archivo',sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; margin:0;}
+  body{background:#F2F0EC; color:var(--ink); font-family:var(--disp); font-size:14.5px; line-height:1.6;}
+  .wrap{max-width:880px; margin:0 auto; padding:36px 32px 48px;}
+
+  header.doc{border-bottom:3px solid var(--ink); padding-bottom:18px; margin-bottom:26px;}
+  .brand{display:flex; align-items:center; gap:11px; margin-bottom:12px;}
+  .bars{display:flex; gap:3px; align-items:flex-end; height:22px;}
+  .bars span{width:5px; border-radius:1px; background:var(--rust); height:12px;}
+  .bars span:nth-child(2){height:22px; background:#5C9BD5;}
+  .bars span:nth-child(3){height:16px; background:var(--green);}
+  .brand b{font-size:13.5px; font-weight:800; letter-spacing:-.01em;}
+  .brand i{font-family:var(--mono); font-size:10px; font-style:normal; color:var(--steel); letter-spacing:.05em;}
+  h1{font-size:28px; font-weight:800; letter-spacing:-.02em; line-height:1.15;}
+  .lede{color:var(--ink-soft); margin-top:10px; max-width:660px; font-size:15px;}
+  .meta{display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:12px; font-family:var(--mono); font-size:10.5px; color:var(--steel); letter-spacing:.03em;}
+  .meta b{color:var(--ink); font-weight:600; margin-right:6px;}
+
+  h2{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--steel); margin:30px 0 12px; padding-bottom:7px; border-bottom:1px solid var(--hair);}
+  p{margin:0 0 11px;}
+  strong{color:var(--ink); font-weight:700;}
+
+  /* the two options */
+  .opts{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:4px 0 6px;}
+  .opt{background:var(--paper); border:1px solid var(--hair); border-radius:11px; padding:18px 20px; display:flex; flex-direction:column;}
+  .opt.b{border-color:#E0D3BA; background:#FDFAF4;}
+  .opt .k{font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--blue); margin-bottom:7px;}
+  .opt.b .k{color:var(--amber);}
+  .opt h3{font-size:16px; font-weight:800; letter-spacing:-.01em; margin-bottom:8px;}
+  .opt ul{list-style:none; margin:0 0 14px; padding:0;}
+  .opt li{position:relative; padding-left:16px; margin-bottom:6px; font-size:13.5px; color:var(--ink-soft); line-height:1.5;}
+  .opt li::before{content:''; position:absolute; left:0; top:8px; width:5px; height:5px; border-radius:50%; background:var(--steel);}
+  .opt .cost{margin-top:auto; padding-top:12px; border-top:1px solid var(--hair); font-size:13px;}
+  .opt .cost b{display:block; font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--steel); margin-bottom:4px;}
+  .opt .cost span{color:var(--ink);}
+
+  /* decisions */
+  .need{list-style:none; margin:0; padding:0; counter-reset:n;}
+  .need li{display:flex; gap:13px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--hair); counter-increment:n; margin:0;}
+  .need li:last-child{border-bottom:none;}
+  .need li::before{content:counter(n); flex:none; width:22px; height:22px; border-radius:50%; background:var(--amber-soft); border:1px solid #E8D2A8; color:var(--amber); font-family:var(--mono); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .need .t{font-size:14px; color:var(--ink-soft); line-height:1.5;}
+  .need .t strong{display:block; color:var(--ink);}
+
+  .live{background:var(--green-soft); border:1px solid #B9D4C2; border-radius:10px; padding:14px 18px; margin-top:8px;}
+  .live b{font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--green); display:block; margin-bottom:5px;}
+  .live p{margin:0; font-size:13.5px; color:#2E5B40;}
+
+
+  @media (max-width:720px){ .wrap{padding:24px 18px 40px;} h1{font-size:23px;} .opts{grid-template-columns:1fr;} }
+  @media print{ body{background:#fff;} .wrap{max-width:none; padding:16px 26px;} .opt,.live,.need li{page-break-inside:avoid;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="brand">
+    <div class="bars" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div><b>Deal Hub</b>&ensp;<i>new add-on · decision brief</i></div>
+  </div>
+  <h1>Operations Calendar</h1>
+  <p class="lede">Deal Hub shows deals as a list. This add-on shows them as a diary — every booked appointment laid out by day and by person, with the gaps visible.</p>
+  <div class="meta">
+    <span><b>Date</b>17 Nov 2026</span>
+    <span><b>Decision needed</b>Which of the two below</span>
+    <span><b>Read time</b>2 minutes</span>
+  </div>
+</header>
+
+<h2>How it works</h2>
+<p>Appointments come from HighLevel, where reps' Google and Outlook calendars already sync both ways. Deal Hub reads them, shows them as a diary, and sends changes back — so there is one copy of the truth, not two. Every appointment arrives carrying its customer, its deal and its value, because Deal Hub already holds all of that.</p>
+
+<h2>The choice</h2>
+<div class="opts">
+  <div class="opt">
+    <span class="k">Option A</span>
+    <h3>Shared week</h3>
+    <ul>
+      <li>One calendar holding everyone's appointments, filtered by person when you want</li>
+      <li>Drag to reschedule, plus book, reassign and cancel</li>
+      <li>Click an appointment to open its deal</li>
+      <li>Answers <em>what is booked</em></li>
+    </ul>
+    <div class="cost"><b>Cost</b><span>Smaller build. No licence.</span></div>
+  </div>
+  <div class="opt b">
+    <span class="k">Option B</span>
+    <h3>Board, a column per person</h3>
+    <ul>
+      <li>A column for each surveyor or fitter, read down the day</li>
+      <li>Everything in option A, plus moving work between people at a glance</li>
+      <li>Click an appointment to open its deal</li>
+      <li>Answers <em>who should take it</em></li>
+    </ul>
+    <div class="cost"><b>Cost</b><span>Notably bigger build, and a commercial calendar component — an ongoing licence, not a one-off.</span></div>
+  </div>
+</div>
+<p>Option A is a way of seeing the work. Option B is a way of allocating it. If the calendar is meant to be used for deciding who does what, it is B, and that is worth knowing before anything is quoted.</p>
+
+<h2>What's needed to start</h2>
+<ol class="need">
+  <li><span class="t"><strong>A or B.</strong> Everything else follows from this, including the price.</span></li>
+  <li><span class="t"><strong>Which sub-account to pilot on.</strong> Then the order the rest follow in.</span></li>
+  <li><span class="t"><strong>Whether blocked-out time has to appear.</strong> If reps block travel or admin in their diary and it must show on the board, that changes the groundwork.</span></li>
+  <li><span class="t"><strong>Whether moving an appointment should email the customer.</strong> HighLevel can do it automatically. Easy to switch on, awkward to undo once customers have had the emails.</span></li>
+</ol>
+
+<h2>Not affected</h2>
+<div class="live">
+  <b>Already live, unchanged by this</b>
+  <p>Deals · customers · stage history · messages · tasks · notes · users. All of it keeps running exactly as it does today. The appointment is the only thing the system doesn't already hold.</p>
+</div>
+
+</div>
+</body>
+</html>

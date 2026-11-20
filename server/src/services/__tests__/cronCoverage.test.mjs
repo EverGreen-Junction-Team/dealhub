@@ -66,6 +66,16 @@ const ENTRY = {
   'messagesSync.js': null,
   'conversationProvidersSync.js': 'syncConversationProvidersAllInstalls',
   'tasksSync.js': 'syncAllTasks',
+  // Scheduled, and the one on this list where an unscheduled sweep would
+  // lose data outright rather than merely leave it stale.
+  //
+  // HighLevel documents no webhook for BLOCKED time — a rep blocking out
+  // travel or a holiday fires nothing we know of — so this nightly pass is
+  // the only path by which blocked slots reach the database at all. Drop it
+  // from the cron and the operations calendar shows every booking and none
+  // of the gaps, which is a calendar that cannot be used for scheduling and
+  // does not look broken.
+  'appointmentsSync.js': 'syncAllAppointments',
   // DELIBERATELY UNSCHEDULED — paused at the client's request on 2026-08-15.
   // Listed so the exclusion is a recorded decision, not an oversight.
   'callRecordingSync.js': null

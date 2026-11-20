@@ -4,7 +4,7 @@ Every path by which a row gets written: what arrives in real time, what is
 reconciled nightly, what only runs when a human invokes it, and what is
 deliberately switched off.
 
-Written against the code as of 2026-10-09. The authority is always
+Written against the code as of 2026-11-17. The authority is always
 `server/src/services/orphanSweep.js` (which registers the nightly job) and
 `server/src/routes/webhooks.js` (which dispatches the real-time one).
 
@@ -14,7 +14,7 @@ Written against the code as of 2026-10-09. The authority is always
 
 | Path | Trigger | Covers |
 |---|---|---|
-| **Webhooks** | GHL pushes, instantly | Opportunities, contacts, messages, tasks, notes, users, relations |
+| **Webhooks** | GHL pushes, instantly | Opportunities, contacts, messages, tasks, notes, users, relations, appointments |
 | **Nightly reconciliation** | `0 3 * * *`, in-process | Everything above *plus* the things GHL never pushes |
 | **Manual scripts** | A person runs them | Backfills, one-off repairs, forced re-syncs |
 
@@ -37,6 +37,7 @@ Idempotency is enforced through the `processed_events` table.
 | `ContactDndUpdate` | `contacts` |
 | `InboundMessage` · `OutboundMessage` | `messages`, `message_opportunity_map` |
 | `TaskCreate` · `TaskComplete` · `TaskDelete` | `tasks`, `task_relations` |
+| `AppointmentCreate` · `AppointmentUpdate` · `AppointmentDelete` | `appointments` |
 | `NoteCreate` · `NoteUpdate` · `NoteDelete` | `notes`, `note_links` |
 | `UserCreate` · `UserUpdate` · `UserDelete` | `users` |
 | `RelationCreate` · `RelationDelete` | `opportunity_contacts`, contact↔business links |
@@ -52,13 +53,104 @@ sync fetches them:
 - **Custom field definitions**
 - **Pipelines and stages**
 - **Conversation providers**
+- **Blocked time** — a rep blocking out travel, admin or a holiday. GHL's
+  webhook docs do not mention blocked slots anywhere; no event is listed and
+  the three Appointment events say nothing about them. We assume none fires.
+  See "Appointments" below, because the consequence is bigger than it looks.
 
-And two things GHL has no concept of, so we derive them ourselves:
+And three things GHL has no concept of, so we derive them ourselves:
 
 - **Opportunity → business**: there is no link. A deal reaches a business
   only through `contacts.business_id` (migration 056).
 - **Deal tags**: tags are contact-scoped. Deal tags are fanned out from the
   union of their contacts' tags (migration 134).
+- **Appointment → opportunity**: there is no link of any kind — no relation,
+  no field, no association. An appointment carries a `contactId` and nothing
+  about the pipeline, so the deal is derived through the contact using the
+  same engine messages, tasks and notes use. It is left **NULL** when the
+  contact has no open deal or more than one. See below.
+
+### Appointments — read this before touching them
+
+Added for the operations calendar (migration 143). Three things about
+HighLevel's appointment webhooks are not like anything else in this app, and
+all three fail *silently* — the symptom is an appointment that never appears,
+with nothing in the logs that looks like an error.
+
+**1. The id is at `appointment.id`.** Not `appointmentId`, and not the
+top-level `id` that opportunity and contact events use. The payload is
+`{ type, locationId, appointment: { id, ... } }` and the envelope carries
+nothing else useful. Reading it the way every other writer here reads an id
+yields `undefined` and the event is dropped for having none.
+
+**2. The documented examples lie about their own type.** HighLevel's
+`AppointmentUpdate` and `AppointmentDelete` doc pages both show an example
+payload whose `type` field reads `"AppointmentCreate"` — copied from the
+Create page and never corrected. The dispatcher therefore keys on the *real*
+value of `type`, and create and update deliberately share one handler, so
+either naming lands the same row. Do not split them.
+
+**3. Blocked time has no webhook, so the nightly pass is its only path.**
+Nothing is documented and nothing is assumed to fire. `appointmentsSync`
+reads `/calendars/blocked-slots` alongside `/calendars/events` and tags the
+difference as `appointments.event_kind`. Drop that job from the cron and the
+calendar shows every booking and none of the gaps — a calendar that cannot
+be used for scheduling and does not look broken.
+
+This assumption is **unverified against a live sub-account**. If a blocked
+slot *does* fire something, `routes/webhooks.js` logs any calendar-shaped
+event type it does not handle at **warn** with the full payload, so it will
+show up as itself rather than vanishing into the generic unrecognised-type
+line. That log is how the assumption gets disproved; check it first.
+
+**Writing back.** The operations calendar books, moves, reassigns and
+cancels appointments through `services/ghlAppointmentWrite.js`, called from
+`routes/appointments.js` — never from the AI, which proposes into
+`ai_actions` and waits for a human (`server/AI_WRITE_FRAMEWORK.md`), and
+never through the MCP connector. The write goes to GHL and the
+`AppointmentCreate` / `AppointmentUpdate` webhook writes our row, the way
+contacts work; nothing in that path touches `appointments` directly.
+
+> One consequence worth knowing when something looks broken: **a newly booked
+> appointment is not in Postgres when the POST returns.** GHL has it; our row
+> arrives with the webhook a moment later. The board polls for about eight
+> seconds and then says it will appear shortly, rather than reporting a
+> failure for a booking that succeeded.
+
+Cancelling is `PATCH { appointmentStatus: 'cancelled' }`, **not** `DELETE`. A
+cancelled appointment keeps its slot in the diary and its link to the deal —
+the record that somebody was going to visit on Tuesday and then did not,
+which is the thing a sales operation counts. `DELETE` exists for the genuine
+mistake (a booking on the wrong account) and the board does not offer it.
+
+> **Moving or cancelling never emails the customer.** GHL's `toNotify` fires
+> the calendar's confirmation and reschedule notifications at the contact,
+> and we send it explicitly — never omitted, because GHL's own default is to
+> notify and the louder behaviour must not be what you get by forgetting.
+>
+> For a **move or a cancellation it is always `false`**. The two mistakes are
+> not symmetrical: a move that should have emailed someone can be followed by
+> an email a minute later, and a dispatcher tidying next week's board cannot
+> unsend fifty.
+>
+> For a **new booking** the board offers a checkbox, off by default. That is
+> the one moment where notifying is arguably right — the customer has just
+> agreed to the visit — so it is the only place in the app that asks. This is
+> open question 4 in the client's decision brief; if they want reschedules to
+> notify too, it is a parameter rather than a constant, so it is a decision
+> and not a rewrite.
+
+The calendar's own availability rules are likewise respected rather than
+overridden: a drop outside working hours is refused by GHL and the board
+shows GHL's reason, instead of silently booking a surveyor into a Sunday.
+
+**Timezones.** `startTime` and `endTime` arrive as ISO 8601 *with* a UTC
+offset, so `TIMESTAMPTZ` stores the right instant with no parsing of ours.
+What that does not give you is a time of day — "9am" is a fact about a place.
+`appointments.calendar_timezone` records the calendar's own IANA zone
+(enriched by `calendarInfo.js`, the single place that decides this), with the
+location's zone as the fallback. The viewer's browser is never used. NULL
+means the calendar has not been read yet, not UTC.
 
 ---
 
@@ -90,10 +182,29 @@ resolved *on the same run* rather than the next:
 11. tasks          ← AFTER opportunities: a task is attributed to a deal, so
                      the deals must be current or attribution falls back to
                      "no open deal".
-12. expired deal-link sweep   create-time deal picks whose webhook never
+12. appointments   ← AFTER users, contacts AND opportunities, for all three
+                     reasons at once: an appointment resolves its owner's
+                     name against `users`, FK-references `contacts`, and
+                     derives its deal from the contact's open opportunities.
+                     ALSO the only path blocked time has — see §1.
+13. expired deal-link sweep   create-time deal picks whose webhook never
                               arrived (migration 069)
-13. purge sync_runs        older than 30 days
+14. purge sync_runs        older than 30 days
 ```
+
+`appointmentsSync` sweeps a **rolling window** — 30 days back, 180 forward —
+per calendar, because there is no "all appointments in a location" endpoint:
+events are read per calendar over a time range. Two consequences:
+
+- An appointment outside the window is not reconciled. It is **never deleted
+  for being outside it** — the delete pass is confined to the exact window
+  *and* the calendars that were successfully read, on top of the shared
+  `shouldReconcileDeletes` truncation guard. Without both clauses, a windowed
+  sweep would soft-delete all of next year's diary.
+- The sweep needs `calendars.readonly` and `calendars/events.readonly`.
+  Without them it logs loudly and gives up: appointments still arrive by
+  webhook, but nothing is reconciled and **blocked time never arrives at
+  all** for that location.
 
 ### Why reconcile at all when webhooks exist
 
@@ -316,7 +427,18 @@ Work down the list:
 4. **Has the nightly job run since?** It is one job: if an early step throws,
    the later ones still run, but check the logs for the specific step.
 
-5. **Is it derived rather than synced?** Deal tags (migration 134) and the
-   opportunity→business link (via `contacts.business_id`) are computed by us.
-   If a contact's tags are right and the deal's are not, the fanout is the
-   place to look, not the sync.
+5. **Is it derived rather than synced?** Deal tags (migration 134), the
+   opportunity→business link (via `contacts.business_id`) and an
+   appointment's deal (migration 143) are computed by us. If a contact's tags
+   are right and the deal's are not, the fanout is the place to look, not the
+   sync. If an appointment has no deal, that is usually correct: the contact
+   has two open deals and we decline rather than guess. The writer logs
+   `dealStatus: 'excluded_multi_open'` when that is why.
+
+6. **Is it an appointment or blocked time?** Blocked time has no webhook and
+   arrives only on the 3am run, inside a 30-day-back / 180-forward window
+   (§1, §2). A block created at 9am will not be here until the next morning,
+   and one scheduled beyond the window will not be here until it drifts into
+   it. An appointment missing entirely is more likely the `appointment.id`
+   trap than a dropped webhook — check the logs for `appointmentWriter: no
+   appointment id on payload`.

@@ -7,6 +7,7 @@ import InsightsTab from './tabs/InsightsTab'
 import BusinessesTab from './tabs/BusinessesTab'
 import ContactsTab from './tabs/ContactsTab'
 import TasksTab from './tabs/TasksTab'
+import CalendarTab from './tabs/CalendarTab'
 import NotesTab from './tabs/NotesTab'
 import ControlCentreTab from './tabs/ControlCentreTab'
 import HomeTab from './tabs/HomeTab'
@@ -32,6 +33,37 @@ import { useAuth } from '../context/AuthContext'
 // React root, so a zoom here scaled the page and left every dialog at full
 // size. body is the only ancestor both share. See the note in index.css.
 
+// The operations calendar's TAB is merged but hidden.
+//
+// Build with VITE_FEATURE_CALENDAR=true to show it. Anything else — unset,
+// 'false', a typo — hides it, which is the right way round for a flag whose
+// job is to keep an unverified screen away from reps.
+//
+// ── THE UI ONLY ──────────────────────────────────────────────────────
+//
+// Nothing on the server is gated, deliberately. The appointment webhooks,
+// the nightly reconcile and /api/appointments all run as normal, so the
+// data builds up from the day this merges — which is what you want before
+// anyone looks at a calendar. A board switched on over an empty table would
+// tell you nothing except that it is empty.
+//
+// So this flag answers one question: can a rep SEE it yet.
+//
+// ── BUILD-TIME, NOT RUNTIME ──────────────────────────────────────────
+//
+// A localStorage or query-string toggle would let one person flip it in
+// their own browser. That sounds convenient and is a trap: "it is off for
+// me" while every rep still sees it. The only states here are "this build
+// has the tab" and "this build does not", which can be reasoned about from
+// the outside.
+//
+// ── TO REMOVE IT ENTIRELY ────────────────────────────────────────────
+//
+// Revert the merge commit that brought the calendar in. It is merged with
+// --no-ff precisely so there is a single commit to revert, rather than four
+// to unpick.
+const CALENDAR_ENABLED = import.meta.env.VITE_FEATURE_CALENDAR === 'true'
+
 // Order: Deal hub → Businesses → Deals → Contacts → Tasks → Notes → Control.
 // Businesses comes second because it's the widest lens: a business rolls up the
 // deals, contacts and conversations that every tab after it shows one slice of.
@@ -50,9 +82,22 @@ const TABS = [
   { id: 'deals',      label: 'Deals',        icon: 'sell' },
   { id: 'contacts',   label: 'Contacts',     icon: 'group' },
   { id: 'tasks',      label: 'Tasks',        icon: 'task_alt' },
+  // After Tasks, before Notes: the calendar is the other half of
+  // "what has to happen" — a task is work with a deadline, an
+  // appointment is work with a time and a person already on it.
+  //
+  // Filtered out below when the flag is off, rather than being absent from
+  // this list: the position is part of the design and belongs here next to
+  // the reason for it, not in whichever branch of an `if` it ends up in.
+  { id: 'calendar',   label: 'Calendar',     icon: 'calendar_month' },
   { id: 'notes',      label: 'Notes',        icon: 'sticky_note_2' },
   { id: 'control',    label: 'Control panel', icon: 'tune' }
 ]
+
+// What the nav actually offers. TABS above stays whole — labelForPlace reads
+// it to name a position in the Back tooltip, and a hidden tab still has a
+// name if something navigates there directly.
+const VISIBLE_TABS = TABS.filter((t) => t.id !== 'calendar' || CALENDAR_ENABLED)
 
 // One navigation position. Back has to restore ALL of it, not just the tab:
 // arriving at a contact record sets both activeTab AND openContactId, so
@@ -125,7 +170,15 @@ export default function DealHubShell() {
   // incognito window. It fell back to the Deal hub, which predates Home and
   // opened a new user on an empty deal picker. A remembered tab still wins,
   // so a refresh returns to where the rep was.
-  const [activeTab, setActiveTab] = useState(() => restored?.tab || 'home')
+  const [activeTab, setActiveTab] = useState(() => {
+    const was = restored?.tab || 'home'
+    // A session restored from a build where the Calendar tab WAS enabled
+    // would otherwise land on a tab this build neither lists nor renders:
+    // an empty page with no nav item highlighted and nothing to click.
+    // Falling back to Home is the only state that is obviously fine.
+    if (was === 'calendar' && !CALENDAR_ENABLED) return 'home'
+    return was
+  })
   const [selectedDealId, setSelectedDealId] = useState(() => restored?.dealId || null)
   // Location-wide totals for the top-nav pill counters. One fetch on mount.
   // Matches what each tab actually shows (Deals 343 = every open opp, etc).
@@ -271,7 +324,7 @@ export default function DealHubShell() {
         return;
       }
       if (e.altKey && /^[1-9]$/.test(e.key)) {
-        const tab = TABS[Number(e.key) - 1];
+        const tab = VISIBLE_TABS[Number(e.key) - 1];
         if (tab) {
           e.preventDefault();
           navigate({ tab: tab.id });
@@ -385,7 +438,7 @@ export default function DealHubShell() {
             NAME any more, so the binding went with the markup. */}
         {/* Tab chips */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {TABS.map((t) => {
+          {VISIBLE_TABS.map((t) => {
             const active = activeTab === t.id
             // Location-wide count on each section chip. Deal-hub + Control
             // centre chips don't have a meaningful total, so we skip them.
@@ -527,6 +580,11 @@ export default function DealHubShell() {
             // one — the same handler the Businesses roll-up already uses.
             onOpenBusiness={openBusiness}
           />
+        )}
+        {/* The board's cards open the deal they belong to, the same
+            cross-tab jump tasks and notes already use. */}
+        {CALENDAR_ENABLED && activeTab === 'calendar' && (
+          <CalendarTab onOpenDeal={openDeal} />
         )}
         {activeTab === 'notes' && (
           <NotesTab

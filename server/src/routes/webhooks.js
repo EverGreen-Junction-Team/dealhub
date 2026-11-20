@@ -7,6 +7,7 @@ import { enqueue, dequeue } from '../services/orphanQueue.js';
 import { handleUserUpsert, handleUserDelete } from '../services/userWriter.js';
 import { handleTaskCreate, handleTaskComplete, handleTaskDelete } from '../services/taskWriter.js';
 import { handleNoteCreate, handleNoteUpdate, handleNoteDelete } from '../services/noteWriter.js';
+import { handleAppointmentUpsert, handleAppointmentDelete } from '../services/appointmentWriter.js';
 import { handleContactUpsert, handleContactDelete, handleContactDndUpdate } from '../services/contactWriter.js';
 import { handleInboundMessage, handleOutboundMessage } from '../services/messageWriter.js';
 import { handleRelationCreate, handleRelationDelete } from '../services/opportunityContactWriter.js';
@@ -64,6 +65,36 @@ const TASK_TYPES = new Set(['TaskCreate', 'TaskComplete', 'TaskDelete']);
 
 // Note events (migration 017, noteWriter.js). NoteUpdate DOES exist.
 const NOTE_TYPES = new Set(['NoteCreate', 'NoteUpdate', 'NoteDelete']);
+
+// Appointment events (migration 143, appointmentWriter.js). All three exist:
+// unlike tasks, appointments DO get an update event.
+//
+// ── DO NOT TRUST THE DOCUMENTED EXAMPLES TO NAME THEIR OWN EVENT ─────────
+//
+// HighLevel's AppointmentUpdate and AppointmentDelete doc pages both show an
+// example payload whose `type` field reads "AppointmentCreate". The examples
+// were copied from the Create page and never corrected.
+//
+// That is a documentation bug, not a protocol one — but it means the example
+// is no evidence of what the live `type` string is, and anyone wiring this up
+// from the docs could reasonably conclude all three events announce
+// themselves as creates.
+//
+// So: we dispatch on the REAL value of `type` (which is the only thing this
+// router has ever done), we treat create and update as the same upsert — so
+// either naming lands the same row — and the dispatch below LOGS LOUDLY on
+// any appointment-shaped type outside this set, so if GHL really does send
+// something unexpected it shows up in the logs as itself rather than being
+// dropped as an unknown event type.
+//
+// Blocked slots are NOT here. HighLevel's webhook documentation does not
+// mention blocked time anywhere, so we assume no event fires for it and
+// catch it in the nightly reconcile (appointmentsSync.js). Unverified
+// against a live sub-account — if a block does arrive, it will surface in
+// the unrecognised-type log below, which is the cheapest way to find out.
+const APPOINTMENT_TYPES = new Set([
+  'AppointmentCreate', 'AppointmentUpdate', 'AppointmentDelete'
+]);
 
 // User events (migration 014, userWriter.js). Soft delete on UserDelete.
 const USER_TYPES = new Set(['UserCreate', 'UserUpdate', 'UserDelete']);
@@ -250,8 +281,27 @@ webhooksRouter.post('/ghl', async (req, res) => {
   const isContactEvent = CONTACT_TYPES.has(eventType);
   const isMessageEvent = MESSAGE_TYPES.has(eventType);
   const isRelationEvent = RELATION_TYPES.has(eventType);
+  const isAppointmentEvent = APPOINTMENT_TYPES.has(eventType);
 
-  if (!isOpportunityEvent && !isTaskEvent && !isNoteEvent && !isUserEvent && !isContactTagEvent && !isContactEvent && !isMessageEvent && !isRelationEvent) {
+  if (!isOpportunityEvent && !isTaskEvent && !isNoteEvent && !isUserEvent && !isContactTagEvent && !isContactEvent && !isMessageEvent && !isRelationEvent && !isAppointmentEvent) {
+    // An appointment-shaped type we do not handle gets its own, louder line.
+    //
+    // This is the net for two things we cannot confirm from the docs: a
+    // blocked-slot event (the docs do not say one exists) and any appointment
+    // event named differently from the three we subscribe to. Both would
+    // otherwise vanish into the generic "unrecognised" line at info level
+    // among every other unsubscribed GHL event, which is where a missing
+    // calendar feature goes to hide for a month.
+    if (typeof eventType === 'string'
+        && /appointment|calendar|block/i.test(eventType)) {
+      logger.warn(
+        { eventType, eventId, locationId, payload: event },
+        'webhook: calendar-shaped event type we do not handle — if this is a '
+        + 'blocked slot or a renamed appointment event, appointmentWriter '
+        + 'needs a case for it (see APPOINTMENT_TYPES)'
+      );
+      return res.json({ ok: true, dropped: 'unhandled_calendar_event' });
+    }
     // Unrecognised type. Log + 200-and-drop so GHL doesn't retry forever.
     // The full payload was already archived to ghl_raw above, so we can
     // inspect what GHL sent and add a handler later if useful.
@@ -366,6 +416,35 @@ webhooksRouter.post('/ghl', async (req, res) => {
     } catch (err) {
       await markProcessed(eventId, 'failed', err?.message);
       logger.error({ err, locationId, eventType, eventId }, 'webhook: note writer failed');
+      return res.json({ ok: false, error: 'writer_failed' });
+    }
+  }
+
+  // ── Appointment events ────────────────────────────────────────────────
+  // Create and Update share one handler: the payloads are identical in shape,
+  // the writer's ON CONFLICT makes either one produce the right row, and an
+  // Update that arrives before its Create (out-of-order delivery, or a create
+  // webhook we dropped) still lands the appointment instead of being lost.
+  //
+  // Delete is the only one that branches, and only because it must not
+  // phantom-insert a row for an appointment we never saw.
+  if (isAppointmentEvent) {
+    try {
+      if (eventType === 'AppointmentDelete') {
+        await handleAppointmentDelete(install, event);
+      } else {
+        // AppointmentCreate and AppointmentUpdate. eventType is passed
+        // through purely so the writer's log says which one actually
+        // arrived — worth having while we are still establishing what GHL
+        // sends for a reschedule, given the docs' own examples mislabel it.
+        await handleAppointmentUpsert(install, event, eventType);
+      }
+      await markProcessed(eventId, 'success', null);
+      logger.info({ locationId, eventType, eventId }, 'webhook: appointment event applied');
+      return res.json({ ok: true });
+    } catch (err) {
+      await markProcessed(eventId, 'failed', err?.message);
+      logger.error({ err, locationId, eventType, eventId }, 'webhook: appointment writer failed');
       return res.json({ ok: false, error: 'writer_failed' });
     }
   }

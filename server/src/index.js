@@ -12,6 +12,7 @@ import { mediaRouter } from './routes/media.js';
 import { contactsRouter } from './routes/contacts.js';
 import { businessesRouter } from './routes/businesses.js';
 import { tasksRouter } from './routes/tasks.js';
+import { appointmentsRouter } from './routes/appointments.js';
 import { notesRouter } from './routes/notes.js';
 import { savedViewsRouter } from './routes/savedViews.js';
 import { providersRouter } from './routes/providers.js';
@@ -112,6 +113,7 @@ async function main() {
   app.use('/api/businesses', dashboardCors, express.json(), businessesRouter);
   app.use('/api/tasks',    dashboardCors, express.json(), tasksRouter);
   app.use('/api/notes',    dashboardCors, express.json(), notesRouter);
+  app.use('/api/appointments', dashboardCors, express.json(), appointmentsRouter);
   app.use('/api/saved-views', dashboardCors, express.json(), savedViewsRouter);
   app.use('/api/providers', dashboardCors, express.json(), providersRouter);
   app.use('/api/summary',  dashboardCors, express.json(), summaryRouter);

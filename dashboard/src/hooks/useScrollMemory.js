@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { getTabState, setTabState } from './useTabState'
+import { getTabState, setTabState } from './useTabState.js'
 
 // Where you were ON the page, not just what the page was showing.
 //
@@ -26,13 +26,53 @@ import { getTabState, setTabState } from './useTabState'
 // Two seconds covers a slow list fetch; beyond that the user is looking at
 // the top of the page and has moved on, and yanking them down would be worse
 // than leaving them.
-const RESTORE_WINDOW_MS = 2000
+const RESTORE_WINDOW_MS = 3000
 
-// Scroll events fire per frame. Writing through to sessionStorage that often
-// would serialise the whole tab-state store on every one, so the write is
-// trailing-edge throttled: the last position in any quarter second wins,
-// which is the only one that matters.
 const SAVE_EVERY_MS = 250
+
+/**
+ * One frame of a restore: should we keep trying?
+ *
+ * ── WHY THIS IS AS DUMB AS IT IS ─────────────────────────────────────
+ *
+ * The first version gave up as soon as the target looked unreachable. At
+ * mount the page is empty — the fetch has not landed — so the furthest you
+ * can scroll is 0 and EVERY target is unreachable. It stopped on frame one,
+ * always, and the symptom was a position that never came back.
+ *
+ * The obvious repair was to wait for the height to hold still before
+ * believing it. That does not work either, and the test for it is what
+ * showed why: a list renders a skeleton, then its first page, then the rest,
+ * so the height holds still at an INTERMEDIATE value for long enough to look
+ * settled. Any threshold short enough to release a genuinely short page is
+ * also short enough to be fooled by a page mid-load. The two are not
+ * distinguishable from height alone.
+ *
+ * So it does not try. Keep aiming at the target, clamped to whatever the
+ * page can currently do, until one of three things is true:
+ *
+ *   it arrives                  the common case, usually within a few frames
+ *   the window expires          the backstop, for a page that never gets there
+ *   the rep scrolls themselves  handled by the caller — their input wins
+ *
+ * On a page that is genuinely shorter than it was, this parks at the bottom
+ * — the closest it can get to where they were — and keeps re-parking there
+ * for a second or two. That costs a few hundred no-op scrollTo calls and is
+ * invisible, which is a better trade than a heuristic that silently gives up
+ * on the case it was written for.
+ *
+ * @param {number} current   where we are now
+ * @param {number} target    where we want to be
+ * @param {number} elapsedMs since the restore began
+ */
+export function restoreStep({ current, target, elapsedMs }) {
+  // Sub-pixel layout and the page zoom both mean the final offset is rarely
+  // exact, so landing within a couple of pixels counts as landing. Without
+  // the tolerance every successful restore would run until the clock.
+  if (Math.abs(current - target) < 2) return { done: true }
+  if (elapsedMs >= RESTORE_WINDOW_MS) return { done: true }
+  return { done: false }
+}
 
 function useThrottledSave(page, key) {
   const timer = useRef(null)
@@ -98,13 +138,13 @@ export function usePageScrollMemory(page) {
         document.documentElement.scrollHeight - window.innerHeight
       )
       window.scrollTo(0, Math.min(target, max))
-      // Done when we get there, or when the page has stopped growing and
-      // simply cannot reach it — a list that is shorter than it was, because
-      // a filter has since narrowed it.
-      const reached = Math.abs(window.scrollY - target) < 2 || max <= target
-      if (!reached && Date.now() - started < RESTORE_WINDOW_MS) {
-        window.requestAnimationFrame(attempt)
-      }
+
+      const { done } = restoreStep({
+        current: window.scrollY,
+        target,
+        elapsedMs: Date.now() - started
+      })
+      if (!done) window.requestAnimationFrame(attempt)
     }
     window.requestAnimationFrame(attempt)
 
@@ -149,18 +189,28 @@ export function useElementScrollMemory(page, key) {
     el.addEventListener('touchstart', abandon, { passive: true })
 
     if (target && (target.x || target.y)) {
+      const wantX = target.x || 0
+      const wantY = target.y || 0
+
       const attempt = () => {
         if (cancelled || !ref.current) return
         const node = ref.current
         const maxX = Math.max(0, node.scrollWidth - node.clientWidth)
         const maxY = Math.max(0, node.scrollHeight - node.clientHeight)
-        node.scrollLeft = Math.min(target.x || 0, maxX)
-        node.scrollTop = Math.min(target.y || 0, maxY)
-        const reachedX = Math.abs(node.scrollLeft - (target.x || 0)) < 2 || maxX <= (target.x || 0)
-        const reachedY = Math.abs(node.scrollTop - (target.y || 0)) < 2 || maxY <= (target.y || 0)
-        if (!(reachedX && reachedY) && Date.now() - started < RESTORE_WINDOW_MS) {
-          window.requestAnimationFrame(attempt)
-        }
+        node.scrollLeft = Math.min(wantX, maxX)
+        node.scrollTop = Math.min(wantY, maxY)
+
+        // Both axes, same rule as the page — see restoreStep. A board with
+        // no columns yet can scroll nowhere, so there is nothing clever to
+        // infer from how far it currently goes.
+        const here = restoreStep({
+          current: node.scrollLeft, target: wantX, elapsedMs: Date.now() - started
+        })
+        const there = restoreStep({
+          current: node.scrollTop, target: wantY, elapsedMs: Date.now() - started
+        })
+        if (here.done && there.done) return
+        window.requestAnimationFrame(attempt)
       }
       window.requestAnimationFrame(attempt)
     }

@@ -261,7 +261,13 @@ async function reconcileDeletes(locationId, seenIds, { truncated, contactIds = n
       { locationId, seenCount: seenIds.length, truncated, reason: verdict.reason },
       'tasksSync: skipping delete reconciliation'
     );
-    return 0;
+    // NOT a bare 0. "Skipped" and "ran, found nothing to delete" are
+    // completely different states that both used to come back as zero — and
+    // the run that recorded them threw the difference away, so sync_runs
+    // showed deleted:0 every night for either reason. That ambiguity is how
+    // stale tasks went unnoticed: the one number anybody could check said
+    // the same thing whether the sweep was working or not running at all.
+    return { deleted: 0, skipped: true, reason: verdict.reason };
   }
   // SCOPE MATTERS. The search path sees the whole location, so "not in the
   // list" means deleted. The per-contact path only ever asked about contacts we
@@ -271,7 +277,9 @@ async function reconcileDeletes(locationId, seenIds, { truncated, contactIds = n
   // So the fallback passes the contacts it actually covered, and the delete is
   // confined to those.
   const scoped = Array.isArray(contactIds);
-  if (scoped && contactIds.length === 0) return 0;
+  if (scoped && contactIds.length === 0) {
+    return { deleted: 0, skipped: true, reason: 'no contacts were covered' };
+  }
 
   const { rowCount } = await rawQuery(
     scoped
@@ -288,7 +296,7 @@ async function reconcileDeletes(locationId, seenIds, { truncated, contactIds = n
             AND NOT (task_id = ANY($2::text[]))`,
     scoped ? [locationId, seenIds, contactIds] : [locationId, seenIds]
   );
-  return rowCount || 0;
+  return { deleted: rowCount || 0, skipped: false, reason: null };
 }
 
 /**
@@ -360,11 +368,22 @@ export async function syncTasksForLocation(locationId) {
     }
   }
 
-  const deleted = await reconcileDeletes(locationId, seenIds, {
+  const sweep = await reconcileDeletes(locationId, seenIds, {
     truncated, contactIds: coveredContacts
   });
 
-  const stats = { source, seen: seenIds.length, changed, deleted, truncated };
+  const stats = {
+    source,
+    seen: seenIds.length,
+    changed,
+    deleted: sweep.deleted,
+    truncated,
+    // Why nothing was deleted, when nothing was. Carried up to the recorded
+    // run rather than only logged, so the question is answerable from the
+    // table a month later — long after the logs have rotated away.
+    deletesSkipped: sweep.skipped,
+    skipReason: sweep.reason
+  };
   logger.info({ locationId, ...stats }, 'tasksSync: location synced');
   return stats;
 }
@@ -393,6 +412,13 @@ export async function syncAllTasks() {
   let changed = 0;
   let deleted = 0;
   let failed = 0;
+  let seen = 0;
+  // The three facts that explain a deleted count, which the recorded run
+  // used to drop on the floor. Without them "deleted: 0" means either "GHL
+  // and we agree" or "the sweep never ran", and nobody can tell which.
+  let deletesSkipped = 0;
+  const skipReasons = new Set();
+  const sources = new Set();
 
   for (const { location_id: locationId } of rows) {
     try {
@@ -400,6 +426,12 @@ export async function syncAllTasks() {
       locations++;
       changed += s.changed;
       deleted += s.deleted;
+      seen += s.seen;
+      sources.add(s.source);
+      if (s.deletesSkipped) {
+        deletesSkipped++;
+        if (s.skipReason) skipReasons.add(s.skipReason);
+      }
     } catch (err) {
       failed++;
       logger.error(
@@ -409,10 +441,23 @@ export async function syncAllTasks() {
     }
   }
 
+  // 'partial' when a location's delete pass was skipped, not just when one
+  // threw. A run that fetched everything and then declined to reconcile has
+  // not done its job, and recording it as a clean success is what let ten
+  // nights of deleted:0 look healthy.
+  const status = failed > 0
+    ? 'partial'
+    : (deletesSkipped > 0 ? 'partial' : 'success');
+
   await recordSyncRun({
     jobName: 'tasksSync', objectType: 'tasks', scope: 'all',
-    status: failed > 0 ? 'partial' : 'success',
+    status,
     startedAt,
-    stats: { locations, changed, deleted, failed }
+    stats: {
+      locations, changed, deleted, failed, seen,
+      sources: [...sources],
+      deletesSkipped,
+      skipReasons: [...skipReasons]
+    }
   });
 }

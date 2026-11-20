@@ -15,6 +15,7 @@ import {
 import { dealsAPI } from '../../api/deals'
 import { aiAPI } from '../../api/ai'
 import { Truncate } from '../shared/ListChrome'
+import { useTabState } from '../../hooks/useTabState'
 
 // Deal Hub tab — the core view.
 //
@@ -279,8 +280,15 @@ export default function DealHubTab({
 
   // Left-rail tabs — Deal / People / Media. Deal comes first and is the
   // default: it's the record the whole page is about, and the header the rep
-  // reads before anything else. Media is still to come.
-  const [leftRail, setLeftRail] = useState('deal')
+  // reads before anything else.
+  //
+  // REMEMBERED, like every other "where was I" on this app. The shell renders
+  // tabs as `{activeTab === 'hub' && <DealHubTab/>}`, so leaving the hub
+  // unmounts it and plain state resets — a rep reading Media, stepping into
+  // Tasks to check something and coming back landed on Deal and had to find
+  // their way again. Not per deal: which rail you read is a habit, not a fact
+  // about one opportunity.
+  const [leftRail, setLeftRail] = useTabState('hub', 'leftRail', 'deal')
 
   // Sibling open deals on the same contact — powers the "other open deals"
   // chips in the Deal section. Reuses the reassignment-targets endpoint,
@@ -295,8 +303,37 @@ export default function DealHubTab({
   // Task, so "notes and tasks, but not the emails" was unreachable — the only
   // way to see both was All, which brought the whole thread with it. Empty
   // array = no channel filter = everything, which is what the All chip sets.
-  const [channelFilter, setChannelFilter] = useState([])
-  const [peopleFilter, setPeopleFilter] = useState([])
+  //
+  // REMEMBERED PER DEAL, which is the only sensible scope for them: a people
+  // filter is a list of THIS deal's contacts, so carrying it onto another
+  // deal would filter by people who are not on it and show an empty
+  // timeline. So the snapshot records which deal it belongs to and is only
+  // restored for that one.
+  const [filterSnapshot, setFilterSnapshot] = useTabState('hub', 'timelineFilters', null)
+  const forThisDeal = filterSnapshot && dealId && filterSnapshot.dealId === dealId
+  const [channelFilter, setChannelFilter] = useState(
+    () => (forThisDeal ? filterSnapshot.channels || [] : [])
+  )
+  const [peopleFilter, setPeopleFilter] = useState(
+    () => (forThisDeal ? filterSnapshot.people || [] : [])
+  )
+
+  // Which deal the CURRENT filters were chosen for.
+  //
+  // Seeded with the deal we mounted on, so a remount of the same deal — which
+  // is what coming back to this tab is — does not read as a deal change and
+  // wipe what was just restored. It is the fetch below that clears filters,
+  // and it runs on every mount, so without this the restore above would be
+  // undone a few hundred milliseconds after it happened.
+  const filtersBelongTo = useRef(dealId)
+
+  // Persist on every change. Cheap — it is two short arrays — and it means
+  // the snapshot is current whenever the rep leaves, however they leave.
+  useEffect(() => {
+    if (!dealId) return
+    setFilterSnapshot({ dealId, channels: channelFilter, people: peopleFilter })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealId, channelFilter, peopleFilter])
   // null = all, true = included only, false = excluded only.
 
   // Deal switcher dropdown open/close
@@ -406,9 +443,18 @@ export default function DealHubTab({
         setMessages(decorateRows(t.messages, d.people))
         setTimelinePaging(t)
         setLoading(false)
-        // Reset filters when the deal changes.
-        setChannelFilter([])
-        setPeopleFilter([])
+        // Reset filters when the deal genuinely CHANGES.
+        //
+        // This used to run on every load, and a load happens on every mount —
+        // so returning to the hub cleared the filters the rep left set, which
+        // is the behaviour this guard exists to stop. A different deal still
+        // starts clean, because its people filter names contacts that are not
+        // on it.
+        if (filtersBelongTo.current !== d.id) {
+          filtersBelongTo.current = d.id
+          setChannelFilter([])
+          setPeopleFilter([])
+        }
       })
       .catch((err) => {
         if (!alive) return

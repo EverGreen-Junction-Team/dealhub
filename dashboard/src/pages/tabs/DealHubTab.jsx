@@ -32,12 +32,18 @@ import { Truncate } from '../shared/ListChrome'
 //
 // ── WHAT THIS REPLACED, AND WHY ──────────────────────────────────────
 //
-// This was `zoom: 0.75` on the root — one number that shrank the whole tab
-// in proportion. It solved the complaint (the hub reads as too zoomed in)
-// and created a worse one: zoom scales EVERYTHING, so the field labels went
-// with it. Those are already the smallest type here at 11px, and at 0.75
-// they landed near 8px, which is past comfortable reading — especially
-// inside the GHL iframe, where the browser may be scaled again on top.
+// The ZOOM that used to sit here has moved to DealHubShell, where it scales
+// the whole app rather than this one tab — see APP_ZOOM. What stays here is
+// a different job, and the two should not be confused:
+//
+//   APP_ZOOM        a DENSITY fix. Every tab is drawn at 85%.
+//   HUB_TYPE_SCALE  a PROPORTION fix. Three headings in this tab are
+//                   oversized RELATIVE to what surrounds them, and would
+//                   still be at any zoom level. Scaling the page cannot
+//                   correct that; it only makes it quieter.
+//
+// They multiply, so what you actually see is 30 × 0.85 = 25.5px for the
+// value and 20 × 0.85 = 17px for the deal name.
 //
 // The hub was never uniformly too big. Three things are much too big and
 // the rest was fine, so only those three move now:
@@ -46,15 +52,16 @@ import { Truncate } from '../shared/ListChrome'
 //   --text-3xl      28 → 24   the Ask Deal answer heading
 //   --text-2xl      24 → 20   the deal NAME (DealSection)
 //
-// Everything else — body text, field values, labels — renders at its normal
-// size again, which is BIGGER than it was under the zoom.
+// Everything else — body text, field values, labels — keeps its normal
+// token size here and is scaled only by APP_ZOOM, the same as every other
+// tab. Nothing in this tab is shrunk twice except those three headings.
 //
 // ── WHY CSS VARIABLES AND NOT EDITED FONT SIZES ──────────────────────
 //
 // Overriding the tokens on this element re-points every `var(--text-2xl)`
 // inside the hub at once, without touching the files that use them. The
-// same tokens keep their normal values everywhere else in the app, so the
-// Deals, Tasks and Contacts tabs are untouched. One place to tune, and
+// same tokens keep their normal values everywhere else, so a 24px heading
+// on the Deals or Contacts tab is still 24px. One place to tune, and
 // nothing to keep in step.
 //
 // NOT CHANGED, deliberately:
@@ -72,35 +79,7 @@ const HUB_TYPE_SCALE = {
   '--text-2xl': '20px'
 }
 
-// And the whole tab renders at 85%.
-//
-// ── TWO LEVERS, AND THEY COMPOUND ────────────────────────────────────
-//
-// This is deliberate rather than a leftover. They do different jobs:
-//
-//   HUB_TYPE_SCALE  fixes a PROPORTION problem — three headings that were
-//                   oversized relative to everything around them, at any
-//                   size. Shrinking the tab uniformly would never correct
-//                   that; the value would just be too big more quietly.
-//   HUB_ZOOM        fixes a DENSITY problem — the hub puts four panels side
-//                   by side and you scroll for things that should be in view
-//                   together.
-//
-// Because they multiply, the effective sizes are what matter:
-//
-//   deal value    34 → 30 → 25.5px
-//   deal name     24 → 20 → 17px
-//   body text     14 → 14 → 11.9px
-//   field labels  11 → 11 →  9.4px   ← the floor; watch this one
-//
-// 0.85, not the 0.75 tried before: at 0.75 the labels landed near 8px, which
-// is past comfortable reading, and they are the first thing to break because
-// they are already the smallest type here. 9.4px is tight but legible.
-//
-// If more density is wanted, reduce row padding and heights rather than
-// either of these — both of them take the labels down with everything else,
-// and they have no room left.
-const HUB_ZOOM = 0.85
+
 
 // Chip presentation order — keep the fixed order across deals so users
 // don't hunt for a channel that moved position. We just skip channels
@@ -1188,7 +1167,7 @@ export default function DealHubTab({
   }
 
   return (
-    <div style={{ ...HUB_TYPE_SCALE, zoom: HUB_ZOOM }}>
+    <div style={HUB_TYPE_SCALE}>
       {/* The OPPORTUNITY row that sat here is gone. Its switcher IS the
           toolbar's SEARCH control now — keeping both would be two ways to do
           one thing, one of them outside the card it changes, and the empty

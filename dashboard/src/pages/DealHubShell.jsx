@@ -25,6 +25,47 @@ import { useAuth } from '../context/AuthContext'
 // when a user clicks a deal card, and it flips activeTab to 'hub'
 // automatically. That's the "click a deal card → jump into deal hub" flow.
 
+// How much of its natural size the whole app renders at.
+//
+// ── WHY ──────────────────────────────────────────────────────────────
+//
+// It started as a complaint about the Deal hub reading as too zoomed in,
+// and was fixed there first. The same is true everywhere: the app runs in a
+// GHL iframe, which is already a window inside a window, and at full size
+// every tab asks for more scrolling than it should.
+//
+// ── WHY `zoom` AND NOT `transform: scale()` ──────────────────────────
+//
+// They look the same and behave completely differently. `transform` paints
+// the element smaller but leaves its layout box at full size, so the app
+// would keep reserving the space it no longer fills and clicks would drift
+// from where things are drawn. `zoom` reflows: layout genuinely happens at
+// the smaller size, hit-testing stays correct, and text is re-hinted rather
+// than resampled.
+//
+// ── WHAT THIS DOES NOT COVER ─────────────────────────────────────────
+//
+// Antd renders dropdowns, pickers and some modals into a portal on `body`,
+// outside this element, so they open at NORMAL size. That is the behaviour
+// we want — a shrunken menu is harder to read for no benefit — but a popover
+// will look slightly larger than the control that opened it.
+//
+// The boot and error screens are rendered by App.jsx INSTEAD of this shell,
+// so they are not scaled either. Also fine: they are a single centred
+// message, and shrinking it would only make it harder to read.
+//
+// ── THE FLOOR ────────────────────────────────────────────────────────
+//
+// 0.85 and not lower. The smallest type in the app is --text-xs at 11px —
+// the uppercase field labels — and at 0.85 those land at 9.4px: tight, but
+// legible. 0.75 was tried and put them near 8px, which is past comfortable
+// reading, especially inside an iframe the browser may already have scaled.
+//
+// So if more density is wanted, reduce padding and row heights rather than
+// this number. It takes the labels down with everything else and they have
+// no room left.
+const APP_ZOOM = 0.85
+
 // Order: Deal hub → Businesses → Deals → Contacts → Tasks → Notes → Control.
 // Businesses comes second because it's the widest lens: a business rolls up the
 // deals, contacts and conversations that every tab after it shows one slice of.
@@ -335,7 +376,23 @@ export default function DealHubShell() {
   )
 
   return (
-    <div data-dealhub style={{ minHeight: '100vh', background: 'var(--surface-page)' }}>
+    <div
+      data-dealhub
+      style={{
+        // EVERY tab renders at 85%. See APP_ZOOM.
+        zoom: APP_ZOOM,
+        // NOT '100vh'.
+        //
+        // Inside a zoomed element, viewport units resolve in that element's
+        // own coordinate space and are then scaled down with everything else
+        // — so a literal 100vh would paint at 85% of the viewport and leave a
+        // 15% strip of bare page at the bottom with none of this background
+        // on it. Dividing by the zoom first gives back a box that covers the
+        // real viewport once scaled.
+        minHeight: `${100 / APP_ZOOM}vh`,
+        background: 'var(--surface-page)'
+      }}
+    >
       {/* Header bar: brand + tabs + search */}
       {/* Sticky: the section tabs are how you move around the app, so they
           shouldn't scroll away on a long deal. zIndex clears the Timeline's

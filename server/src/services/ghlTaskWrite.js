@@ -32,12 +32,79 @@
 // confusing 404 from GHL.
 
 import { ghlRequest } from './ghlClient.js';
-import { rejectionMessage, logRejection } from './ghlRejection.js';
+import { rejectionMessage, logRejection, looksUnknownId, ghlDetail } from './ghlRejection.js';
 import { rawQuery } from '../db.js';
 import { buildTaskPatch, TaskWriteError } from './taskPatch.js';
 import { logger } from '../utils/logger.js';
 
 export { buildTaskPatch, TaskWriteError };
+
+/**
+ * GHL says it has never heard of this task. Stop showing it.
+ *
+ * ── THE PROBLEM THIS SOLVES ──────────────────────────────────────────
+ *
+ * A write came back `400 {"message":"The task id is invalid."}` on a task
+ * whose id was perfectly well formed and had come from GHL's own webhook.
+ * The explanation turned out to be upstream: "5th follow up" is a workflow
+ * step, and a workflow that deletes and recreates its tasks leaves our rows
+ * pointing at ids GHL has discarded.
+ *
+ * Until something removes that row, the task sits in the rep's list looking
+ * entirely normal, and EVERY action on it fails the same way — edit,
+ * complete, delete. There is nothing the rep can do about it and no
+ * indication of what is wrong. They just have a task they cannot touch.
+ *
+ * ── WHY ACT ON THIS SIGNAL ───────────────────────────────────────────
+ *
+ * A write is the strongest evidence we ever get. The nightly sweep infers
+ * deletions from absence in a list, and hedges heavily about it for good
+ * reason — a truncated page would otherwise wipe the table. This is not an
+ * inference: we named one task and GHL said that id is not actionable.
+ *
+ * ── THE ONE CASE THIS GETS WRONG, AND WHY IT IS SURVIVABLE ───────────
+ *
+ * "Invalid" would also be the answer if the task had MOVED to another
+ * contact, since the write is scoped to the contact we have on file. Then
+ * the task still exists and we would be hiding it.
+ *
+ * That is self-correcting: tasksSync's upsert clears deleted_at on anything
+ * GHL returns, so it comes back on the next run with its new contact. A
+ * wrong soft-delete costs a day of visibility; the phantom costs a row
+ * nobody can ever act on, indefinitely. Logged at warn either way, so the
+ * pattern is visible rather than silently tidied away.
+ *
+ * Never throws. This runs while another error is already on its way to the
+ * rep, and failing here would replace a useful message with a database one.
+ */
+async function forgetUnknownTask(install, taskId, err) {
+  const status = err?.response?.status;
+  if (status !== 400 && status !== 422) return;
+  const detail = ghlDetail(err?.response?.data);
+  if (!looksUnknownId(detail)) return;
+
+  try {
+    const { rowCount } = await rawQuery(
+      `UPDATE tasks
+          SET status = 'deleted', deleted_at = now(), updated_at = now()
+        WHERE location_id = $1 AND task_id = $2 AND deleted_at IS NULL`,
+      [install.location_id, taskId]
+    );
+    if (rowCount > 0) {
+      logger.warn(
+        { locationId: install.location_id, taskId, detail },
+        'ghlTaskWrite: the CRM does not recognise this task — removing it '
+        + 'from the list. If it still exists there, the nightly sync brings '
+        + 'it back.'
+      );
+    }
+  } catch (dbErr) {
+    logger.error(
+      { err: dbErr, taskId },
+      'ghlTaskWrite: could not clear a task the CRM does not recognise'
+    );
+  }
+}
 
 /**
  * Map a GHL error onto a message a rep can act on.
@@ -246,6 +313,7 @@ export async function updateGhlTask(install, { contactId, taskId }, input) {
     task = data?.task || null;
   } catch (err) {
     if (!contactId) noteLocationScope(err, { taskId, verb: 'update' });
+    await forgetUnknownTask(install, taskId, err);
     throw translateGhlError(err, { taskId, contactId, verb: 'update' });
   }
 
@@ -296,6 +364,7 @@ export async function setGhlTaskCompleted(install, { contactId, taskId }, comple
     task = data?.task || null;
   } catch (err) {
     if (!contactId) noteLocationScope(err, { taskId, verb: 'complete' });
+    await forgetUnknownTask(install, taskId, err);
     throw translateGhlError(err, { taskId, contactId, verb: 'update' });
   }
 
@@ -334,6 +403,9 @@ export async function deleteGhlTask(install, { contactId, taskId }) {
     });
   } catch (err) {
     if (!contactId) noteLocationScope(err, { taskId, verb: 'delete' });
+    // A delete that fails because the task is already gone has, in every
+    // sense the rep cares about, succeeded.
+    await forgetUnknownTask(install, taskId, err);
     throw translateGhlError(err, { taskId, contactId, verb: 'delete' });
   }
 

@@ -5,8 +5,10 @@ import { contactLabel } from '../utils/contactLabel.js';
 import { getActiveInstall, explainInactiveInstall } from '../services/ghlClient.js';
 import { fetchLocationTimezone } from '../services/locationInfo.js';
 import {
-  updateGhlAppointment, deleteGhlAppointment, AppointmentWriteError
+  updateGhlAppointment, deleteGhlAppointment, createGhlAppointment,
+  AppointmentWriteError
 } from '../services/ghlAppointmentWrite.js';
+import { ghlRequest } from '../services/ghlClient.js';
 import { userMessage } from '../utils/userMessage.js';
 import { logger } from '../utils/logger.js';
 
@@ -256,6 +258,108 @@ appointmentsRouter.get('/', async (req, res, next) => {
     });
   } catch (err) {
     logger.error({ err, locationId }, 'GET /api/appointments failed');
+    next(err);
+  }
+});
+
+// ── GET /api/appointments/calendars ───────────────────────────────────
+//
+// The calendars a booking can be made on.
+//
+// NOT FROM OUR DATABASE, because we do not hold one. Appointments carry a
+// calendar_id and we enrich a timezone from it (calendarInfo.js), but there
+// is no `calendars` table — nothing so far has needed to LIST them, only to
+// resolve one. Adding a table and a nightly sync for a dropdown that opens a
+// few times a day would be a sync to keep correct forever in exchange for
+// nothing; this is one cached call instead.
+//
+// MUST be registered before any GET /:id — the same single-segment
+// shadowing trap /api/deals/users and /api/deals/pipelines document. There
+// is no GET /:id on this router today, which is exactly why it is worth
+// putting this first now rather than discovering it when one is added.
+//
+// Requires `calendars.readonly`. Without it the booking form has nothing to
+// offer, so the error says which permission is missing rather than
+// presenting an empty dropdown that looks like "no calendars exist".
+appointmentsRouter.get('/calendars', async (req, res, next) => {
+  const locationId = req.locationId;
+  try {
+    const install = await getActiveInstall(locationId);
+    if (!install) {
+      const why = await explainInactiveInstall(locationId);
+      return res.status(409).json({ error: userMessage(why) });
+    }
+    const { data } = await ghlRequest(install, {
+      method: 'GET',
+      url: '/calendars/',
+      params: { locationId },
+      scopeOptional: true
+    });
+    const rows = Array.isArray(data?.calendars) ? data.calendars : [];
+    res.json({
+      calendars: rows
+        // Inactive calendars are GHL's soft-delete: one is a calendar
+        // somebody has retired, and offering it would let a rep book onto a
+        // diary nobody reads.
+        .filter((c) => c.isActive !== false)
+        .map((c) => ({
+          id: c.id || c._id,
+          name: c.name || 'Calendar',
+          timezone: c.timezone || null
+        }))
+        .filter((c) => c.id)
+    });
+  } catch (err) {
+    if (err.code === 'GHL_SCOPE_MISSING') {
+      return res.status(403).json({
+        error: 'This app cannot read your calendars yet — the '
+          + 'calendars.readonly permission is missing. It has to be added '
+          + 'while the app is in draft, then reauthorised.'
+      });
+    }
+    logger.error({ err, locationId }, 'GET /api/appointments/calendars failed');
+    next(err);
+  }
+});
+
+// ── POST /api/appointments ────────────────────────────────────────────
+//
+// Book one.
+//
+// Like every other write here, this goes to GHL and the AppointmentCreate
+// webhook writes our row — so the new appointment does NOT appear in a
+// refetch issued the same instant. The response carries GHL's created
+// appointment so the board can say what it booked, and the board polls
+// briefly for the row to land rather than claiming it is already there.
+appointmentsRouter.post('/', async (req, res, next) => {
+  const locationId = req.locationId;
+  const {
+    calendarId, contactId, startTime, endTime, title, address,
+    assignedUserId, notifyCustomer, ignoreAvailability
+  } = req.body || {};
+
+  try {
+    const install = await getActiveInstall(locationId);
+    if (!install) {
+      const why = await explainInactiveInstall(locationId);
+      return res.status(409).json({ error: userMessage(why) });
+    }
+
+    const created = await createGhlAppointment(install, {
+      calendarId, contactId, startTime, endTime, title, address,
+      assignedUserId,
+      // Passed through, never defaulted here — ghlAppointmentWrite owns the
+      // decision and documents why booking is the one case where notifying
+      // the customer is arguably right.
+      notifyCustomer, ignoreAvailability
+    });
+
+    res.status(201).json({ appointment: created });
+  } catch (err) {
+    if (err instanceof AppointmentWriteError) {
+      return res.status(err.status).json({ error: err.message, field: err.field });
+    }
+    logger.error({ err, locationId }, 'POST /api/appointments failed');
     next(err);
   }
 });

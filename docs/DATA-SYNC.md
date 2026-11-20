@@ -103,22 +103,42 @@ event type it does not handle at **warn** with the full payload, so it will
 show up as itself rather than vanishing into the generic unrecognised-type
 line. That log is how the assumption gets disproved; check it first.
 
-**Writing back.** The operations calendar moves, reassigns and cancels
-appointments through `services/ghlAppointmentWrite.js`, called from
+**Writing back.** The operations calendar books, moves, reassigns and
+cancels appointments through `services/ghlAppointmentWrite.js`, called from
 `routes/appointments.js` — never from the AI, which proposes into
 `ai_actions` and waits for a human (`server/AI_WRITE_FRAMEWORK.md`), and
 never through the MCP connector. The write goes to GHL and the
-`AppointmentUpdate` webhook writes our row, the way contacts work; nothing
-in that path touches `appointments` directly.
+`AppointmentCreate` / `AppointmentUpdate` webhook writes our row, the way
+contacts work; nothing in that path touches `appointments` directly.
 
-> **Customers are not emailed.** GHL's `toNotify` fires the calendar's
-> confirmation and reschedule notifications at the contact, and we send it
-> explicitly `false` on every call rather than relying on GHL's default,
-> which is to notify. The two mistakes are not symmetrical: a move that
-> should have emailed someone can be followed by an email a minute later, and
-> a dispatcher tidying next week's board cannot unsend fifty. It is a
-> parameter, not a constant, so switching it on is a decision rather than a
-> code change — and it is open question 4 in the client's decision brief.
+> One consequence worth knowing when something looks broken: **a newly booked
+> appointment is not in Postgres when the POST returns.** GHL has it; our row
+> arrives with the webhook a moment later. The board polls for about eight
+> seconds and then says it will appear shortly, rather than reporting a
+> failure for a booking that succeeded.
+
+Cancelling is `PATCH { appointmentStatus: 'cancelled' }`, **not** `DELETE`. A
+cancelled appointment keeps its slot in the diary and its link to the deal —
+the record that somebody was going to visit on Tuesday and then did not,
+which is the thing a sales operation counts. `DELETE` exists for the genuine
+mistake (a booking on the wrong account) and the board does not offer it.
+
+> **Moving or cancelling never emails the customer.** GHL's `toNotify` fires
+> the calendar's confirmation and reschedule notifications at the contact,
+> and we send it explicitly — never omitted, because GHL's own default is to
+> notify and the louder behaviour must not be what you get by forgetting.
+>
+> For a **move or a cancellation it is always `false`**. The two mistakes are
+> not symmetrical: a move that should have emailed someone can be followed by
+> an email a minute later, and a dispatcher tidying next week's board cannot
+> unsend fifty.
+>
+> For a **new booking** the board offers a checkbox, off by default. That is
+> the one moment where notifying is arguably right — the customer has just
+> agreed to the visit — so it is the only place in the app that asks. This is
+> open question 4 in the client's decision brief; if they want reschedules to
+> notify too, it is a parameter rather than a constant, so it is a decision
+> and not a rewrite.
 
 The calendar's own availability rules are likewise respected rather than
 overridden: a drop outside working hours is refused by GHL and the board

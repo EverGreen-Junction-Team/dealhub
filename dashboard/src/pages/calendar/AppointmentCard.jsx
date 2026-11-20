@@ -1,5 +1,5 @@
 import React from 'react'
-import { Tooltip } from 'antd'
+import { Tooltip, Dropdown } from 'antd'
 import { clockTime, zoneNote } from '../../utils/calendarTime'
 import { formatMoney } from '../../utils/money'
 
@@ -47,7 +47,7 @@ const BLOCKED_STYLE = { tint: 'var(--gray-100)', bar: 'var(--gray-450)', text: '
 export default function AppointmentCard({
   appointment, zone, top, height, lane, lanes,
   clippedBefore, clippedAfter,
-  onOpenDeal, onDragStart, busy
+  onOpenDeal, onDragStart, onSetStatus, busy
 }) {
   const a = appointment
   const isBlocked = a.kind === 'blocked'
@@ -73,6 +73,45 @@ export default function AppointmentCard({
   const label = isBlocked
     ? (a.title || 'Blocked')
     : (a.contactName || a.title || 'Appointment')
+
+  // Cancelling and reinstating, behind a menu rather than an always-visible
+  // button.
+  //
+  // CANCELLING, NOT DELETING. A cancelled appointment keeps its slot in the
+  // diary and its link to the deal — it is the record that somebody was
+  // going to visit on Tuesday and then did not, which is exactly what a
+  // sales operation wants to be able to count. Deleting it would make the
+  // afternoon look like it was always free. Deletion exists on the API for
+  // the genuine mistake, and is deliberately not offered here.
+  //
+  // Reinstating is offered because cancelling is one click and people
+  // misclick. Without it the only way back is the CRM.
+  const statusActions = []
+  if (!isBlocked && onSetStatus) {
+    if (cancelled) {
+      statusActions.push({
+        key: 'confirmed',
+        label: 'Reinstate',
+        onClick: () => onSetStatus(a, 'confirmed')
+      })
+    } else {
+      statusActions.push({
+        key: 'cancelled',
+        label: 'Cancel this appointment',
+        danger: true,
+        onClick: () => onSetStatus(a, 'cancelled')
+      })
+      // Outcomes, which are what make the board worth reading back. A
+      // no-show recorded on the day is a fact; reconstructed a week later
+      // it is a guess.
+      statusActions.push({
+        key: 'showed', label: 'Mark as attended', onClick: () => onSetStatus(a, 'showed')
+      })
+      statusActions.push({
+        key: 'noshow', label: 'Mark as a no-show', onClick: () => onSetStatus(a, 'noshow')
+      })
+    }
+  }
 
   const tip = (
     <div style={{ display: 'grid', gap: 4, fontSize: 'var(--text-sm)' }}>
@@ -159,6 +198,34 @@ export default function AppointmentCard({
           color: 'var(--text-body)'
         }}
       >
+        {statusActions.length > 0 && !busy && (
+          <Dropdown
+            trigger={['click']}
+            menu={{ items: statusActions.map(({ onClick, ...rest }) => rest),
+                    onClick: ({ key }) => statusActions.find((x) => x.key === key)?.onClick() }}
+          >
+            <button
+              type="button"
+              aria-label="Appointment actions"
+              // Stops the card's own click opening the deal underneath the
+              // menu, and stops a click on the button starting a drag.
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              draggable={false}
+              className="pp-appt-menu"
+              style={{
+                position: 'absolute', top: 1, right: 1, zIndex: 1,
+                width: 18, height: 18, padding: 0,
+                border: 'none', borderRadius: 'var(--radius-sm)',
+                background: 'rgba(255,255,255,0.78)',
+                color: 'var(--text-muted)',
+                cursor: 'pointer', lineHeight: '16px', fontSize: 13
+              }}
+            >
+              ⋯
+            </button>
+          </Dropdown>
+        )}
         <div
           style={{
             fontWeight: 'var(--weight-semibold)',

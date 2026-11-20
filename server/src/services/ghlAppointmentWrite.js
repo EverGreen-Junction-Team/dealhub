@@ -130,6 +130,108 @@ function translateGhlError(err, { appointmentId = null, verb } = {}) {
 }
 
 /**
+ * Book a new appointment.
+ *
+ * ── WHAT GHL INSISTS ON ──────────────────────────────────────────────
+ *
+ * A calendar and a contact. Neither is optional and neither can be
+ * sensibly defaulted:
+ *
+ *   calendarId  an appointment does not exist in the abstract — it exists
+ *               on a calendar, and that calendar is what carries the
+ *               working hours, the timezone and the notification settings.
+ *               Picking one on the rep's behalf would silently choose all
+ *               three.
+ *   contactId   GHL has no concept of an appointment with nobody. A block
+ *               of time with no customer is BLOCKED TIME, which is a
+ *               different object on a different endpoint — see the note in
+ *               appointmentsSync.js.
+ *
+ * Both are therefore required here rather than defaulted, and the errors
+ * say which is missing rather than letting GHL answer with a 422 about a
+ * field the rep never saw.
+ *
+ * ── WHAT WE DO NOT SEND ──────────────────────────────────────────────
+ *
+ * No opportunityId. GHL has no appointment-to-deal link to set — the deal
+ * is DERIVED through the contact when the webhook lands (migration 143),
+ * and it is left NULL when the contact has more than one open deal. So a
+ * booking made here against a customer with two live jobs will show on the
+ * board without a deal, and that is correct rather than a gap: the
+ * alternative is guessing which job the surveyor is visiting about.
+ */
+export async function createGhlAppointment(install, {
+  calendarId, contactId, startTime, endTime, title, address,
+  assignedUserId, appointmentStatus, notifyCustomer, ignoreAvailability
+} = {}) {
+  if (!calendarId) {
+    throw new AppointmentWriteError(
+      'Pick a calendar — an appointment has to be booked on one, and the '
+      + 'calendar is what sets the working hours and the timezone.',
+      { status: 400, field: 'calendarId' }
+    );
+  }
+  if (!contactId) {
+    throw new AppointmentWriteError(
+      'Pick a customer — your CRM cannot store an appointment without one. '
+      + 'To hold time with no customer, block it out in the calendar instead.',
+      { status: 400, field: 'contactId' }
+    );
+  }
+  if (!startTime || !endTime) {
+    throw new AppointmentWriteError('An appointment needs a start and an end', {
+      status: 400, field: startTime ? 'endTime' : 'startTime'
+    });
+  }
+
+  const body = {
+    calendarId,
+    locationId: install.location_id,
+    contactId,
+    startTime,
+    endTime,
+    // Sent only when given. GHL names an appointment after the calendar's
+    // own template when no title is supplied, which is a better default
+    // than anything generic we could invent here.
+    ...(title ? { title } : {}),
+    ...(address ? { address } : {}),
+    ...(assignedUserId ? { assignedUserId } : {}),
+    // 'confirmed' unless told otherwise. A booking made deliberately by a
+    // dispatcher is confirmed by definition; leaving it unset makes the
+    // card render with no status and read as provisional.
+    appointmentStatus: appointmentStatus || 'confirmed',
+    // Always explicit — see NOTIFY_CUSTOMER_BY_DEFAULT. Booking is the one
+    // case where notifying is arguably right (the customer has just agreed
+    // to a visit and wants the confirmation), so this is the first place
+    // anyone should consider turning it on. It is still off until someone
+    // decides that, because the default must not be set by forgetting.
+    toNotify: notifyCustomer === true
+  };
+  if (ignoreAvailability === true) body.ignoreFreeSlotValidation = true;
+
+  try {
+    const { data } = await ghlRequest(install, {
+      method: 'POST',
+      url: '/calendars/events/appointments',
+      data: body
+    });
+    const created = data?.appointment || data?.event || data || null;
+    logger.info(
+      {
+        locationId: install.location_id,
+        appointmentId: created?.id || null,
+        calendarId, contactId, assignedUserId: assignedUserId || null,
+        notifiedCustomer: body.toNotify === true
+      },
+      'ghlAppointmentWrite: appointment created'
+    );
+    return created;
+  } catch (err) {
+    throw translateGhlError(err, { verb: 'book' });
+  }
+}
+
+/**
  * Move, reassign or cancel one appointment.
  *
  * Every field is optional: this is a PATCH in spirit, and the board sends

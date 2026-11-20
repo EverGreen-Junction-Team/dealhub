@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DatePicker, Segmented, Select, Button } from 'antd'
 import dayjs from 'dayjs'
 import ResourceBoard from '../calendar/ResourceBoard'
+import BookAppointment from '../calendar/BookAppointment'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
 import { Shell, StateMessage } from '../shared/ListChrome'
@@ -59,6 +60,10 @@ export default function CalendarTab({ onOpenDeal }) {
   // overlap, and a single flag would unlock the first card when the second
   // finished.
   const [busyIds, setBusyIds] = useState(() => new Set())
+  // null = closed. An object = open, prefilled from wherever the rep asked
+  // to book (a double-clicked slot, or the toolbar button with nothing
+  // prefilled but the day on screen).
+  const [booking, setBooking] = useState(null)
 
   const zone = useMemo(() => boardZone(data.timezone), [data.timezone])
 
@@ -142,12 +147,98 @@ export default function CalendarTab({ onOpenDeal }) {
     }
   }, [load, say])
 
+  // Cancel, reinstate, or record an outcome.
+  //
+  // Not optimistic, unlike a move. A drag has already shown the rep where
+  // the card went and reverting it is visible; a status change would alter
+  // only a colour, and a colour that flickers back is easy to miss — so this
+  // waits for the server and then reloads. It is one click, not a gesture,
+  // so the wait costs nothing in feel.
+  const handleSetStatus = useCallback(async (appointment, appointmentStatus) => {
+    const id = appointment.id
+    setBusyIds((s) => new Set(s).add(id))
+    try {
+      await appointmentsAPI.update(id, { appointmentStatus })
+      await load()
+      say(
+        appointmentStatus === 'cancelled' ? 'Cancelled — the customer was not emailed'
+          : appointmentStatus === 'confirmed' ? 'Reinstated'
+            : 'Saved',
+        'done'
+      )
+    } catch (err) {
+      say(err.message || 'That did not save.')
+    } finally {
+      setBusyIds((s) => {
+        const next = new Set(s)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [load, say])
+
+  // A new appointment is NOT in our database when the POST resolves — GHL
+  // has it, and the AppointmentCreate webhook writes our row a moment later.
+  // So reloading immediately usually shows nothing, which reads as "the
+  // booking failed".
+  //
+  // Poll briefly instead, backing off. Most land on the first or second try.
+  // After about eight seconds give up and SAY so rather than spinning: the
+  // appointment really does exist, and an honest "it will appear shortly"
+  // beats a board that looks broken.
+  const waitForBooking = useCallback(async (createdId) => {
+    const delays = [600, 1200, 2200, 4000]
+    for (const ms of delays) {
+      await new Promise((r) => window.setTimeout(r, ms))
+      const res = await appointmentsAPI.list({
+        from: fromDay.startOf('day').toISOString(),
+        to: fromDay.add(days, 'day').startOf('day').toISOString(),
+        kind,
+        ...(personFilter ? { assignedTo: personFilter } : {})
+      }).catch(() => null)
+      if (!res) continue
+      setData({
+        appointments: res.appointments || [],
+        resources: res.resources || [],
+        timezone: res.timezone || null
+      })
+      if (!createdId || (res.appointments || []).some((a) => a.id === createdId)) return true
+    }
+    return false
+  }, [fromDay, days, kind, personFilter])
+
+  const handleBooked = useCallback(async (created, { notified }) => {
+    setBooking(null)
+    say(
+      notified
+        ? 'Booked — the customer has been emailed'
+        : 'Booked — the customer was not emailed',
+      'done'
+    )
+    const landed = await waitForBooking(created?.id)
+    if (!landed) {
+      say('Booked in your CRM — it will appear on the board shortly.', 'done')
+    }
+  }, [waitForBooking, say])
+
   const people = useMemo(
     () => (data.resources || []).map((r) => ({ value: r.id, label: r.name })),
     [data.resources]
   )
 
-  const empty = !loading && !error && data.appointments.length === 0
+  // An empty DAY is not an empty board.
+  //
+  // A board with columns and no cards is the most useful thing a dispatcher
+  // can be shown on a quiet day: it says who is free, and it can be
+  // double-clicked to book. Hiding it behind "nothing booked" would make the
+  // one screen that answers "who can take this" disappear exactly when the
+  // answer is "anyone".
+  //
+  // So the empty state is reserved for having nobody to draw columns for at
+  // all — which is a real and different problem (no synced users, or a
+  // filter narrowed to one person with nothing on).
+  const hasBoard = !error && data.resources.length > 0
+  const empty = !loading && !error && !hasBoard && data.appointments.length === 0
 
   return (
     <Shell>
@@ -173,6 +264,13 @@ export default function CalendarTab({ onOpenDeal }) {
           options={[{ label: 'Day', value: 1 }, { label: '3 days', value: 3 }]}
         />
         <Segmented value={kind} onChange={setKind} options={KIND_OPTIONS} />
+
+        <Button
+          type="primary"
+          onClick={() => setBooking({ day: fromDay.format('YYYY-MM-DD') })}
+        >
+          Book
+        </Button>
 
         <Select
           allowClear
@@ -203,15 +301,15 @@ export default function CalendarTab({ onOpenDeal }) {
         empty={empty}
         loadingText="Loading the board…"
         emptyIcon="event_busy"
-        emptyTitle="Nothing booked in this window"
+        emptyTitle="Nobody to show"
         emptyText={
-          kind === 'appointment'
-            ? 'Blocked time is hidden by the filter — switch to Everything to see it.'
-            : 'Try another day, or widen the filters.'
+          personFilter
+            ? 'That person has nothing in this window — clear the filter to see everyone.'
+            : 'No active users have synced from your CRM yet, so there are no columns to draw.'
         }
       />
 
-      {!error && data.appointments.length > 0 && (
+      {hasBoard && (
         <ResourceBoard
           appointments={data.appointments}
           resources={data.resources}
@@ -221,6 +319,18 @@ export default function CalendarTab({ onOpenDeal }) {
           busyIds={busyIds}
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
+          onSetStatus={handleSetStatus}
+          onBookAt={setBooking}
+        />
+      )}
+
+      {booking && (
+        <BookAppointment
+          initial={booking}
+          zone={zone}
+          resources={data.resources}
+          onClose={() => setBooking(null)}
+          onBooked={handleBooked}
         />
       )}
 

@@ -40,7 +40,7 @@ function dayList(from, days) {
 
 export default function ResourceBoard({
   appointments, resources, zone, fromDay, days = 1,
-  onOpenDeal, onMove, busyIds
+  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds
 }) {
   // What is being dragged, and where it was grabbed. Held in a ref rather
   // than state: it changes during a drag and re-rendering the whole board on
@@ -194,6 +194,29 @@ export default function ResourceBoard({
                     }}
                     onDragLeave={() => setHover((h) => (h === key ? null : h))}
                     onDrop={(e) => col.assignable && handleDrop(e, day, col.id)}
+                    // Double-click, not single.
+                    //
+                    // A single click is what a consumer calendar uses, and on
+                    // a board that is also a drop target it is too easy to
+                    // fire by accident — a drag released a pixel from where
+                    // it started reads as a click, and a modal opening
+                    // mid-gesture is the kind of thing that makes people stop
+                    // dragging. The toolbar's Book button is the discoverable
+                    // path; this is the fast one, and it prefills the time and
+                    // the person from where the rep clicked.
+                    onDoubleClick={(e) => {
+                      if (!col.assignable || !onBookAt) return
+                      // Only empty space. A double-click on a card is a
+                      // double-click on the deal it opens, not a request to
+                      // book something on top of it.
+                      if (e.target !== e.currentTarget) return
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      onBookAt({
+                        day,
+                        minutes: minutesForDrop(e.clientY - rect.top),
+                        userId: col.id === UNASSIGNED ? null : col.id
+                      })
+                    }}
                     style={{
                       position: 'relative', height,
                       background: isHover ? 'var(--surface-selected)' : 'var(--surface-card)',
@@ -239,6 +262,7 @@ export default function ResourceBoard({
                           lanes={item.lanes}
                           busy={busyIds?.has(item.id)}
                           onOpenDeal={onOpenDeal}
+                          onSetStatus={onSetStatus}
                           onDragStart={(appointment, grabOffset) => {
                             dragging.current = { appointment, grabOffset }
                           }}
@@ -260,7 +284,9 @@ export default function ResourceBoard({
         }}
       >
         Drag a card down its column to change the time, or across to give it to
-        someone else. Times snap to {SNAP_MINUTES} minutes. The board shows
+        someone else. Double-click an empty slot to book there, and use a
+        card's ⋯ menu to cancel it or record the outcome. Times snap to
+        {' '}{SNAP_MINUTES} minutes. The board shows
         {' '}{String(Math.floor(DAY_START_MIN / 60)).padStart(2, '0')}:00 onwards —
         anything earlier is pinned to the top and marked ↑. Customers are not
         emailed when you move an appointment.

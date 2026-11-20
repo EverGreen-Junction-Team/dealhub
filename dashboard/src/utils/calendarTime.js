@@ -168,3 +168,20 @@ export function durationMinutes(startsAt, endsAt) {
 // so changing it is a one-line decision.
 export const DEFAULT_SLOT_MINUTES = 30
 export const SNAP_MINUTES = 15
+
+/**
+ * Minutes from midnight RIGHT NOW, in the board's zone.
+ *
+ * Used for the now-line. In the board's zone rather than the browser's for
+ * the same reason everything else here is: a dispatcher in another timezone
+ * asking "where are we in this rep's day" means the rep's day.
+ */
+export function minutesNow(zone) {
+  const d = dayjs().tz(isUsableZone(zone) ? zone : FALLBACK_ZONE)
+  return d.hour() * 60 + d.minute()
+}
+
+/** Today's date key in the board's zone — 'YYYY-MM-DD'. */
+export function dayKeyNow(zone) {
+  return dayjs().tz(isUsableZone(zone) ? zone : FALLBACK_ZONE).format('YYYY-MM-DD')
+}

@@ -1,11 +1,13 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
 import {
-  DAY_START_MIN, boardHeightPx, hourMarks, clampToWindow,
+  DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
   groupIntoCells, cellKey, minutesForDrop, isRealMove, movePatch,
   UNASSIGNED, PIXELS_PER_MINUTE
 } from './boardLayout'
-import { isoForSlot, dayLabel, SNAP_MINUTES } from '../../utils/calendarTime'
+import {
+  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES
+} from '../../utils/calendarTime'
 
 // The board: a column per person, read down the day.
 //
@@ -40,7 +42,8 @@ function dayList(from, days) {
 
 export default function ResourceBoard({
   appointments, resources, zone, fromDay, days = 1,
-  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds
+  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
+  hideEmpty = false
 }) {
   // What is being dragged, and where it was grabbed. Held in a ref rather
   // than state: it changes during a drag and re-rendering the whole board on
@@ -59,18 +62,53 @@ export default function ResourceBoard({
   // An empty column permanently taking up width would be noise on a board
   // that is usually fully assigned.
   const columns = useMemo(() => {
-    const cols = resources.map((r) => ({ ...r }))
+    // Who actually has something in this window.
+    //
+    // WHY THIS MATTERS MORE THAN IT SOUNDS. The column list is "every active
+    // account user", and a real sub-account's user list is not a list of
+    // surveyors — it is the surveyors PLUS the marketing logins, the
+    // enquiries inbox and whatever integrations have accounts. One live
+    // account draws twelve columns, of which perhaps three ever take an
+    // appointment. At three days that is thirty-six columns of nothing, and
+    // the two bookings you came to look at are somewhere off-screen.
+    const busy = new Set(
+      appointments.map((a) => a.assignedUserId).filter(Boolean)
+    )
+
+    let cols = resources.map((r) => ({ ...r, hasWork: busy.has(r.id) }))
+
+    if (hideEmpty) {
+      const kept = cols.filter((c) => c.hasWork)
+      // Never hide EVERYTHING. On a genuinely empty day the board's remaining
+      // job is to be booked into, and a board with no columns cannot be —
+      // there is nowhere to double-click. So an empty result falls back to
+      // showing everyone, which is also the honest answer to "who is free".
+      cols = kept.length > 0 ? kept : cols
+    }
+
     const hasUnassigned = appointments.some((a) => !a.assignedUserId)
     if (hasUnassigned) {
       cols.push({
         id: UNASSIGNED,
         name: 'Unassigned',
         assignable: true,
-        isUnassigned: true
+        isUnassigned: true,
+        hasWork: true
       })
     }
     return cols
-  }, [resources, appointments])
+  }, [resources, appointments, hideEmpty])
+
+  // The red line across today. A day board without one makes you read the
+  // gutter to answer "what is next", which is the question you opened it for.
+  // Minute precision is pointless here and would re-render every second; a
+  // minute is finer than the 15-minute grid anyone books on.
+  const [nowMin, setNowMin] = useState(() => minutesNow(zone))
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMin(minutesNow(zone)), 60000)
+    return () => window.clearInterval(id)
+  }, [zone])
+  const todayKey = dayKeyNow(zone)
 
   const height = boardHeightPx()
   const marks = hourMarks()
@@ -136,12 +174,35 @@ export default function ResourceBoard({
             key={day}
             style={{
               display: 'flex',
+              flexDirection: days > 1 ? 'column' : 'row',
               // A heavier rule between days than between people, so a
               // three-day board reads as three days of columns rather than
               // one undifferentiated wall.
               borderLeft: dayIdx > 0 ? '2px solid var(--border-strong)' : 'none'
             }}
           >
+            {/* One heading per DAY, above that day's people — rather than the
+                date repeated under every column, which is where it was. */}
+            {days > 1 && (
+              <div
+                style={{
+                  position: 'sticky', top: 0, zIndex: 4,
+                  padding: '5px 10px',
+                  background: day === todayKey ? 'var(--tint-teal)' : 'var(--surface-sunken)',
+                  borderBottom: '1px solid var(--border-default)',
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 'var(--weight-semibold)',
+                  color: 'var(--text-heading)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {dayLabel(`${day}T12:00:00`, zone)}
+                {day === todayKey && (
+                  <span style={{ marginLeft: 6, color: 'var(--accent-teal-text)' }}>· today</span>
+                )}
+              </div>
+            )}
+            <div style={{ display: 'flex' }}>
             {columns.map((col) => {
               const key = cellKey(day, col.id === UNASSIGNED ? null : col.id)
               const items = cells.get(key) || []
@@ -160,7 +221,9 @@ export default function ResourceBoard({
                     style={{
                       height: HEADER_H, boxSizing: 'border-box',
                       position: 'sticky', top: 0, zIndex: 2,
-                      background: col.isUnassigned ? 'var(--tint-gold)' : 'var(--surface-card)',
+                      background: col.isUnassigned
+                        ? 'var(--tint-gold)'
+                        : (day === todayKey ? 'var(--tint-teal)' : 'var(--surface-card)'),
                       borderBottom: '1px solid var(--border-default)',
                       padding: '4px 8px',
                       display: 'flex', flexDirection: 'column', justifyContent: 'center'
@@ -178,7 +241,13 @@ export default function ResourceBoard({
                       {col.name}
                     </div>
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                      {days > 1 ? dayLabel(`${day}T12:00:00`, zone) : `${items.length} booked`}
+                      {/* The count, always — it was replaced by the date on a
+                          multi-day board, which put the same date under all
+                          twelve of that day's columns and told you nothing
+                          you could not see from the day heading. */}
+                      {items.length === 0
+                        ? 'Free'
+                        : `${items.length} booked`}
                     </div>
                   </div>
 
@@ -247,6 +316,23 @@ export default function ResourceBoard({
                       </React.Fragment>
                     ))}
 
+                    {/* Now. Drawn per column rather than once across the
+                        board because each day group is its own scroll box;
+                        one absolutely-positioned line could not span them. */}
+                    {day === todayKey
+                      && nowMin >= DAY_START_MIN && nowMin <= DAY_END_MIN && (
+                      <div
+                        aria-hidden
+                        style={{
+                          position: 'absolute', left: 0, right: 0,
+                          top: (nowMin - DAY_START_MIN) * PIXELS_PER_MINUTE,
+                          borderTop: '2px solid var(--status-stuck)',
+                          pointerEvents: 'none',
+                          zIndex: 1
+                        }}
+                      />
+                    )}
+
                     {items.map((item) => {
                       const geo = clampToWindow(item.startMin, item.endMin)
                       return (
@@ -273,6 +359,7 @@ export default function ResourceBoard({
                 </div>
               )
             })}
+            </div>
           </div>
         ))}
       </div>

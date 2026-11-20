@@ -176,17 +176,36 @@ appointmentsRouter.get('/', async (req, res, next) => {
 
       // The people who can be assigned work: the same set the owner picker
       // uses, and for the same reasons (see GET /api/deals/users).
-      const { rows: assignable } = await client.query(
-        `SELECT user_id, name, email
-           FROM users
-          WHERE location_id = $1
-            AND active = true
-            AND deleted_at IS NULL
-            AND user_type = 'account'
-            AND (location_ids IS NULL OR $1 = ANY(location_ids))
-          ORDER BY name ASC NULLS LAST, email ASC`,
-        [locationId]
-      );
+      //
+      // NARROWED BY ?assignedTo, which this previously ignored — so filtering
+      // the board to one person, or to Unassigned, still drew a column for
+      // every user in the account. On a sub-account with a dozen marketing
+      // and system logins that is a screen of empty columns with no sign the
+      // filter did anything at all.
+      //
+      // 'unassigned' yields NO people columns. The board adds the Unassigned
+      // column itself when something is in it, so the filter resolves to
+      // exactly that one column rather than to nothing.
+      const userParams = [locationId];
+      let userScope = '';
+      if (assignedTo && assignedTo !== 'unassigned') {
+        userParams.push(assignedTo);
+        userScope = 'AND user_id = $' + userParams.length;
+      }
+      const { rows: assignable } = assignedTo === 'unassigned'
+        ? { rows: [] }
+        : await client.query(
+          `SELECT user_id, name, email
+             FROM users
+            WHERE location_id = $1
+              AND active = true
+              AND deleted_at IS NULL
+              AND user_type = 'account'
+              AND (location_ids IS NULL OR $1 = ANY(location_ids))
+              ${userScope}
+            ORDER BY name ASC NULLS LAST, email ASC`,
+          userParams
+        );
 
       return { appointments: rows, resources: assignable };
     });

@@ -6,6 +6,7 @@ import BookAppointment from '../calendar/BookAppointment'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
 import { Shell, StateMessage } from '../shared/ListChrome'
+import { useTabState } from '../../hooks/useTabState'
 
 // The operations calendar — option B: a board with a column per person.
 //
@@ -47,10 +48,40 @@ const KIND_OPTIONS = [
 ]
 
 export default function CalendarTab({ onOpenDeal }) {
-  const [fromDay, setFromDay] = useState(() => dayjs().startOf('day'))
-  const [days, setDays] = useState(1)
-  const [kind, setKind] = useState('all')
-  const [personFilter, setPersonFilter] = useState(null)
+  // REMEMBERED, like every other tab's filters. The shell unmounts tabs, so
+  // plain state would send a dispatcher back to today-everyone-everything
+  // each time they stepped out to look at a deal.
+  //
+  // The day is stored as 'YYYY-MM-DD' rather than a dayjs object, because the
+  // snapshot goes through JSON and a dayjs instance does not survive that —
+  // it would come back as a string that every date call then mishandled.
+  const [fromDayKey, setFromDayKey] = useTabState(
+    'calendar', 'day', dayjs().startOf('day').format('YYYY-MM-DD')
+  )
+  const fromDay = useMemo(() => dayjs(fromDayKey).startOf('day'), [fromDayKey])
+  const setFromDay = useCallback(
+    (d) => setFromDayKey(d.startOf('day').format('YYYY-MM-DD')),
+    [setFromDayKey]
+  )
+
+  const [days, setDays] = useTabState('calendar', 'days', 1)
+  const [kind, setKind] = useTabState('calendar', 'kind', 'all')
+  const [personFilter, setPersonFilter] = useTabState('calendar', 'person', null)
+
+  // Hide people with nothing booked. ON by default, and that default is the
+  // whole reason this control exists.
+  //
+  // The column list is every active account user, which on a real
+  // sub-account is the surveyors PLUS the marketing logins, the enquiries
+  // inbox and anything with a seat. One live account draws twelve columns,
+  // perhaps three of which ever take an appointment — so the board opened on
+  // a wall of empty lanes with the day's actual bookings scrolled off to the
+  // side.
+  //
+  // Off shows everyone, which is the right answer to "who is free this
+  // afternoon". That question is real, so this is a toggle rather than a
+  // filter applied once and forgotten.
+  const [hideEmpty, setHideEmpty] = useTabState('calendar', 'hideEmpty', true)
 
   const [data, setData] = useState({ appointments: [], resources: [], timezone: null })
   const [loading, setLoading] = useState(true)
@@ -237,8 +268,16 @@ export default function CalendarTab({ onOpenDeal }) {
   // So the empty state is reserved for having nobody to draw columns for at
   // all — which is a real and different problem (no synced users, or a
   // filter narrowed to one person with nothing on).
-  const hasBoard = !error && data.resources.length > 0
-  const empty = !loading && !error && !hasBoard && data.appointments.length === 0
+  // Appointments OR people is enough to draw a board.
+  //
+  // Not people alone, which is what this tested. Filtering to Unassigned now
+  // returns no PEOPLE by design — the Unassigned column is added by the board
+  // itself — so a board holding nothing but unassigned work would have been
+  // hidden behind an empty state while the work sat there unallocated. That
+  // is the one view where hiding it is worst: unowned appointments are the
+  // ones most likely to be missed.
+  const hasBoard = !error && (data.resources.length > 0 || data.appointments.length > 0)
+  const empty = !loading && !error && !hasBoard
 
   return (
     <Shell>
@@ -281,6 +320,15 @@ export default function CalendarTab({ onOpenDeal }) {
           options={[{ value: 'unassigned', label: 'Unassigned only' }, ...people]}
         />
 
+        <Segmented
+          value={hideEmpty ? 'busy' : 'all'}
+          onChange={(v) => setHideEmpty(v === 'busy')}
+          options={[
+            { label: 'Busy only', value: 'busy' },
+            { label: 'Everyone', value: 'all' }
+          ]}
+        />
+
         <span
           style={{
             marginLeft: 'auto',
@@ -317,6 +365,7 @@ export default function CalendarTab({ onOpenDeal }) {
           fromDay={fromDay}
           days={days}
           busyIds={busyIds}
+          hideEmpty={hideEmpty}
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
           onSetStatus={handleSetStatus}

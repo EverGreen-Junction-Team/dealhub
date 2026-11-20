@@ -72,7 +72,10 @@ t('each failure gets its own message', () => {
   const invalidInput = rejectionMessage('task', 'title must be a string').message;
   const gone = rejectionMessage('task', 'Task not found').message;
 
-  assert.match(unknown, /does not recognise/i);
+  // Matches what the app DOES: the row is cleared on this signal, so the
+  // message says it has gone rather than sending the rep to the CRM after
+  // something that is no longer there.
+  assert.match(unknown, /removed from your list/i);
   // The specific regression: no "check the values" on an error that has
   // nothing to do with the values.
   assert.ok(!/check the values/i.test(unknown));

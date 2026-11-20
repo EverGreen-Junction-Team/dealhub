@@ -91,8 +91,13 @@ export function rejectionMessage(noun, detail, { action = 'change' } = {}) {
     return {
       missing: false,
       status: 422,
-      message: `Your CRM does not recognise this ${noun} — it has to be `
-        + `changed in the CRM, and this one needs looking into`
+      // Written to match what the app DOES about it: ghlTaskWrite clears
+      // the local row on this exact signal, so by the time a rep reads
+      // this, the record has already left their list. Telling them to go
+      // and deal with it in the CRM would be sending them after something
+      // that is no longer theirs to deal with.
+      message: `That ${noun} no longer exists in your CRM — it has been `
+        + `removed from your list`
     };
   }
   return {

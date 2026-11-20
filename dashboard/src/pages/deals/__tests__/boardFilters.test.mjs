@@ -66,7 +66,18 @@ test('DealsTab gives the board the same filters it gives the count query', () =>
 test('stage is still NOT passed to the board', () => {
   // The board's columns ARE the stages — a stageId would leave one column
   // populated and the rest empty. This is the one filter that must not pass.
-  const call = tab.slice(tab.indexOf('<DealBoard'), tab.indexOf('onOpenDeal={setOpenDealId}'))
+  // Bounded by the element's own closing `/>`, not by a prop that happens to
+  // sit at the end of it.
+  //
+  // This used to slice up to `onOpenDeal={setOpenDealId}`. When card clicks
+  // were pointed at the deal hub that prop changed, indexOf returned -1, and
+  // `slice(start, -1)` quietly widened the search to the rest of the FILE —
+  // so the test went on passing while checking something else entirely. A
+  // stageId reaching the board would no longer have failed it.
+  const start = tab.indexOf('<DealBoard')
+  const end = tab.indexOf('/>', start)
+  assert.ok(start > -1 && end > start, 'the DealBoard element was not found')
+  const call = tab.slice(start, end)
   assert.ok(!/stageId=/.test(call), 'a stage filter must not reach the board')
 })
 

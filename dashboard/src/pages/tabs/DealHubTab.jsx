@@ -28,6 +28,48 @@ import { Truncate } from '../shared/ListChrome'
 //   • Filter chips (people + channels + inclusion) narrow the timeline
 //     client-side per rule 7 — never a round-trip.
 
+// How much of its natural size the Deal hub renders at.
+//
+// ── WHY ──────────────────────────────────────────────────────────────
+//
+// Reps said this screen reads as "too zoomed in": the value, the deal name
+// and the field rows are all sized for a page of their own, and the hub puts
+// four of those panels side by side. You end up scrolling for things that
+// should be in view at once — which is the opposite of what a hub is for.
+//
+// ── WHY ONE ZOOM AND NOT A HUNDRED SMALLER NUMBERS ───────────────────
+//
+// The alternative was to walk DealSection and its neighbours and shrink each
+// font, padding and row height by hand. That is roughly a hundred values
+// across several files, every one a chance to knock something out of
+// alignment, and it would have to be done again the next time someone wants
+// it a bit smaller.
+//
+// This is one number, it scales everything in proportion so nothing can drift
+// relative to anything else, and it is trivial to tune or revert.
+//
+// ── WHY `zoom` AND NOT `transform: scale()` ──────────────────────────
+//
+// They look the same and behave completely differently. `transform` paints
+// the element smaller but leaves its layout box at full size, so the hub
+// would keep reserving the space it used to fill and leave a large gap below
+// itself — and hit-testing drifts away from where things are drawn. `zoom`
+// reflows: the layout genuinely happens at the smaller size, clicks land
+// where they look, and text stays crisply hinted rather than being resampled.
+//
+// Worth knowing: antd renders dropdowns and date pickers into a portal on
+// `body`, outside this element, so menus open at NORMAL size. That is the
+// behaviour we want — a shrunken menu would be harder to read for no benefit
+// — but it does mean a popover will look slightly larger than the control
+// that opened it.
+//
+// 0.75 after trying 0.85, which was still read as too large. Raise it toward
+// 1 for bigger text, lower it for more on screen. Below about 0.7 the field
+// labels — already the smallest type here, at --text-xs — stop being
+// comfortably readable, so that is roughly the floor rather than a hard
+// limit.
+const HUB_ZOOM = 0.75
+
 // Chip presentation order — keep the fixed order across deals so users
 // don't hunt for a channel that moved position. We just skip channels
 // that don't exist on the current deal.
@@ -1114,7 +1156,7 @@ export default function DealHubTab({
   }
 
   return (
-    <div>
+    <div style={{ zoom: HUB_ZOOM }}>
       {/* The OPPORTUNITY row that sat here is gone. Its switcher IS the
           toolbar's SEARCH control now — keeping both would be two ways to do
           one thing, one of them outside the card it changes, and the empty

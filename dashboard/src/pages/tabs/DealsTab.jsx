@@ -846,13 +846,19 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           // The toolbar's Stage narrows the board to that one column rather
           // than being sent as a filter — the columns ARE the stages.
           focusColumn={filters.stageId || undefined}
-          // A card opens the deal's own page. It used to jump straight to the
-          // deal hub, which is a different question — the hub is the record's
-          // activity, this is the record itself. The hub is one button away
-          // from there.
-          onOpenDeal={setOpenDealId}
-          // The card face opens the deal's page; this icon is the hub, the
-          // same pairing the table rows use.
+          // A card opens the DEAL HUB.
+          //
+          // This was the deal's own editor page for a while, on the reasoning
+          // that the hub is the record's activity and the card should open the
+          // record itself. Reps did not read it that way: clicking a card to
+          // see what is happening on a deal and landing in a form of empty
+          // fields is a dead end, and the hub was a second click that most
+          // people never found.
+          //
+          // So the card face and the hub chip now do the same thing. The
+          // editor is still reachable — the list view's rows and the Edit
+          // action open it — it is just no longer what a card click means.
+          onOpenDeal={onOpenDeal}
           onOpenInHub={onOpenDeal}
         />
       )}

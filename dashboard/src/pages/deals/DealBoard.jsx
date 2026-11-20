@@ -190,10 +190,15 @@ function DealCard({ deal, onOpen, onOpenInHub, onDragStart, dragging }) {
           gap: 'var(--space-2)'
         }}>
           <FollowUpCounts tasks={deal.openTaskCount ?? 0} notes={deal.noteCount ?? 0} />
-          {/* The card body opens the deal's editor; this chip goes straight
-              to the hub. The two drag guards are NOT optional: the card is
-              draggable, and a button inside a draggable element starts its
-              own drag on mousedown, which cancels the click. */}
+          {/* The card body and this chip both open the deal hub now — the
+              card used to open the editor instead, and reps kept landing in
+              a form when they wanted to see what was happening on the deal.
+              The chip stays because it names the deal as well as acting as a
+              target, so it is worth more than the duplication costs.
+
+              The two drag guards are NOT optional: the card is draggable, and
+              a button inside a draggable element starts its own drag on
+              mousedown, which cancels the click. */}
           {onOpenInHub && (
             <DealPill
               compact

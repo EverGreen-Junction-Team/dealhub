@@ -70,8 +70,13 @@ function translateGhlError(err, { taskId = null, contactId = null, verb } = {}) 
     // GHL's own text is LOGGED, never shown — services/ghlRejection.js
     // explains why: it names a field for a validation error, but a raw
     // record id for a missing one, and the whole sales team sees these.
-    logRejection('ghlTaskWrite', { status, detail, body });
-    const rej = rejectionMessage('task', detail);
+    logRejection('ghlTaskWrite', { status, id: taskId, detail, body });
+    // `verb` is what the caller was doing — 'delete' here comes straight
+    // from deleteGhlTask — so a refused deletion stops telling the rep to
+    // check values that a delete does not have.
+    const rej = rejectionMessage('task', detail, {
+      action: verb === 'delete' ? 'delete' : 'change'
+    });
     return new TaskWriteError(rej.message, { status: rej.status, detail });
   }
   logger.error(

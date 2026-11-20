@@ -37,16 +37,43 @@ export function looksMissing(detail) {
 /**
  * Build the user-facing message for a rejected write.
  *
- * @param {string} noun  what the rep was editing — 'contact', 'deal', 'note'…
+ * ── WHY `action` EXISTS ──────────────────────────────────────────────
+ *
+ * The one message used to be "check the values and try again", whatever had
+ * been attempted. On an edit that is sound advice. On a DELETE it is
+ * nonsense — there are no values to check — and it was being shown in a
+ * confirm dialog whose only remaining button said "Delete task", so the rep
+ * was told to correct fields they could not see on a form that did not
+ * exist. Pressing the button again produced the same refusal.
+ *
+ * We still never show GHL's own text (see logRejection): it names a field
+ * for a validation error but a bare record id for a missing one, and the
+ * whole sales team reads these. So the copy cannot say WHY. What it can do
+ * is stop giving advice that does not apply, and point somewhere that can
+ * actually resolve it.
+ *
+ * @param {string} noun     what the rep was working on — 'task', 'deal'…
+ * @param {string} detail   GHL's own message, used only to detect "missing"
+ * @param {object} [opts]
+ * @param {string} [opts.action]  'change' (default) or 'delete'
  * @returns {{ message: string, status: number, missing: boolean }}
  */
-export function rejectionMessage(noun, detail) {
+export function rejectionMessage(noun, detail, { action = 'change' } = {}) {
   const missing = looksMissing(detail);
+  if (missing) {
+    return {
+      missing,
+      status: 404,
+      message: `That ${noun} no longer exists in your CRM — it may have been deleted`
+    };
+  }
   return {
     missing,
-    status: missing ? 404 : 422,
-    message: missing
-      ? `That ${noun} no longer exists in your CRM — it may have been deleted`
+    status: 422,
+    message: action === 'delete'
+      // No "check the values": there are none. The CRM is where a refusal
+      // like this can be seen and acted on, so that is where it points.
+      ? `Your CRM would not delete that ${noun} — it may need to be removed in the CRM itself`
       : 'Your CRM would not accept that change — check the values and try again'
   };
 }

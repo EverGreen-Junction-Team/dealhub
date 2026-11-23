@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { DatePicker, Segmented, Select, Button } from 'antd'
+import { DatePicker, Segmented, Button } from 'antd'
 import dayjs from 'dayjs'
 import ResourceBoard from '../calendar/ResourceBoard'
 import TimeGrid from '../calendar/TimeGrid'
 import MonthGrid from '../calendar/MonthGrid'
-import { monthWeeks } from '../calendar/boardLayout'
+import { monthWeeks, UNASSIGNED } from '../calendar/boardLayout'
+import CalendarPeople from '../calendar/CalendarPeople'
 import BookAppointment from '../calendar/BookAppointment'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
@@ -79,7 +80,12 @@ export default function CalendarTab({ onOpenDeal }) {
   // Only the People board uses this — 1 or 3 columns of people.
   const [days, setDays] = useTabState('calendar', 'days', 1)
   const [kind, setKind] = useTabState('calendar', 'kind', 'all')
-  const [personFilter, setPersonFilter] = useTabState('calendar', 'person', null)
+  // WHO IS TICKED. null means everyone, which is not the same as [] meaning
+  // nobody — see CalendarPeople. Replaces a single-select "Everyone / one
+  // person" dropdown that could not express "the two surveyors, not the
+  // marketing logins", which is the only question worth asking on an account
+  // whose user list is mostly system logins.
+  const [people, setPeople] = useTabState('calendar', 'people', null)
 
   // Hide people with nothing booked. ON by default, and that default is the
   // whole reason this control exists.
@@ -146,8 +152,11 @@ export default function CalendarTab({ onOpenDeal }) {
       const res = await appointmentsAPI.list({
         from: span.from.startOf('day').toISOString(),
         to: span.from.add(span.days, 'day').startOf('day').toISOString(),
-        kind,
-        ...(personFilter ? { assignedTo: personFilter } : {})
+        kind
+        // No assignedTo. The window is fetched for EVERYONE and the ticks
+        // filter it in the browser, so a tick is instant — no request, no
+        // spinner, no flash of an empty grid. That is what makes a checkbox
+        // list feel like one.
       })
       setData({
         appointments: res.appointments || [],
@@ -159,7 +168,7 @@ export default function CalendarTab({ onOpenDeal }) {
     } finally {
       setLoading(false)
     }
-  }, [span, kind, personFilter])
+  }, [span, kind])
 
   useEffect(() => { load() }, [load])
 
@@ -260,8 +269,7 @@ export default function CalendarTab({ onOpenDeal }) {
       const res = await appointmentsAPI.list({
         from: span.from.startOf('day').toISOString(),
         to: span.from.add(span.days, 'day').startOf('day').toISOString(),
-        kind,
-        ...(personFilter ? { assignedTo: personFilter } : {})
+        kind
       }).catch(() => null)
       if (!res) continue
       setData({
@@ -272,7 +280,7 @@ export default function CalendarTab({ onOpenDeal }) {
       if (!createdId || (res.appointments || []).some((a) => a.id === createdId)) return true
     }
     return false
-  }, [span, kind, personFilter])
+  }, [span, kind])
 
   const handleBooked = useCallback(async (created, { notified }) => {
     setBooking(null)
@@ -288,6 +296,34 @@ export default function CalendarTab({ onOpenDeal }) {
     }
   }, [waitForBooking, say])
 
+  // How many each person has in this window. Counted BEFORE the filter, or
+  // unticking somebody would zero their own count and the list would stop
+  // telling you who is busy.
+  const counts = useMemo(() => {
+    const m = new Map()
+    for (const a of data.appointments) {
+      const id = a.assignedUserId || UNASSIGNED
+      m.set(id, (m.get(id) || 0) + 1)
+    }
+    return m
+  }, [data.appointments])
+
+  const visible = useMemo(() => {
+    if (people == null) return data.appointments
+    const set = new Set(people)
+    return data.appointments.filter(
+      (a) => set.has(a.assignedUserId || UNASSIGNED)
+    )
+  }, [data.appointments, people])
+
+  // The People board's columns follow the ticks too, or you would untick
+  // somebody and still be looking at their empty lane.
+  const visibleResources = useMemo(() => {
+    if (people == null) return data.resources
+    const set = new Set(people)
+    return data.resources.filter((r) => set.has(r.id))
+  }, [data.resources, people])
+
   // ← and → move by whatever the view shows, which is the only behaviour
   // that does not feel broken: a month view that steps by one day, or a week
   // view that steps by three, makes the arrows useless.
@@ -299,11 +335,6 @@ export default function CalendarTab({ onOpenDeal }) {
       return d.add(dir * days, 'day')
     })
   }, [view, days, setFromDay])
-
-  const people = useMemo(
-    () => (data.resources || []).map((r) => ({ value: r.id, label: r.name })),
-    [data.resources]
-  )
 
   // An empty DAY is not an empty board.
   //
@@ -374,15 +405,6 @@ export default function CalendarTab({ onOpenDeal }) {
           Book
         </Button>
 
-        <Select
-          allowClear
-          placeholder="Everyone"
-          style={{ minWidth: 180 }}
-          value={personFilter}
-          onChange={setPersonFilter}
-          options={[{ value: 'unassigned', label: 'Unassigned only' }, ...people]}
-        />
-
         <Segmented
           value={hideEmpty ? 'busy' : 'all'}
           onChange={(v) => setHideEmpty(v === 'busy')}
@@ -414,15 +436,24 @@ export default function CalendarTab({ onOpenDeal }) {
         emptyIcon="event_busy"
         emptyTitle="Nobody to show"
         emptyText={
-          personFilter
-            ? 'That person has nothing in this window — clear the filter to see everyone.'
-            : 'No active users have synced from your CRM yet, so there are no columns to draw.'
+          'No active users have synced from your CRM yet, so there is nobody to draw.'
         }
       />
 
+      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+        {hasBoard && (
+          <CalendarPeople
+            resources={data.resources}
+            selected={people}
+            onChange={setPeople}
+            counts={counts}
+          />
+        )}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
       {hasBoard && view === 'month' && (
         <MonthGrid
-          appointments={data.appointments}
+          appointments={visible}
           zone={zone}
           fromDay={fromDay}
           busyIds={busyIds}
@@ -438,7 +469,8 @@ export default function CalendarTab({ onOpenDeal }) {
 
       {hasBoard && (view === 'day' || view === 'week') && (
         <TimeGrid
-          appointments={data.appointments}
+          appointments={visible}
+          resources={data.resources}
           zone={zone}
           fromDay={span.from}
           days={span.days}
@@ -452,8 +484,8 @@ export default function CalendarTab({ onOpenDeal }) {
 
       {hasBoard && view === 'people' && (
         <ResourceBoard
-          appointments={data.appointments}
-          resources={data.resources}
+          appointments={visible}
+          resources={visibleResources}
           zone={zone}
           fromDay={fromDay}
           days={days}
@@ -465,6 +497,9 @@ export default function CalendarTab({ onOpenDeal }) {
           onBookAt={setBooking}
         />
       )}
+
+        </div>
+      </div>
 
       {booking && (
         <BookAppointment

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
+import { colourFor } from './CalendarPeople'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
   groupByDay, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
@@ -37,7 +38,7 @@ const HEADER_H = 58
 const GUTTER_W = 56
 
 export default function TimeGrid({
-  appointments, zone, fromDay, days = 7,
+  appointments, resources = [], zone, fromDay, days = 7,
   onOpenDeal, onMove, onSetStatus, onBookAt, busyIds
 }) {
   const dragging = useRef(null)
@@ -64,6 +65,29 @@ export default function TimeGrid({
 
   const height = boardHeightPx()
   const marks = hourMarks()
+
+  // Open where the work is, not at 07:00.
+  //
+  // Google scrolls to roughly now, and the reason is the same here: the top
+  // of the grid is the hour least likely to hold anything, so a view that
+  // opens there spends its first impression on empty space. An hour before
+  // now gives a little context behind the current time; outside working
+  // hours it falls back to 08:00 rather than parking at midnight-adjacent
+  // emptiness.
+  const scroller = useRef(null)
+  const scrolledOnce = useRef(false)
+  useEffect(() => {
+    const el = scroller.current
+    if (!el || scrolledOnce.current) return
+    scrolledOnce.current = true
+    const anchor = (nowMin > DAY_START_MIN && nowMin < DAY_END_MIN)
+      ? nowMin - 60
+      : 8 * 60
+    el.scrollTop = Math.max(0, (anchor - DAY_START_MIN) * PIXELS_PER_MINUTE)
+    // Mount only: re-running would yank the grid back every minute when the
+    // now-line ticks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleDrop = useCallback((e, day) => {
     e.preventDefault()
@@ -106,6 +130,7 @@ export default function TimeGrid({
           borderBottom: '1px solid var(--border-default)'
         }}
       >
+        {/* Lines up with the hour gutter below. */}
         <div style={{ width: GUTTER_W, flex: `0 0 ${GUTTER_W}px` }} />
         {dayKeys.map((day) => {
           const d = inZone(`${day}T12:00:00`, zone)
@@ -152,8 +177,26 @@ export default function TimeGrid({
         })}
       </div>
 
-      {/* The grid itself. */}
-      <div style={{ display: 'flex', position: 'relative' }}>
+      {/* THE GRID SCROLLS INSIDE ITSELF, and the day headings above do not.
+          
+          Thirteen hours at this scale is about 860 pixels, which inside the
+          GHL iframe is taller than the viewport — so the grid was being cut
+          off at both ends with no way to reach either. Letting the PAGE
+          scroll instead would take the day headings away with it, and a week
+          grid whose columns are unlabelled is unreadable.
+
+          The height is the viewport less the chrome above it — divided by
+          the app zoom, because a viewport unit inside a zoomed body resolves
+          in body own coordinate space (see index.css). The floor keeps it
+          usable on a short window rather than collapsing to nothing. */}
+      <div
+        ref={scroller}
+        style={{
+          display: 'flex', position: 'relative',
+          maxHeight: 'max(360px, calc(100vh / var(--app-zoom) - 250px))',
+          overflowY: 'auto'
+        }}
+      >
         <div
           style={{
             width: GUTTER_W, flex: `0 0 ${GUTTER_W}px`,
@@ -284,6 +327,7 @@ export default function TimeGrid({
                     onOpenDeal={onOpenDeal}
                     onSetStatus={onSetStatus}
                     showOwner
+                    accent={colourFor(resources, item.assignedUserId)}
                     onDragStart={(appointment, grabOffset) => {
                       dragging.current = { appointment, grabOffset }
                     }}

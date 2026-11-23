@@ -51,7 +51,16 @@ export default function AppointmentCard({
   // Week and day views mix every rep together, so the card has to say
   // WHOSE it is. On the resource board the column already says that, and
   // repeating it on every card would be noise.
-  showOwner = false
+  showOwner = false,
+  // The PERSON's colour, for the bar down the left edge. Only the time views
+  // pass it: there, every rep's work is mixed into one column per day, and
+  // the colour is what lets you read whose is whose without squinting at
+  // names four cards abreast. On the resource board the column already says
+  // whose it is, so the bar keeps showing STATUS instead.
+  //
+  // Status is never lost either way — it is the tint, and cancelled is also
+  // struck through. The bar is the only thing this changes.
+  accent = null
 }) {
   const a = appointment
   const isBlocked = a.kind === 'blocked'
@@ -183,7 +192,7 @@ export default function AppointmentCard({
           borderLeft: `3px solid ${style.bar}`,
           border: '1px solid var(--border-default)',
           borderLeftWidth: 3,
-          borderLeftColor: style.bar,
+          borderLeftColor: isBlocked ? style.bar : (accent || style.bar),
           borderRadius: 'var(--radius-sm)',
           padding: '3px 6px',
           overflow: 'hidden',

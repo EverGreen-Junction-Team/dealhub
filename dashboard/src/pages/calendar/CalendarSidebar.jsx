@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react'
-import { Checkbox } from 'antd'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Checkbox, Tooltip } from 'antd'
 import { UNASSIGNED } from './boardLayout'
 
 // The calendar list, as Google Calendar's left rail: CALENDARS first, then
@@ -113,8 +113,16 @@ export default function CalendarSidebar({
     <aside
       style={{
         width: 196, flex: '0 0 196px',
+        // CLIPS. A calendar called "Vault Suite Vaultsuite's Personal
+        // Calendar" is wider than this box, and without this it was drawn
+        // straight across the border and over the grid beside it.
+        overflow: 'hidden',
         alignSelf: 'flex-start',
-        position: 'sticky', top: 'var(--space-3)',
+        // Below the sticky toolbar, not under it: the app nav sits at 60px
+        // and the calendar toolbar directly beneath it, so anything sticking
+        // at a smaller offset slides behind both and the top rows of this
+        // list disappear while you scroll.
+        position: 'sticky', top: 118,
         border: '1px solid var(--border-default)',
         borderRadius: 'var(--radius-md)',
         background: 'var(--surface-card)',
@@ -128,7 +136,7 @@ export default function CalendarSidebar({
             action={calsAreAll ? 'None' : 'All'}
             onAction={() => onChangeCalendars(calsAreAll ? [] : null)}
           />
-          <div style={{ display: 'grid', gap: 2, marginBottom: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gap: 2, minWidth: 0, marginBottom: 'var(--space-4)' }}>
             {calendars.map((c) => (
               <Row
                 key={c.id}
@@ -151,7 +159,7 @@ export default function CalendarSidebar({
         onAction={() => onChange(isAll ? [] : null)}
       />
 
-      <div style={{ display: 'grid', gap: 2 }}>
+      <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
         {resources.map((r) => (
           <Row
             key={r.id}
@@ -176,6 +184,43 @@ export default function CalendarSidebar({
       </div>
     </aside>
   )
+}
+
+/**
+ * Is this element's text actually cut off?
+ *
+ * ── WHY MEASURE RATHER THAN ALWAYS SHOW A TOOLTIP ────────────────────
+ *
+ * A tooltip repeating text you can already read is noise, and it trains
+ * people to ignore the ones that matter. Most calendar names fit; two on
+ * this account do not. Only those two should pop.
+ *
+ * Measured, not guessed from a character count — the sidebar is a fixed 196
+ * pixels but the font is not, and the app renders at 85% zoom, so no string
+ * length maps reliably to "too wide".
+ *
+ * Re-measured on resize as well as on the text changing. This is the same
+ * test ListChrome's Truncate uses; what differs is the presentation. Truncate
+ * sets a native `title`, which is the browser's small pale box after a
+ * second's delay. antd's Tooltip is the dark pill that Google shows, which is
+ * what was asked for and is easier to read over a busy grid.
+ */
+function useClipped(dep) {
+  const ref = useRef(null)
+  const [clipped, setClipped] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    const measure = () => setClipped(el.scrollWidth > el.clientWidth + 1)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [dep])
+
+  return [ref, clipped]
 }
 
 function SectionHead({ label, action, onAction }) {
@@ -213,14 +258,23 @@ function SectionHead({ label, action, onAction }) {
 }
 
 function Row({ colour, label, count, checked, onToggle }) {
+  const [textRef, clipped] = useClipped(label)
   return (
     <label
       style={{
         display: 'flex', alignItems: 'center', gap: 7,
+        // minWidth 0 IS THE FIX, and it is not optional.
+        //
+        // This row is a grid item, and a grid item's min-width defaults to
+        // `auto` — meaning "at least as wide as my content". So the ellipsis
+        // on the label below could never take effect: the row simply grew to
+        // fit the longest calendar name and pushed it through the sidebar's
+        // edge. The label was already set up to truncate; it was never given
+        // the chance.
+        minWidth: 0,
         padding: '3px 2px', borderRadius: 'var(--radius-sm)',
         cursor: 'pointer', fontSize: 'var(--text-sm)'
       }}
-      title={label}
     >
       <Checkbox checked={checked} onChange={onToggle} />
       {colour && (
@@ -232,15 +286,20 @@ function Row({ colour, label, count, checked, onToggle }) {
           }}
         />
       )}
-      <span
-        style={{
-          flex: 1, minWidth: 0,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          color: checked ? 'var(--text-body)' : 'var(--text-faint)'
-        }}
-      >
-        {label}
-      </span>
+      {/* `title` is null when the text fits, and antd renders no tooltip at
+          all for a null title — so the measurement is the whole switch. */}
+      <Tooltip title={clipped ? label : null} mouseEnterDelay={0.3} placement="right">
+        <span
+          ref={textRef}
+          style={{
+            flex: 1, minWidth: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            color: checked ? 'var(--text-body)' : 'var(--text-faint)'
+          }}
+        >
+          {label}
+        </span>
+      </Tooltip>
       {/* The count is what makes the list worth reading rather than just
           operating: it says who is busy before you have ticked anything. */}
       {count > 0 && (

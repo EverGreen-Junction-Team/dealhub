@@ -429,10 +429,23 @@ export default function CalendarTab({ onOpenDeal }) {
   return (
     <Shell>
       <style>{REFRESH_CSS}</style>
+      {/* STICKY. The month grid is six rows tall and the page scrolls behind
+          it, which took the date, the view switcher and Book off the top of
+          the screen — and the screenshot that reported this had the toolbar
+          half cut off. The app's own nav is sticky at 60px, so this sits
+          directly under it rather than at 0.
+
+          The negative margins and matching padding let the background run
+          to the full width of the page while the controls stay aligned with
+          the grid: without them a card sliding under a transparent toolbar
+          shows through it. */}
       <div
         style={{
           display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)',
-          alignItems: 'center'
+          alignItems: 'center',
+          position: 'sticky', top: 60, zIndex: 6,
+          margin: '0 -20px', padding: 'var(--space-2) 20px',
+          background: 'var(--surface-page)'
         }}
       >
         <Button onClick={() => step(-1)} aria-label="Previous">←</Button>

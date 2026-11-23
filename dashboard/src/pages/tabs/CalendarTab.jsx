@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DatePicker, Segmented, Button } from 'antd'
 import dayjs from 'dayjs'
 import ResourceBoard from '../calendar/ResourceBoard'
@@ -115,7 +115,28 @@ export default function CalendarTab({ onOpenDeal }) {
   const [hideEmpty, setHideEmpty] = useTabState('calendar', 'hideEmpty', true)
 
   const [data, setData] = useState({ appointments: [], resources: [], timezone: null })
+  // TWO KINDS OF LOADING, and conflating them is what made the calendar
+  // jump.
+  //
+  //   loading     the FIRST load, when there is nothing on screen yet. A
+  //               message is the right answer: there is nothing to look at.
+  //   refreshing  every other fetch — changing view, stepping a week, the
+  //               reload after a drag, the poll after a booking. There IS
+  //               something on screen, and replacing it with "Loading the
+  //               board…" threw the grid away, pushed the layout down, and
+  //               then put it all back a moment later. On a view switch that
+  //               happens several times a minute.
+  //
+  // So a refresh keeps the old grid up and says so in a 2px strip that takes
+  // no layout space at all.
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  // A REF, not the state itself. load() is memoised on [span, kind], so it
+  // closes over whatever `data` was when it was built — empty, on the first
+  // render. Reading state there would make every later refresh believe it
+  // was the first load and blank the grid again, which is the bug this
+  // whole change exists to fix.
+  const hasDrawn = useRef(false)
   const [error, setError] = useState(null)
   const [toast, setToast] = useState(null)
   // Cards with a write in flight. A Set rather than a boolean: two moves can
@@ -158,7 +179,9 @@ export default function CalendarTab({ onOpenDeal }) {
   }, [view, fromDay, days])
 
   const load = useCallback(async () => {
-    setLoading(true)
+    // Already showing something? Then this is a refresh, not a load.
+    if (hasDrawn.current) setRefreshing(true)
+    else setLoading(true)
     setError(null)
     try {
       const res = await appointmentsAPI.list({
@@ -175,10 +198,12 @@ export default function CalendarTab({ onOpenDeal }) {
         resources: res.resources || [],
         timezone: res.timezone || null
       })
+      hasDrawn.current = true
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }, [span, kind])
 
@@ -403,6 +428,7 @@ export default function CalendarTab({ onOpenDeal }) {
 
   return (
     <Shell>
+      <style>{REFRESH_CSS}</style>
       <div
         style={{
           display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)',
@@ -472,7 +498,7 @@ export default function CalendarTab({ onOpenDeal }) {
       </div>
 
       <StateMessage
-        loading={loading && data.appointments.length === 0}
+        loading={loading}
         error={error}
         empty={empty}
         loadingText="Loading the board…"
@@ -497,7 +523,25 @@ export default function CalendarTab({ onOpenDeal }) {
           />
         )}
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          {/* A refresh in progress. Absolute, so it costs no layout — the
+              grid does not move by a pixel while it is up, which is the
+              whole point. */}
+          {refreshing && (
+            <div
+              role="status"
+              aria-label="Updating"
+              style={{
+                position: 'absolute', top: -3, left: 0, right: 0, height: 3,
+                borderRadius: 'var(--radius-pill)',
+                overflow: 'hidden', zIndex: 5,
+                background: 'var(--border-default)'
+              }}
+            >
+              <span className="pp-cal-refresh" />
+            </div>
+          )}
+
       {hasBoard && view === 'month' && (
         <MonthGrid
           appointments={visible}
@@ -591,3 +635,30 @@ function Toast({ children, tone = 'error' }) {
     </div>
   )
 }
+
+// An indeterminate strip: we do not know how long the fetch will take, so a
+// percentage would be a lie. It travels rather than fills.
+//
+// prefers-reduced-motion gets a static tinted bar instead — still visible as
+// "something is happening", with nothing moving. A looping animation is
+// exactly what that setting exists to switch off.
+const REFRESH_CSS = `
+@keyframes pp-cal-refresh {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.pp-cal-refresh {
+  display: block;
+  width: 25%;
+  height: 100%;
+  background: var(--brand-primary);
+  animation: pp-cal-refresh 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-cal-refresh {
+    width: 100%;
+    animation: none;
+    opacity: 0.55;
+  }
+}
+`

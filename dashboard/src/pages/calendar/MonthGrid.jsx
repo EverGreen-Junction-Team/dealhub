@@ -116,7 +116,12 @@ export default function MonthGrid({
                   // form opens with it filled in and the rep changes it —
                   // better than refusing to open at all, which is what a
                   // month grid with no click target amounts to.
-                  onBookAt?.({ day, minutes: 9 * 60, userId: null })
+                  onBookAt?.({
+                    day,
+                    minutes: 9 * 60,
+                    userId: null,
+                    anchor: { x: e.clientX, y: e.clientY }
+                  })
                 }}
                 style={{
                   flex: 1, minWidth: 0, minHeight: 96,

@@ -288,7 +288,8 @@ export default function ResourceBoard({
                       onBookAt({
                         day,
                         minutes: minutesForDrop(e.clientY - rect.top),
-                        userId: col.id === UNASSIGNED ? null : col.id
+                        userId: col.id === UNASSIGNED ? null : col.id,
+                        anchor: { x: e.clientX, y: e.clientY }
                       })
                     }}
                     style={{

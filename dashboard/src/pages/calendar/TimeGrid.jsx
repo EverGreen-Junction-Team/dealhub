@@ -252,7 +252,10 @@ export default function TimeGrid({
                 onBookAt({
                   day,
                   minutes: minutesForDrop(e.clientY - rect.top),
-                  userId: null
+                  userId: null,
+                  // Where to spring the card from, so it reads as belonging
+                  // to the slot that was clicked rather than to the page.
+                  anchor: { x: e.clientX, y: e.clientY }
                 })
               }}
               style={{

@@ -43,7 +43,14 @@ appointmentsRouter.use(requireSession);
 // `assignable: false` so the UI can show the work without offering it as a
 // destination.
 
-const MAX_WINDOW_DAYS = 31;
+// 45, not 31. A MONTH VIEW IS NOT 31 DAYS.
+//
+// The month grid draws whole weeks, so it reaches back into the previous
+// month and forward into the next — up to 42 days for a month that starts
+// on a Sunday and has 31 of them. Clamped at 31 the grid would silently
+// lose its last week and a half: appointments drawn as absent, on a view
+// whose whole job is "which day is it on".
+const MAX_WINDOW_DAYS = 45;
 const DEFAULT_WINDOW_DAYS = 7;
 
 // An ISO date or datetime, as the board sends it.

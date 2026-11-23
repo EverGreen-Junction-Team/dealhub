@@ -214,3 +214,54 @@ export function movePatch(appointment, target, zone, isoForSlot) {
   }
   return patch
 }
+
+// ── TIME VIEWS: grouped by DAY, with nobody in the key ────────────────
+//
+// The resource board's cells are (day, person) — one column per person,
+// repeated per day. A day or week view is the other shape: one column per
+// DAY, holding everyone's appointments together.
+//
+// Same lane packing underneath, which matters more here than on the board.
+// A week column carries every rep's bookings at once, so overlaps are the
+// normal case rather than the exception — four people out at 10am is four
+// cards abreast, not a stack with three hidden.
+export function groupByDay(appointments, zone) {
+  const cells = new Map()
+  for (const a of appointments) {
+    if (!a.startsAt) continue
+    const key = dayKey(a.startsAt, zone)
+    if (!cells.has(key)) cells.set(key, [])
+    cells.get(key).push(a)
+  }
+  for (const [key, items] of cells) cells.set(key, assignLanes(items, zone))
+  return cells
+}
+
+// A month's worth of weeks, as rows of seven 'YYYY-MM-DD' keys.
+//
+// Always whole weeks, so the grid is rectangular: the first row reaches back
+// into the previous month and the last reaches into the next. Those days are
+// real and may hold appointments — a survey on the 1st is visible from
+// October's grid, which is what anybody looking at a month boundary wants.
+export function monthWeeks(anyDayInMonth, weekStartsOn = 1) {
+  const first = anyDayInMonth.startOf('month')
+  const last = anyDayInMonth.endOf('month')
+  // dayjs: 0 = Sunday. Shift so the configured first day of the week lands
+  // at index 0, then walk back to it.
+  const lead = (first.day() - weekStartsOn + 7) % 7
+  let cursor = first.subtract(lead, 'day')
+
+  const weeks = []
+  // Six rows at most — the longest any month can span — and we stop as soon
+  // as the month is behind us, so most months draw five.
+  for (let w = 0; w < 6; w++) {
+    const row = []
+    for (let d = 0; d < 7; d++) {
+      row.push(cursor.format('YYYY-MM-DD'))
+      cursor = cursor.add(1, 'day')
+    }
+    weeks.push(row)
+    if (cursor.isAfter(last, 'day')) break
+  }
+  return weeks
+}

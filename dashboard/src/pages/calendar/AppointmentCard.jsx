@@ -47,7 +47,11 @@ const BLOCKED_STYLE = { tint: 'var(--gray-100)', bar: 'var(--gray-450)', text: '
 export default function AppointmentCard({
   appointment, zone, top, height, lane, lanes,
   clippedBefore, clippedAfter,
-  onOpenDeal, onDragStart, onSetStatus, busy
+  onOpenDeal, onDragStart, onSetStatus, busy,
+  // Week and day views mix every rep together, so the card has to say
+  // WHOSE it is. On the resource board the column already says that, and
+  // repeating it on every card would be noise.
+  showOwner = false
 }) {
   const a = appointment
   const isBlocked = a.kind === 'blocked'
@@ -247,7 +251,9 @@ export default function AppointmentCard({
           >
             {isBlocked
               ? 'Blocked'
-              : (a.dealName || (status === 'noshow' ? 'No-show' : 'No deal'))}
+              : (showOwner
+                ? (a.assignedUserName || 'Unassigned')
+                : (a.dealName || (status === 'noshow' ? 'No-show' : 'No deal')))}
             {clippedAfter ? ' ↓' : ''}
           </div>
         )}

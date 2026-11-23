@@ -1,0 +1,246 @@
+import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { Tooltip } from 'antd'
+import { monthWeeks, groupByDay, movePatch } from './boardLayout'
+import {
+  isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, durationMinutes
+} from '../../utils/calendarTime'
+
+// The month view.
+//
+// ── IT IS NOT A SMALL WEEK VIEW ──────────────────────────────────────
+//
+// A month cell is about 90 pixels tall. At the week view's scale that is
+// twenty minutes of one day, so there is no room to place anything by time —
+// and no point: nobody reads a month grid to find out whether something is
+// at 9am or 9:30. They read it to find which DAY has the thing on it.
+//
+// So a month cell is a LIST, in time order, with the time as text. The grid
+// answers "which day", you click through to a day for "what time".
+//
+// ── WHAT A DRAG MEANS HERE ───────────────────────────────────────────
+//
+// Dropping on a day moves the appointment to that day AT THE SAME TIME.
+// There is no vertical position to read a new time from, and inventing one
+// — 9am, say — would silently reschedule a 2pm survey to the morning
+// because somebody dragged it one square right. Keeping the clock time is
+// the only reading that cannot surprise anyone.
+
+// How many fit before the cell has to say "+N more". Four lines plus the
+// date is about all 90px holds without the row growing and pushing the
+// weeks below it off screen.
+const MAX_PER_CELL = 4
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+export default function MonthGrid({
+  appointments, zone, fromDay,
+  onOpenDeal, onMove, onBookAt, onOpenDay, busyIds
+}) {
+  const dragging = useRef(null)
+  const [hover, setHover] = useState(null)
+
+  const weeks = useMemo(() => monthWeeks(fromDay), [fromDay])
+  const cells = useMemo(() => groupByDay(appointments, zone), [appointments, zone])
+  const todayKey = dayKeyNow(zone)
+  const thisMonth = fromDay.format('YYYY-MM')
+
+  const handleDrop = useCallback((e, day) => {
+    e.preventDefault()
+    const drag = dragging.current
+    setHover(null)
+    if (!drag) return
+    dragging.current = null
+
+    const a = drag.appointment
+    // Same time of day, different date — see the note above.
+    const minutes = minutesFromMidnight(a.startsAt, zone)
+    const target = { day, minutes, userId: a.assignedUserId || null }
+    const patch = movePatch(a, target, zone, isoForSlot)
+    if (Object.keys(patch).length === 0) return
+    onMove?.(a, patch, target)
+  }, [zone, onMove])
+
+  return (
+    <div
+      style={{
+        border: '1px solid var(--border-default)',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'hidden',
+        background: 'var(--surface-card)'
+      }}
+    >
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)' }}>
+        {WEEKDAYS.map((d) => (
+          <div
+            key={d}
+            style={{
+              flex: 1, textAlign: 'center', padding: '6px 0',
+              fontSize: 'var(--text-xs)',
+              letterSpacing: 'var(--tracking-label)',
+              textTransform: 'uppercase',
+              color: 'var(--text-faint)'
+            }}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {weeks.map((week) => (
+        <div
+          key={week[0]}
+          style={{ display: 'flex', borderBottom: '1px solid var(--border-default)' }}
+        >
+          {week.map((day) => {
+            const items = cells.get(day) || []
+            const d = inZone(`${day}T12:00:00`, zone)
+            const isToday = day === todayKey
+            // Days either side of the month are real and may hold work — a
+            // survey on the 1st should be visible from the previous month's
+            // last row — but they are dimmed so the month still reads as a
+            // month.
+            const outside = d.format('YYYY-MM') !== thisMonth
+            return (
+              <div
+                key={day}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                  if (hover !== day) setHover(day)
+                }}
+                onDragLeave={() => setHover((h) => (h === day ? null : h))}
+                onDrop={(e) => handleDrop(e, day)}
+                onClick={(e) => {
+                  if (e.target !== e.currentTarget) return
+                  // 9am, because a month cell has no time in it to read. The
+                  // form opens with it filled in and the rep changes it —
+                  // better than refusing to open at all, which is what a
+                  // month grid with no click target amounts to.
+                  onBookAt?.({ day, minutes: 9 * 60, userId: null })
+                }}
+                style={{
+                  flex: 1, minWidth: 0, minHeight: 96,
+                  boxSizing: 'border-box',
+                  padding: '4px 5px',
+                  borderLeft: '1px solid var(--border-default)',
+                  background: hover === day
+                    ? 'var(--surface-selected)'
+                    : (outside ? 'var(--surface-sunken)' : 'var(--surface-card)'),
+                  cursor: onBookAt ? 'cell' : 'default'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 22, height: 22, marginBottom: 2,
+                    borderRadius: 'var(--radius-pill)',
+                    background: isToday ? 'var(--brand-primary)' : 'transparent',
+                    color: isToday
+                      ? '#fff'
+                      : (outside ? 'var(--text-faint)' : 'var(--text-heading)'),
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: isToday ? 'var(--weight-semibold)' : 'var(--weight-regular)'
+                  }}
+                >
+                  {d.format('D')}
+                </div>
+
+                {items.slice(0, MAX_PER_CELL).map((a) => (
+                  <MonthChip
+                    key={a.id}
+                    appointment={a}
+                    zone={zone}
+                    busy={busyIds?.has(a.id)}
+                    onOpenDeal={onOpenDeal}
+                    onDragStart={(appointment) => { dragging.current = { appointment } }}
+                  />
+                ))}
+
+                {items.length > MAX_PER_CELL && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenDay?.(day) }}
+                    style={{
+                      display: 'block', width: '100%',
+                      border: 'none', background: 'none',
+                      padding: '1px 2px', textAlign: 'left',
+                      fontSize: 'var(--text-xs)', color: 'var(--text-link)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    +{items.length - MAX_PER_CELL} more
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// One appointment as a line in a month cell.
+//
+// A single line, because four of these plus the date is what the cell holds.
+// The time leads: in a month view the time is the only thing distinguishing
+// two visits to the same customer, and it is what you are scanning for once
+// you have found the day.
+function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart }) {
+  const isBlocked = a.kind === 'blocked'
+  const status = (a.status || '').toLowerCase()
+  const cancelled = status === 'cancelled'
+  const label = isBlocked
+    ? (a.title || 'Blocked')
+    : (a.contactName || a.title || 'Appointment')
+
+  const tip = (
+    <div style={{ display: 'grid', gap: 3, fontSize: 'var(--text-sm)' }}>
+      <strong>{label}</strong>
+      <span>
+        {clockTime(a.startsAt, zone)}
+        {a.endsAt ? `–${clockTime(a.endsAt, zone)}` : ''}
+        {` · ${durationMinutes(a.startsAt, a.endsAt)} min`}
+      </span>
+      {a.assignedUserName && <span>{a.assignedUserName}</span>}
+      {!isBlocked && <span style={{ opacity: 0.75 }}>{a.dealName || 'No deal linked'}</span>}
+      {a.status && !isBlocked && <span style={{ opacity: 0.75 }}>Status: {a.status}</span>}
+    </div>
+  )
+
+  return (
+    <Tooltip title={tip} mouseEnterDelay={0.4}>
+      <div
+        draggable={!isBlocked && !busy}
+        onDragStart={(e) => {
+          if (isBlocked || busy) return
+          onDragStart?.(a)
+          e.dataTransfer.setData('text/plain', a.id)
+          e.dataTransfer.effectAllowed = 'move'
+        }}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!isBlocked && a.dealId) onOpenDeal?.(a.dealId)
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '1px 4px', marginBottom: 1,
+          borderRadius: 'var(--radius-sm)',
+          background: isBlocked ? 'var(--gray-100)' : 'var(--tint-teal)',
+          color: isBlocked ? 'var(--text-muted)' : 'var(--accent-teal-text)',
+          fontSize: 'var(--text-xs)',
+          lineHeight: 1.5,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          opacity: busy ? 0.55 : 1,
+          cursor: isBlocked ? 'default' : 'grab',
+          textDecoration: cancelled ? 'line-through' : 'none'
+        }}
+      >
+        <span style={{ fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
+          {clockTime(a.startsAt, zone)}
+        </span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+      </div>
+    </Tooltip>
+  )
+}

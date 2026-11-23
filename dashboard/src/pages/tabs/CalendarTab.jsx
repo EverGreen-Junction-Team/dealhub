@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DatePicker, Segmented, Select, Button } from 'antd'
 import dayjs from 'dayjs'
 import ResourceBoard from '../calendar/ResourceBoard'
+import TimeGrid from '../calendar/TimeGrid'
+import MonthGrid from '../calendar/MonthGrid'
+import { monthWeeks } from '../calendar/boardLayout'
 import BookAppointment from '../calendar/BookAppointment'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
@@ -64,6 +67,16 @@ export default function CalendarTab({ onOpenDeal }) {
     [setFromDayKey]
   )
 
+  // WHICH VIEW. Day, Week and Month are the three everybody already knows;
+  // People is the resource board — a column per person — which answers a
+  // different question and is why it stays rather than being replaced.
+  //
+  //   Day / Week   days across, hours down. "What is happening?"
+  //   Month        which DAY a thing is on; no room for time, by design.
+  //   People       who should take it. Dragging sideways reassigns.
+  const [view, setView] = useTabState('calendar', 'view', 'week')
+
+  // Only the People board uses this — 1 or 3 columns of people.
   const [days, setDays] = useTabState('calendar', 'days', 1)
   const [kind, setKind] = useTabState('calendar', 'kind', 'all')
   const [personFilter, setPersonFilter] = useTabState('calendar', 'person', null)
@@ -103,13 +116,36 @@ export default function CalendarTab({ onOpenDeal }) {
     window.setTimeout(() => setToast(null), tone === 'done' ? 2200 : 5000)
   }, [])
 
+  // THE WINDOW TO FETCH, which is not the same as the window on screen.
+  //
+  // A week view starts on Monday whatever day you picked, and a month grid
+  // draws whole weeks — so it reaches into the month either side and can span
+  // 42 days. Asking for exactly what is drawn, rather than for the nominal
+  // month, is what stops the first and last rows rendering empty.
+  const span = useMemo(() => {
+    if (view === 'week') {
+      const start = fromDay.startOf('week').add(1, 'day')
+      // dayjs weeks start on Sunday; the board starts on Monday, which is how
+      // a working week reads here. If picking the Sunday pushed us forward a
+      // week, step back one.
+      const monday = start.isAfter(fromDay, 'day') ? start.subtract(7, 'day') : start
+      return { from: monday, days: 7 }
+    }
+    if (view === 'month') {
+      const weeks = monthWeeks(fromDay)
+      return { from: dayjs(weeks[0][0]), days: weeks.length * 7 }
+    }
+    if (view === 'day') return { from: fromDay, days: 1 }
+    return { from: fromDay, days }
+  }, [view, fromDay, days])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       const res = await appointmentsAPI.list({
-        from: fromDay.startOf('day').toISOString(),
-        to: fromDay.add(days, 'day').startOf('day').toISOString(),
+        from: span.from.startOf('day').toISOString(),
+        to: span.from.add(span.days, 'day').startOf('day').toISOString(),
         kind,
         ...(personFilter ? { assignedTo: personFilter } : {})
       })
@@ -123,7 +159,7 @@ export default function CalendarTab({ onOpenDeal }) {
     } finally {
       setLoading(false)
     }
-  }, [fromDay, days, kind, personFilter])
+  }, [span, kind, personFilter])
 
   useEffect(() => { load() }, [load])
 
@@ -222,8 +258,8 @@ export default function CalendarTab({ onOpenDeal }) {
     for (const ms of delays) {
       await new Promise((r) => window.setTimeout(r, ms))
       const res = await appointmentsAPI.list({
-        from: fromDay.startOf('day').toISOString(),
-        to: fromDay.add(days, 'day').startOf('day').toISOString(),
+        from: span.from.startOf('day').toISOString(),
+        to: span.from.add(span.days, 'day').startOf('day').toISOString(),
         kind,
         ...(personFilter ? { assignedTo: personFilter } : {})
       }).catch(() => null)
@@ -236,7 +272,7 @@ export default function CalendarTab({ onOpenDeal }) {
       if (!createdId || (res.appointments || []).some((a) => a.id === createdId)) return true
     }
     return false
-  }, [fromDay, days, kind, personFilter])
+  }, [span, kind, personFilter])
 
   const handleBooked = useCallback(async (created, { notified }) => {
     setBooking(null)
@@ -251,6 +287,18 @@ export default function CalendarTab({ onOpenDeal }) {
       say('Booked in your CRM — it will appear on the board shortly.', 'done')
     }
   }, [waitForBooking, say])
+
+  // ← and → move by whatever the view shows, which is the only behaviour
+  // that does not feel broken: a month view that steps by one day, or a week
+  // view that steps by three, makes the arrows useless.
+  const step = useCallback((dir) => {
+    setFromDay((d) => {
+      if (view === 'month') return d.add(dir, 'month')
+      if (view === 'week') return d.add(dir * 7, 'day')
+      if (view === 'day') return d.add(dir, 'day')
+      return d.add(dir * days, 'day')
+    })
+  }, [view, days, setFromDay])
 
   const people = useMemo(
     () => (data.resources || []).map((r) => ({ value: r.id, label: r.name })),
@@ -287,21 +335,36 @@ export default function CalendarTab({ onOpenDeal }) {
           alignItems: 'center'
         }}
       >
-        <Button onClick={() => setFromDay((d) => d.subtract(days, 'day'))} aria-label="Previous">←</Button>
+        <Button onClick={() => step(-1)} aria-label="Previous">←</Button>
         <DatePicker
           value={fromDay}
           onChange={(d) => d && setFromDay(d.startOf('day'))}
           allowClear={false}
           format="ddd D MMM YYYY"
         />
-        <Button onClick={() => setFromDay((d) => d.add(days, 'day'))} aria-label="Next">→</Button>
+        <Button onClick={() => step(1)} aria-label="Next">→</Button>
         <Button onClick={() => setFromDay(dayjs().startOf('day'))}>Today</Button>
 
         <Segmented
-          value={days}
-          onChange={setDays}
-          options={[{ label: 'Day', value: 1 }, { label: '3 days', value: 3 }]}
+          value={view}
+          onChange={setView}
+          options={[
+            { label: 'Day', value: 'day' },
+            { label: 'Week', value: 'week' },
+            { label: 'Month', value: 'month' },
+            { label: 'People', value: 'people' }
+          ]}
         />
+
+        {/* Only the People board has a span to choose — the others are named
+            after theirs. */}
+        {view === 'people' && (
+          <Segmented
+            value={days}
+            onChange={setDays}
+            options={[{ label: '1 day', value: 1 }, { label: '3 days', value: 3 }]}
+          />
+        )}
         <Segmented value={kind} onChange={setKind} options={KIND_OPTIONS} />
 
         <Button
@@ -357,7 +420,37 @@ export default function CalendarTab({ onOpenDeal }) {
         }
       />
 
-      {hasBoard && (
+      {hasBoard && view === 'month' && (
+        <MonthGrid
+          appointments={data.appointments}
+          zone={zone}
+          fromDay={fromDay}
+          busyIds={busyIds}
+          onOpenDeal={onOpenDeal}
+          onMove={handleMove}
+          onBookAt={setBooking}
+          // "+N more" drops into that day rather than trying to grow the
+          // cell — a month row that expands pushes the weeks below it off
+          // screen, which is worse than one more click.
+          onOpenDay={(day) => { setFromDay(dayjs(day)); setView('day') }}
+        />
+      )}
+
+      {hasBoard && (view === 'day' || view === 'week') && (
+        <TimeGrid
+          appointments={data.appointments}
+          zone={zone}
+          fromDay={span.from}
+          days={span.days}
+          busyIds={busyIds}
+          onOpenDeal={onOpenDeal}
+          onMove={handleMove}
+          onSetStatus={handleSetStatus}
+          onBookAt={setBooking}
+        />
+      )}
+
+      {hasBoard && view === 'people' && (
         <ResourceBoard
           appointments={data.appointments}
           resources={data.resources}

@@ -14,9 +14,10 @@
 //   * an appointment before the board's first hour vanishing would show a
 //     free morning that is not free.
 import assert from 'node:assert/strict'
+import dayjs from 'dayjs'
 import {
   assignLanes, clampToWindow, minutesForDrop, isRealMove, movePatch,
-  groupIntoCells, cellKey, hourMarks,
+  groupIntoCells, cellKey, hourMarks, groupByDay, monthWeeks,
   DAY_START_MIN, DAY_END_MIN, PIXELS_PER_MINUTE
 } from '../boardLayout.js'
 import {
@@ -333,6 +334,79 @@ t('an appointment with no start is skipped rather than crashing the board', () =
     appt('a', at('09:00'), at('10:00'), 'u1')
   ], ZONE)
   assert.equal(cells.get(cellKey('2026-11-17', 'u1')).length, 1)
+})
+
+console.log('day and week views — one column per DAY')
+
+t('everyone goes in the same day column', () => {
+  // The resource board keys cells by (day, person). A week view must not:
+  // its columns ARE days, so two reps out on Tuesday belong in one column.
+  const cells = groupByDay([
+    appt('a', at('09:00'), at('10:00'), 'u1'),
+    appt('b', at('11:00'), at('12:00'), 'u2'),
+    appt('c', '2026-11-18T09:00:00+01:00', '2026-11-18T10:00:00+01:00', 'u1')
+  ], ZONE)
+  assert.equal(cells.get('2026-11-17').length, 2)
+  assert.equal(cells.get('2026-11-18').length, 1)
+})
+
+t('clashes between different people are still drawn abreast', () => {
+  // This matters MORE in a week view than on the board: a week column holds
+  // every rep at once, so four people out at 10am is the normal case. Stacked,
+  // three of the four would be invisible and the day would look quiet.
+  const cells = groupByDay([
+    appt('a', at('10:00'), at('11:00'), 'u1'),
+    appt('b', at('10:00'), at('11:00'), 'u2'),
+    appt('c', at('10:30'), at('11:30'), 'u3')
+  ], ZONE)
+  const day = cells.get('2026-11-17')
+  assert.equal(day.length, 3)
+  for (const item of day) assert.equal(item.lanes, 3)
+  assert.deepEqual(day.map((i) => i.lane).sort(), [0, 1, 2])
+})
+
+console.log('month view — whole weeks, Monday first')
+
+t('the grid is rectangular and starts on a Monday', () => {
+  // Whole weeks or the grid has ragged ends. Monday first because the header
+  // row is Mon..Sun and a mismatch would silently shift every date one column.
+  for (const d of ['2026-11-10', '2026-02-03', '2027-01-20', '2026-08-31']) {
+    const weeks = monthWeeks(dayjs(d))
+    assert.ok(weeks.length >= 4 && weeks.length <= 6, d)
+    for (const row of weeks) assert.equal(row.length, 7, d)
+    assert.equal(dayjs(weeks[0][0]).day(), 1, `${d} does not start on a Monday`)
+  }
+})
+
+t('every day of the month is somewhere in the grid', () => {
+  // The thing a month view cannot get wrong. A missing day is an appointment
+  // that simply is not drawn.
+  const month = dayjs('2026-11-10')
+  const all = monthWeeks(month).flat()
+  for (let day = 1; day <= month.daysInMonth(); day++) {
+    const key = month.date(day).format('YYYY-MM-DD')
+    assert.ok(all.includes(key), `missing ${key}`)
+  }
+})
+
+t('it reaches into the months either side, on purpose', () => {
+  // A survey on the 1st has to be visible from the previous month's last
+  // row — somebody looking at a month boundary is usually looking for
+  // exactly that.
+  const weeks = monthWeeks(dayjs('2026-11-10'))
+  const first = dayjs(weeks[0][0])
+  const last = dayjs(weeks[weeks.length - 1][6])
+  assert.ok(first.month() !== 10 || first.date() === 1)
+  assert.ok(last.isAfter(dayjs('2026-11-30'), 'day'))
+})
+
+t('no month needs more than six rows', () => {
+  // Six is the worst case — 31 days starting on the last day of a week. A
+  // seventh row would mean the loop never terminated.
+  for (let m = 0; m < 12; m++) {
+    const weeks = monthWeeks(dayjs('2027-01-15').month(m))
+    assert.ok(weeks.length <= 6, `month ${m} drew ${weeks.length} rows`)
+  }
 })
 
 console.log(`\n${n} passed, 0 failed`)

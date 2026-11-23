@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
-import { colourFor } from './CalendarPeople'
+import { colourFor } from './CalendarSidebar'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
   groupByDay, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE

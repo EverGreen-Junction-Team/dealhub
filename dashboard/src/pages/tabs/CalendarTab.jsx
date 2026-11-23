@@ -5,7 +5,7 @@ import ResourceBoard from '../calendar/ResourceBoard'
 import TimeGrid from '../calendar/TimeGrid'
 import MonthGrid from '../calendar/MonthGrid'
 import { monthWeeks, UNASSIGNED } from '../calendar/boardLayout'
-import CalendarPeople from '../calendar/CalendarPeople'
+import CalendarSidebar from '../calendar/CalendarSidebar'
 import BookAppointment from '../calendar/BookAppointment'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
@@ -81,11 +81,23 @@ export default function CalendarTab({ onOpenDeal }) {
   const [days, setDays] = useTabState('calendar', 'days', 1)
   const [kind, setKind] = useTabState('calendar', 'kind', 'all')
   // WHO IS TICKED. null means everyone, which is not the same as [] meaning
-  // nobody — see CalendarPeople. Replaces a single-select "Everyone / one
+  // nobody — see CalendarSidebar. Replaces a single-select "Everyone / one
   // person" dropdown that could not express "the two surveyors, not the
   // marketing logins", which is the only question worth asking on an account
   // whose user list is mostly system logins.
   const [people, setPeople] = useTabState('calendar', 'people', null)
+
+  // WHICH CALENDARS. Same null-means-everything rule as people.
+  //
+  // The list comes from the CRM, not from our database — we hold no
+  // calendars table, only a calendar_id on each appointment — so it is
+  // fetched once per visit and kept here rather than per modal open. The
+  // booking form asks for its own copy; one extra call on open is cheaper
+  // than threading this down into it.
+  const [calendars, setCalendars] = useState([])
+  const [selectedCalendars, setSelectedCalendars] = useTabState(
+    'calendar', 'calendars', null
+  )
 
   // Hide people with nothing booked. ON by default, and that default is the
   // whole reason this control exists.
@@ -171,6 +183,17 @@ export default function CalendarTab({ onOpenDeal }) {
   }, [span, kind])
 
   useEffect(() => { load() }, [load])
+
+  // The calendar list, once. It changes about never, and a failure here is
+  // survivable: no Calendars section, everything still drawn, which is
+  // better than an error over a filter.
+  useEffect(() => {
+    let live = true
+    appointmentsAPI.calendars()
+      .then((res) => { if (live) setCalendars(res.calendars || []) })
+      .catch(() => { /* no section; the board is unaffected */ })
+    return () => { live = false }
+  }, [])
 
   // Move, reassign, or both at once. See the optimistic note above.
   const handleMove = useCallback(async (appointment, patch) => {
@@ -308,13 +331,33 @@ export default function CalendarTab({ onOpenDeal }) {
     return m
   }, [data.appointments])
 
+  const calendarCounts = useMemo(() => {
+    const m = new Map()
+    for (const a of data.appointments) {
+      if (a.calendarId) m.set(a.calendarId, (m.get(a.calendarId) || 0) + 1)
+    }
+    return m
+  }, [data.appointments])
+
+  // Both cuts, applied together: a calendar narrows what KIND of thing is
+  // shown, a person narrows WHO is going.
   const visible = useMemo(() => {
-    if (people == null) return data.appointments
-    const set = new Set(people)
-    return data.appointments.filter(
-      (a) => set.has(a.assignedUserId || UNASSIGNED)
-    )
-  }, [data.appointments, people])
+    const byPerson = people == null ? null : new Set(people)
+    const byCalendar = selectedCalendars == null ? null : new Set(selectedCalendars)
+    // Which calendars we actually have boxes for. An appointment on a
+    // calendar that is NOT in the list — deleted in the CRM, or created
+    // before it was — has no box to untick, so filtering it out would hide
+    // it with no way to bring it back. Those always show.
+    const known = new Set(calendars.map((c) => c.id))
+
+    if (!byPerson && !byCalendar) return data.appointments
+    return data.appointments.filter((a) => {
+      if (byPerson && !byPerson.has(a.assignedUserId || UNASSIGNED)) return false
+      if (byCalendar && a.calendarId && known.has(a.calendarId)
+          && !byCalendar.has(a.calendarId)) return false
+      return true
+    })
+  }, [data.appointments, people, selectedCalendars, calendars])
 
   // The People board's columns follow the ticks too, or you would untick
   // somebody and still be looking at their empty lane.
@@ -442,11 +485,15 @@ export default function CalendarTab({ onOpenDeal }) {
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
         {hasBoard && (
-          <CalendarPeople
+          <CalendarSidebar
             resources={data.resources}
             selected={people}
             onChange={setPeople}
             counts={counts}
+            calendars={calendars}
+            selectedCalendars={selectedCalendars}
+            onChangeCalendars={setSelectedCalendars}
+            calendarCounts={calendarCounts}
           />
         )}
 

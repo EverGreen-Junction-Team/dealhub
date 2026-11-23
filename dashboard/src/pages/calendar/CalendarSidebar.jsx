@@ -2,8 +2,21 @@ import React, { useMemo } from 'react'
 import { Checkbox } from 'antd'
 import { UNASSIGNED } from './boardLayout'
 
-// The people list, as Google Calendar's "My calendars" — a checkbox each,
-// tick what you want to see.
+// The calendar list, as Google Calendar's left rail: CALENDARS first, then
+// PEOPLE, a checkbox each, tick what you want to see.
+//
+// ── WHY BOTH, AND WHY CALENDARS FIRST ────────────────────────────────
+//
+// They cut the same appointments two different ways and you need both.
+// A calendar is the KIND of thing — a survey calendar, a service
+// calendar, somebody's personal diary — and it carries the working hours
+// and the timezone. A person is who is going. "Show me the service
+// calendar" and "show me Brad's week" are both real questions, and
+// neither answers the other.
+//
+// Calendars lead because that is the coarser cut: on this account the
+// personal diaries carry almost nothing and one service calendar carries
+// the work, so it is the first thing worth narrowing by.
 //
 // ── WHY CHECKBOXES AND NOT THE DROPDOWN THIS REPLACES ────────────────
 //
@@ -59,8 +72,9 @@ export function colourFor(resources, userId) {
   return PERSON_COLOURS[i % PERSON_COLOURS.length]
 }
 
-export default function CalendarPeople({
-  resources, selected, onChange, counts
+export default function CalendarSidebar({
+  resources, selected, onChange, counts,
+  calendars = [], selectedCalendars, onChangeCalendars, calendarCounts
 }) {
   // null/undefined selection means EVERYONE, which is different from an empty
   // array meaning nobody. A fresh board shows all the work; a board where
@@ -83,6 +97,18 @@ export default function CalendarPeople({
     onChange(next.length === all.length ? null : next)
   }
 
+  // The same null-means-everything rule as people, for the same reason.
+  const allCalendars = useMemo(() => calendars.map((c) => c.id), [calendars])
+  const calsAreAll = selectedCalendars == null
+  const calsChecked = calsAreAll ? allCalendars : selectedCalendars
+
+  const toggleCalendar = (id) => {
+    const next = calsChecked.includes(id)
+      ? calsChecked.filter((x) => x !== id)
+      : [...calsChecked, id]
+    onChangeCalendars(next.length === allCalendars.length ? null : next)
+  }
+
   return (
     <aside
       style={{
@@ -95,35 +121,35 @@ export default function CalendarPeople({
         padding: 'var(--space-3)'
       }}
     >
-      <div
-        style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-          marginBottom: 'var(--space-2)'
-        }}
-      >
-        <h3
-          style={{
-            margin: 0,
-            fontSize: 'var(--text-xs)',
-            letterSpacing: 'var(--tracking-label)',
-            textTransform: 'uppercase',
-            color: 'var(--text-muted)'
-          }}
-        >
-          People
-        </h3>
-        <button
-          type="button"
-          onClick={() => onChange(isAll ? [] : null)}
-          style={{
-            border: 'none', background: 'none', padding: 0,
-            fontSize: 'var(--text-xs)', color: 'var(--text-link)',
-            cursor: 'pointer'
-          }}
-        >
-          {isAll ? 'None' : 'All'}
-        </button>
-      </div>
+      {calendars.length > 0 && (
+        <>
+          <SectionHead
+            label="Calendars"
+            action={calsAreAll ? 'None' : 'All'}
+            onAction={() => onChangeCalendars(calsAreAll ? [] : null)}
+          />
+          <div style={{ display: 'grid', gap: 2, marginBottom: 'var(--space-4)' }}>
+            {calendars.map((c) => (
+              <Row
+                key={c.id}
+                // Calendars get no colour swatch. The card colours are the
+                // PERSON's, and a second colour system on the same cards
+                // would be two keys for one picture.
+                label={c.name}
+                count={calendarCounts?.get(c.id) || 0}
+                checked={calsChecked.includes(c.id)}
+                onToggle={() => toggleCalendar(c.id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <SectionHead
+        label="People"
+        action={isAll ? 'None' : 'All'}
+        onAction={() => onChange(isAll ? [] : null)}
+      />
 
       <div style={{ display: 'grid', gap: 2 }}>
         {resources.map((r) => (
@@ -152,6 +178,40 @@ export default function CalendarPeople({
   )
 }
 
+function SectionHead({ label, action, onAction }) {
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        marginBottom: 'var(--space-2)'
+      }}
+    >
+      <h3
+        style={{
+          margin: 0,
+          fontSize: 'var(--text-xs)',
+          letterSpacing: 'var(--tracking-label)',
+          textTransform: 'uppercase',
+          color: 'var(--text-muted)'
+        }}
+      >
+        {label}
+      </h3>
+      <button
+        type="button"
+        onClick={onAction}
+        style={{
+          border: 'none', background: 'none', padding: 0,
+          fontSize: 'var(--text-xs)', color: 'var(--text-link)',
+          cursor: 'pointer'
+        }}
+      >
+        {action}
+      </button>
+    </div>
+  )
+}
+
 function Row({ colour, label, count, checked, onToggle }) {
   return (
     <label
@@ -163,13 +223,15 @@ function Row({ colour, label, count, checked, onToggle }) {
       title={label}
     >
       <Checkbox checked={checked} onChange={onToggle} />
-      <span
-        aria-hidden
-        style={{
-          width: 10, height: 10, flex: 'none',
-          borderRadius: 2, background: colour
-        }}
-      />
+      {colour && (
+        <span
+          aria-hidden
+          style={{
+            width: 10, height: 10, flex: 'none',
+            borderRadius: 2, background: colour
+          }}
+        />
+      )}
       <span
         style={{
           flex: 1, minWidth: 0,

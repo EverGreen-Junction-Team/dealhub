@@ -935,7 +935,11 @@ export function DealCardsSkeleton({ cards = 3 }) {
 // business roll-up are all scanned in rows, and a row that stops two thirds
 // of the way across wastes the space it needed. A caller can still pass a cap
 // where reading length genuinely matters.
-export function Shell({ children, maxWidth = 'none' }) {
+// `style` is a passthrough for a page that needs to set something on its own
+// root — in practice CSS variables, like the calendar's type scale. It is
+// spread LAST so a caller can override the padding too if it must, but the
+// layout below is the default every tab shares and should stay that way.
+export function Shell({ children, maxWidth = 'none', style }) {
   return (
     <div
       style={{
@@ -944,7 +948,8 @@ export function Shell({ children, maxWidth = 'none' }) {
         // ring outside its border, and at 4px that ring was clipped by the
         // tab strip directly above it. Applies to every tab's page.
         margin: '0 auto', padding: 'var(--space-3) 20px var(--space-7)',
-        display: 'grid', gap: 'var(--space-4)'
+        display: 'grid', gap: 'var(--space-4)',
+        ...style
       }}
     >
       {children}

@@ -124,7 +124,10 @@ export default function MonthGrid({
                   })
                 }}
                 style={{
-                  flex: 1, minWidth: 0, minHeight: 96,
+                  // Tall enough for the date plus MAX_PER_CELL rows at the
+                  // calendar's text size — 96 fitted four rows of the old
+                  // 12px type and clipped the fourth once it went up.
+                  flex: 1, minWidth: 0, minHeight: 116,
                   boxSizing: 'border-box',
                   padding: '4px 5px',
                   borderLeft: '1px solid var(--border-default)',

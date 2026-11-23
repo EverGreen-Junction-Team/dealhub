@@ -15,7 +15,12 @@ import {
 // see clampToWindow.
 export const DAY_START_MIN = 7 * 60   // 07:00
 export const DAY_END_MIN = 20 * 60    // 20:00
-export const PIXELS_PER_MINUTE = 1.1  // ~72px an hour: a 30-minute booking is still readable
+// ~78px an hour. Raised from 1.1 when the calendar's text went up (see
+// CALENDAR_TYPE_SCALE in CalendarTab): a 30-minute card carries two lines —
+// the name and the time — and at the old height the second one was being
+// clipped by the larger type. The two numbers belong together; changing one
+// without the other is what produces cards you cannot read.
+export const PIXELS_PER_MINUTE = 1.3
 
 export function boardHeightPx() {
   return (DAY_END_MIN - DAY_START_MIN) * PIXELS_PER_MINUTE
@@ -54,8 +59,10 @@ export function clampToWindow(startMin, endMin) {
   const clippedAfter = endMin > DAY_END_MIN
   const top = (visibleStart - DAY_START_MIN) * PIXELS_PER_MINUTE
   // A minimum height so a short or heavily clipped booking stays clickable.
-  // 18px is about the smallest target a mouse can reliably grab.
-  const height = Math.max((visibleEnd - visibleStart) * PIXELS_PER_MINUTE, 18)
+  // 22px: 18 was the smallest a mouse can reliably grab, and it now also has
+  // to fit one line of the calendar's larger text plus the card's padding,
+  // which is the taller of the two requirements.
+  const height = Math.max((visibleEnd - visibleStart) * PIXELS_PER_MINUTE, 22)
   return { top, height, clippedBefore, clippedAfter }
 }
 

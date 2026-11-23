@@ -21,6 +21,34 @@ import { useTabState } from '../../hooks/useTabState'
 // the drawing and boardLayout owns the arithmetic; keeping the three apart is
 // what makes the geometry testable without a browser.
 //
+// ── WHY THE CALENDAR SETS ITS OWN TYPE SIZES ─────────────────────────
+//
+// The app renders at `zoom: 0.85` on <body>, which is right for a page of
+// cards and lists and wrong for this one. Everywhere else the text that
+// shrank was already comfortable; here the body token is --text-xs — 11px,
+// so 9.4px once zoomed — because an appointment card is a box a few dozen
+// pixels tall and has always had to make do with the smallest size in the
+// scale. Shrinking THAT by another 15% took it below readable.
+//
+// So the calendar raises the three sizes it actually uses by roughly the
+// reciprocal of the zoom (11 ÷ 0.85 ≈ 13), which lands them back at the
+// size the design intended. It is not making the calendar bigger than the
+// rest of the app; it is undoing a reduction that happened to fall hardest
+// on the one page whose text was already at the floor.
+//
+// Re-pointing the tokens on this element covers every `var(--text-sm)`
+// inside the tab — the grids, the cards, the sidebar, the booking card —
+// without editing a single one of them, and keeps the ones that are already
+// right (--text-lg and up, used only for headings here) exactly as they are.
+//
+// The grid grew with it: see PIXELS_PER_MINUTE in boardLayout. Bigger text
+// in boxes of the same height would clip the second line of a short booking.
+const CALENDAR_TYPE_SCALE = {
+  '--text-xs': '13px',
+  '--text-sm': '14px',
+  '--text-md': '16px'
+}
+
 // ── WHY A BOARD AND NOT A SHARED WEEK ────────────────────────────────
 //
 // The difference is not cosmetic. A shared calendar answers "what is
@@ -427,7 +455,7 @@ export default function CalendarTab({ onOpenDeal }) {
   const empty = !loading && !error && !hasBoard
 
   return (
-    <Shell>
+    <Shell style={CALENDAR_TYPE_SCALE}>
       <style>{REFRESH_CSS}</style>
       {/* STICKY. The month grid is six rows tall and the page scrolls behind
           it, which took the date, the view switcher and Book off the top of

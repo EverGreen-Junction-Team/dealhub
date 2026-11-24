@@ -1,7 +1,9 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState
 } from 'react'
+import { ConfigProvider } from 'antd'
 import { preferencesAPI } from '../api/preferences'
+import { scaledTheme } from '../theme'
 
 // How big this dashboard draws itself, and who decided.
 //
@@ -177,9 +179,19 @@ export function AppearanceProvider({ children }) {
     reload: load
   }), [state, applied, loading, error, preview, save, clear, load])
 
+  // antd sizes itself in JS and never reads a CSS variable, so the token
+  // block in index.css reaches our own components and none of antd's. With
+  // only that half wired up, raising the text size moved the headings and
+  // left every Select, Input, Button and Table at 13px — which reads as a
+  // broken slider rather than a partial one. A nested ConfigProvider merges
+  // into the one in main.jsx, so only the two sizes that change are named.
+  const antdTheme = useMemo(() => scaledTheme(applied.textScale), [applied.textScale])
+
   return (
     <AppearanceContext.Provider value={value}>
-      {children}
+      <ConfigProvider theme={antdTheme}>
+        {children}
+      </ConfigProvider>
     </AppearanceContext.Provider>
   )
 }

@@ -75,7 +75,24 @@ body { zoom: var(--app-zoom); }
  * stays within what the boxes can take.
  *
  * .pp-menu and .pp-cal keep their own smaller overrides, as they already
- * did: a dropdown's type should not grow with the page's. */
+ * did: a dropdown's type should not grow with the page's.
+ *
+ * ── BOTH SELECTORS, AND WHY THAT IS NOT OPTIONAL ────────────────────
+ *
+ * dealhub-tokens.css declares the scale on `[data-dealhub], .pp-portal`,
+ * because the app tree carries the data attribute and anything PORTALLED
+ * out of it (a dropdown, a popover, an antd overlay) carries the class
+ * instead. This block first listed only `.pp-portal`, so it matched the
+ * dropdowns and nothing else: the text size setting moved the type inside
+ * an open Select and left every page in the app at its fixed 11px. The
+ * zoom slider worked throughout, which made it look as though only one of
+ * the two settings had been wired up.
+ *
+ * The two selectors have equal specificity (0,1,0) and this file is
+ * imported after the tokens, so the later declaration wins — but ONLY for
+ * selectors it actually matches. Dropping either half silently disables
+ * the setting for that half of the DOM. */
+[data-dealhub],
 .pp-portal {
   --text-xs: calc(11px * var(--app-text-scale));
   --text-sm: calc(12px * var(--app-text-scale));

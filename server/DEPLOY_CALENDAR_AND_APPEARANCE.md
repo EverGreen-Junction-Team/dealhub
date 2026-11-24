@@ -133,12 +133,30 @@ with `event_kind = 'blocked'`.
 phantom rows in the first place; everything shipped so far catches them one
 failed click at a time. The instrumentation to answer it is now live, so:
 
+One likely cause is already fixed — the per-contact fallback abandoned the
+whole location's delete pass on a single failed contact, and over 1500 calls
+a night it never got a clean run. To find out whether that was yours, and
+whether it is the same story on every sub-account:
+
 ```bash
-cd /path/to/dealhub/server && npm run sync:tasks
+cd /path/to/dealhub/server && npm run probe:tasksweep
 ```
 
-Read the per-location lines for `source`, `seen` and `truncated`. Each points
-at a different fix:
+Read-only, a line per location. Name one to get the full report and the rows
+it would remove:
+
+```bash
+npm run probe:tasksweep -- <location_id>
+```
+
+Or run the real sweep and read its per-location lines for `source`, `seen`
+and `truncated`:
+
+```bash
+npm run sync:tasks
+```
+
+Each points at a different fix:
 
 - `seen: 0` — the sweep is reading nothing at all.
 - `truncated: true` — it is paging out before it reaches the end, so the

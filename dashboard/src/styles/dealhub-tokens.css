@@ -1039,6 +1039,47 @@
   font-weight: 600;
 }
 
+/* ── Past dates: unavailable, but still readable ──────────────────────
+ *
+ * A task's due date cannot be in the past, so every day before today is
+ * disabled — which on this picker is most of the grid for most of the
+ * month. antd paints those at its default disabled colour, rgba(0,0,0,0.25),
+ * about 2.2:1 on white. This file's own scale calls --gray-400 at 2.6:1
+ * "not for text", so antd's default is below a line we already decided not
+ * to cross, on a third of the dialog.
+ *
+ * And they are not decoration. You read the past days to find your place —
+ * "today is the 24th, so next Tuesday is the 1st" is counted from the rows
+ * above it. A number you have to squint at still has to be read.
+ *
+ * --text-muted, NOT --text-faint, and the band is the reason. --text-faint
+ * is described above as the faintest readable colour at 4.52:1 — but that
+ * is against WHITE, and these cells sit on the grey band, where it drops to
+ * 4.18:1 and misses AA. --text-muted holds 4.69:1 against the band. The
+ * measurements that matter are against what is actually behind the text.
+ *
+ * For scale: antd's default was 1.70:1 on that band. Not "a bit light" —
+ * roughly a sixth of the contrast of ordinary body text, which is 11.8:1.
+ *
+ * These days still read as plainly recessive against the live ones in
+ * --text-body, and the band behind them is what carries "you cannot pick
+ * these" now that illegibility no longer does.
+ *
+ * Scoped to in-view cells on purpose, and with enough specificity (0,3,1) to
+ * beat antd without !important. A day that is BOTH past and spilling in from
+ * last month keeps the fainter treatment below: it is not in this month and
+ * not pickable, so it has even less claim on attention. */
+.pp-cal .ant-picker-cell-in-view.ant-picker-cell-disabled .ant-picker-cell-inner {
+  color: var(--text-muted);
+}
+/* The band stays, as the thing that says "unavailable" now that the text no
+   longer does it by being hard to see. Tokenised rather than left at antd's
+   rgba(0,0,0,0.04), so it tracks the app's greys. */
+.pp-cal .ant-picker-cell-in-view.ant-picker-cell-disabled::before {
+  background: var(--gray-50);
+}
+.pp-cal .ant-picker-cell-disabled { cursor: not-allowed; }
+
 /* Days spilling in from the neighbouring month are context, not choices. */
 .pp-cal .ant-picker-cell:not(.ant-picker-cell-in-view) .ant-picker-cell-inner {
   color: var(--text-faint);

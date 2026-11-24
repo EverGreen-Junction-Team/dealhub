@@ -151,9 +151,40 @@ async function probeLocation(locationId) {
        count(*) FILTER (WHERE deleted_at IS NULL
                           AND from_backfill)::int                         AS by_sync,
        max(imported_at) FILTER (WHERE NOT from_backfill)                  AS last_webhook,
-       max(imported_at) FILTER (WHERE from_backfill)                      AS last_sync
+       max(imported_at) FILTER (WHERE from_backfill)                      AS last_sync,
+       min(imported_at)                                                   AS first_seen
      FROM appointments
     WHERE location_id = $1`,
+    [locationId]
+  );
+
+  // ── THE ONLY EVIDENCE THAT SETTLES THE WEBHOOK QUESTION ─────────────
+  //
+  // "by webhook: 0" on its own proves nothing. Webhooks fire on NEW
+  // activity, so a sub-account where nobody has booked anything since the
+  // server came up will show zero no matter how perfectly the wiring works
+  // — and the first version of this probe announced "the webhooks are NOT
+  // arriving" on exactly that, which is a diagnosis the data cannot
+  // support.
+  //
+  // This is the question with an answer: are there appointments that were
+  // CREATED IN GHL after we had already started watching this location,
+  // and which still reached us only through a later sweep? Each of those
+  // is a webhook that should have fired and did not.
+  //
+  // `first_seen` — the earliest row we ever imported here — is the proxy
+  // for "we were watching from about here". It is conservative: anything
+  // created before it is excluded, so this undercounts rather than
+  // inventing a failure.
+  const { rows: [missed] } = await rawQuery(
+    `SELECT count(*)::int AS n, max(created_at_ghl) AS latest
+       FROM appointments
+      WHERE location_id = $1
+        AND from_backfill
+        AND created_at_ghl IS NOT NULL
+        AND created_at_ghl > (
+          SELECT min(imported_at) FROM appointments WHERE location_id = $1
+        )`,
     [locationId]
   );
 
@@ -175,7 +206,7 @@ async function probeLocation(locationId) {
     ? await countAtGhl(install, locationId, scopes.calendarList)
     : null;
 
-  return { locationId, counts, scopes, ghl, lastRun };
+  return { locationId, counts, scopes, ghl, lastRun, missed };
 }
 
 // The one-line reading of a location. Ordered by how badly it wants
@@ -198,7 +229,14 @@ function verdict(r) {
   if (atGhl !== null && atGhl > r.counts.live) {
     return `MISSING ${atGhl - r.counts.live} — GHL has ${atGhl}, we have ${r.counts.live}`;
   }
-  if (r.counts.by_webhook === 0) return 'all from the sweep — no webhook has landed yet';
+  if (r.missed.n > 0) {
+    return `WEBHOOKS NOT FIRING — ${r.missed.n} booked while we watched, all found by sweep`;
+  }
+  if (r.counts.by_webhook === 0) {
+    // No webhook AND no evidence one was owed. Nothing has been booked
+    // since we started watching, so there is nothing to conclude.
+    return 'nothing booked since we started watching — webhooks untested';
+  }
   if (r.ghl && r.ghl.blocked > 0 && r.counts.blocked === 0) {
     return 'BLOCKED TIME NOT ARRIVING — GHL has some, we have none';
   }
@@ -249,12 +287,30 @@ function report(r) {
   line('by webhook', `${r.counts.by_webhook}   last ${ago(r.counts.last_webhook)}`);
   line('by nightly sweep', `${r.counts.by_sync}   last ${ago(r.counts.last_sync)}`);
 
-  if (r.counts.live > 0 && r.counts.by_webhook === 0) {
+  line(
+    'booked while we watched',
+    r.missed.n > 0
+      ? `${r.missed.n}, and the sweep found them — latest ${ago(r.missed.latest)}`
+      : 'none'
+  );
+
+  if (r.missed.n > 0) {
     console.log(
-      '\n  → The webhooks are NOT arriving. Everything here was found by the\n'
-      + '    nightly sweep, so the data looks healthy while the calendar is\n'
-      + '    up to a day out of date, all the time. Check that the three\n'
-      + '    Appointment events are subscribed on the marketplace app.'
+      '\n  → The webhooks are NOT arriving, and this is the proof: these\n'
+      + '    appointments were created in GHL after we had started watching\n'
+      + '    this location, and still only reached us through a later sweep.\n'
+      + '    The data looks healthy while the calendar runs up to a day\n'
+      + '    behind, permanently. Check that the three Appointment events\n'
+      + '    are subscribed on the marketplace app.'
+    );
+  } else if (r.counts.by_webhook === 0) {
+    console.log(
+      '\n  → No webhook has landed, and nothing proves one should have.\n'
+      + '    Webhooks fire on NEW activity only; everything here predates us\n'
+      + '    watching and came in through the sweep backfilling history. So\n'
+      + '    this zero is not yet a finding either way.\n\n'
+      + '    Create an appointment in GHL on one of these calendars and run\n'
+      + '    this again. It should appear within seconds under "by webhook".'
     );
   }
 
@@ -305,7 +361,7 @@ async function main() {
   console.log(
     '  ' + 'LOCATION'.padEnd(26)
     + 'OURS'.padStart(6) + 'GHL'.padStart(6) + 'HOOK'.padStart(6)
-    + 'SWEEP'.padStart(7) + 'BLOCK'.padStart(7)
+    + 'SWEEP'.padStart(7) + 'BLOCK'.padStart(7) + 'MISSED'.padStart(8)
     + '  READING'
   );
 
@@ -330,19 +386,26 @@ async function main() {
       + String(r.counts.by_webhook).padStart(6)
       + String(r.counts.by_sync).padStart(7)
       + String(r.counts.blocked).padStart(7)
+      // Appointments booked while we were already watching that a webhook
+      // should have delivered and did not. The only column here that is
+      // evidence rather than a count.
+      + String(r.missed.n).padStart(8)
       + `  ${verdict(r)}`
     );
   }
 
   const atGhl = (r) => (r.ghl ? r.ghl.events + r.ghl.blocked : null);
   const behind = found.filter((r) => atGhl(r) !== null && atGhl(r) > r.counts.live);
-  const noHook = found.filter((r) => r.counts.live > 0 && r.counts.by_webhook === 0);
+  // Only locations with EVIDENCE of a missed webhook, not merely a zero.
+  const noHook = found.filter((r) => r.missed.n > 0);
+  const untested = found.filter((r) => r.missed.n === 0 && r.counts.by_webhook === 0);
 
   console.log('\nSummary');
   line('locations probed', found.length);
   line('cannot read calendars', found.filter((r) => !r.scopes.ok).length);
   line('behind GHL', behind.length);
-  line('no webhook has landed', noHook.length);
+  line('webhooks proven missing', noHook.length);
+  line('webhooks untested', `${untested.length} — nothing booked since we started watching`);
   line(
     'blocked time in GHL',
     found.reduce((n, r) => n + (r.ghl ? r.ghl.blocked : 0), 0)
@@ -359,15 +422,19 @@ async function main() {
     line('last appointmentsSync', 'NEVER RUN — nothing has swept yet');
   }
 
-  if (found.every((r) => r.counts.by_webhook === 0)) {
+  if (noHook.length > 0) {
     console.log(
-      '\nNo webhook has landed in ANY location. Two innocent explanations\n'
-      + 'before suspecting the wiring: the three Appointment events may not be\n'
-      + 'subscribed on the marketplace app, or nobody may have created an\n'
-      + 'appointment since the server was last restarted — webhooks only fire\n'
-      + 'on new activity, and the rows above came from the sweep backfilling\n'
-      + 'history. Create one in GHL and run this again; it should appear\n'
-      + 'within seconds under HOOK.'
+      `\nWebhooks are proven to be missing in ${noHook.length} location(s): work was`
+      + '\nbooked in GHL while we were already watching, and only a later sweep'
+      + '\nfound it. Check the three Appointment event subscriptions on the'
+      + '\nmarketplace app.'
+    );
+  } else if (untested.length === found.length) {
+    console.log(
+      '\nNo webhook has landed anywhere — and nothing here proves one should'
+      + '\nhave. Every appointment predates us watching its location, so the'
+      + '\nzeros are untested rather than failing. Create an appointment in GHL'
+      + '\nand run this again; it should appear within seconds under HOOK.'
     );
   }
 

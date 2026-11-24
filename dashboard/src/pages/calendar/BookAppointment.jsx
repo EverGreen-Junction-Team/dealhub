@@ -55,7 +55,25 @@ import { isoForSlot, DEFAULT_SLOT_MINUTES } from '../../utils/calendarTime'
 // shown here. That is the right order: let the dispatcher say what they
 // mean, and let the calendar object if it must.
 
-const CARD_WIDTH = 428
+// ── WIDTH, AND THE ZOOM THAT MADE 428 LOOK LIKE 364 ──────────────────
+//
+// Google's quick-create card is about 448 real pixels. This one was 428,
+// which sounds close and was not: the app renders at zoom 0.85, so 428 CSS
+// pixels paint at roughly 364 — about four fifths of Google's. Comparing
+// the two side by side, that is the whole difference.
+//
+// 520 puts it back at ~442 painted at the default zoom, near enough to
+// match. Deliberately a plain CSS pixel value rather than
+// `calc(448px / var(--app-zoom))`: the zoom is a user setting now, and
+// somebody who picks a smaller one is asking for everything to be smaller,
+// this card included. Dividing it out would make this the one piece of the
+// app that ignores them.
+//
+// It is not only about matching Google. At 428 the two longest hints wrapped
+// to a second line each, which pushed the card taller to save width it was
+// not short of — and a hint that wraps reads as a paragraph rather than an
+// aside.
+const CARD_WIDTH = 520
 // Keep the card this far from the viewport edge when it is nudged back in.
 const EDGE_GUTTER = 12
 

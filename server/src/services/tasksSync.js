@@ -54,13 +54,13 @@ import { ensureContactExists } from './contactStub.js';
 import { logger } from '../utils/logger.js';
 import { recordSyncRun } from './syncRunLog.js';
 import { shouldReconcileDeletes } from './businessesReconcile.js';
+import { MAX_CONTACTS_PER_RUN, fallbackReach, looksCapped } from './taskSweepReach.js';
 
 const PAGE_SIZE = 100;
 
 // Fallback-path limits. A ceiling on calls per run so a location with a large
 // contact base cannot turn the nightly job into an hours-long crawl, and a
 // small pause between calls because GHL rate-limits per location.
-const MAX_CONTACTS_PER_RUN = 1500;
 const THROTTLE_MS = 60;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -117,16 +117,29 @@ async function contactsWithTasks(locationId) {
   return rows.map((r) => r.contact_id);
 }
 
+// Task counts that might be a page rather than a total.
+//
+// GET /contacts/{id}/tasks takes no limit or skip parameter and is not
+// documented as paged, so in principle it returns everything. But "in
+// principle" is not good enough to delete rows on: if it silently caps at a
+// page, every task past the cap looks deleted. A contact that comes back
+// with EXACTLY a round page-sized number is indistinguishable from a capped
+// one, so its tasks are still written, and it is simply left out of the
+// delete scope. The cost is a stale row on one unusual contact; the cost of
+// being wrong the other way is losing their task list.
 /**
- * The fallback sweep. Returns the same shape as the search path so the caller
- * treats them identically — including `truncated`, which gates delete
- * reconciliation.
+ * The fallback sweep.
+ *
+ * Returns the tasks, plus the contacts whose lists we can trust enough to
+ * delete against — which is the only thing standing between this and a
+ * wrongly emptied task list, now that `truncated` no longer blocks the pass.
  */
 async function fetchTasksPerContact(install, locationId) {
   const contactIds = await contactsWithTasks(locationId);
   const tasks = [];
   const failedContacts = new Set();
   let failed = 0;
+  let maybeCapped = 0;
 
   for (const contactId of contactIds) {
     try {
@@ -138,6 +151,17 @@ async function fetchTasksPerContact(install, locationId) {
       // The per-contact endpoint omits contactId on the task body; the caller
       // needs it, and we know it from the request.
       for (const t of rows) tasks.push({ contactId, ...t });
+      // Written either way; only trusted for deletes if the count does not
+      // look like a page boundary. See SUSPICIOUS_COUNTS.
+      if (looksCapped(rows.length)) {
+        maybeCapped++;
+        failedContacts.add(contactId);
+        logger.warn(
+          { locationId, contactId, count: rows.length },
+          'tasksSync: contact task count sits exactly on a page boundary — '
+          + 'not reconciling deletes for this contact'
+        );
+      }
     } catch (err) {
       const status = err.response?.status;
       if (status === 404) {
@@ -156,14 +180,37 @@ async function fetchTasksPerContact(install, locationId) {
     await sleep(THROTTLE_MS);
   }
 
-  // A partial sweep must never reconcile deletes — a contact we failed to reach
-  // would look like "GHL has no tasks for them".
+  // ── WHY `truncated` IS FALSE HERE EVEN WHEN CONTACTS FAILED ─────────
+  //
+  // It used to be `failed > 0 || contactIds.length >= MAX_CONTACTS_PER_RUN`,
+  // and that is why this sweep deleted nothing, night after night.
+  //
+  // `truncated` disables the delete pass for the WHOLE LOCATION. But this
+  // path does not need it to be safe, because it is already safe by a
+  // stronger mechanism: the delete is confined to `contactIds` below, and a
+  // contact we could not reach is filtered out of that list. Its tasks are
+  // outside the UPDATE's WHERE clause and cannot be touched. The same goes
+  // for the MAX_CONTACTS_PER_RUN cap — a contact past the cap was never in
+  // the list, so it is never in the delete scope either.
+  //
+  // So the flag was pure redundancy with a very large cost. Up to 1500 HTTP
+  // calls run here, 60ms apart, against an endpoint that rate-limits per
+  // location. ONE transient failure anywhere in that sequence set the flag,
+  // and the entire location's reconciliation was abandoned — including for
+  // the 1499 contacts that answered perfectly. Over ten nights it never once
+  // got a clean run, which is exactly what "deleted: 0 every night" was.
+  //
+  // The truncation guard still matters on the SEARCH path, where the list is
+  // location-wide and there is no scoping to fall back on. It is untouched
+  // there, and shouldReconcileDeletes still refuses an empty list on both.
+  //
+  // The covered list — the contacts whose answers we trust — is the ONLY
+  // safety mechanism now, so it is computed in one tested place.
   return {
     tasks,
-    // Only the contacts we actually reached — a failed fetch must not put a
-    // contact in the "covered" set, or its tasks would be deleted.
-    contactIds: contactIds.filter((id) => !failedContacts.has(id)),
-    truncated: failed > 0 || contactIds.length >= MAX_CONTACTS_PER_RUN
+    ...fallbackReach({ contactIds, excluded: failedContacts }),
+    failedContacts: failed,
+    maybeCapped
   };
 }
 
@@ -318,6 +365,9 @@ export async function syncTasksForLocation(locationId) {
   // null = the whole location was swept (search path). An array = only these
   // contacts were covered, and deletes must be confined to them.
   let coveredContacts = null;
+  // Only set on the fallback path; null on the search path, which sweeps the
+  // whole location and has no notion of partial reach.
+  let fallbackReach = null;
 
   // Collect first, write second — so a fetch failure partway through cannot
   // leave `truncated` unset while seenIds looks complete.
@@ -344,6 +394,17 @@ export async function syncTasksForLocation(locationId) {
     all = fallback.tasks;
     truncated = fallback.truncated;
     coveredContacts = fallback.contactIds;
+    // How complete that sweep was. It no longer BLOCKS the delete pass —
+    // the pass is scoped to the contacts below — but a run that reached 900
+    // of 1500 contacts should say so, or the next person reads a healthy
+    // 'success' and assumes the whole location was checked.
+    fallbackReach = {
+      attempted: fallback.attempted,
+      covered: fallback.covered,
+      failedContacts: fallback.failedContacts,
+      maybeCapped: fallback.maybeCapped,
+      cappedAtLimit: fallback.cappedAtLimit
+    };
   }
 
   for (const t of all) {
@@ -384,7 +445,8 @@ export async function syncTasksForLocation(locationId) {
     // run rather than only logged, so the question is answerable from the
     // table a month later — long after the logs have rotated away.
     deletesSkipped: sweep.skipped,
-    skipReason: sweep.reason
+    skipReason: sweep.reason,
+    ...(fallbackReach ? { reach: fallbackReach } : {})
   };
   logger.info({ locationId, ...stats }, 'tasksSync: location synced');
   return stats;

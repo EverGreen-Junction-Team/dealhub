@@ -627,6 +627,23 @@ export default function NoteEditor({
                   invalid={errorField === 'businessId'}
                   placeholder="Not linked to a company"
                   emptyText="No company matches that"
+                  // NOT the deal picker's wording, and the difference
+                  // matters. That list is scoped to the chosen contact, so
+                  // empty means "not one of theirs". This one is not scoped
+                  // to anything — searchBusinesses asks the whole
+                  // sub-account — so empty means there are no companies
+                  // here AT ALL. Saying "this contact has no companies"
+                  // would send a rep looking at the contact for a problem
+                  // that is nowhere near them.
+                  noneText={
+                    <span>
+                      No companies in this sub-account yet.
+                      <br />
+                      <span style={{ color: 'var(--text-faint)' }}>
+                        The note saves fine without one.
+                      </span>
+                    </span>
+                  }
                   style={{ width: '100%' }}
                 />
               </Field>

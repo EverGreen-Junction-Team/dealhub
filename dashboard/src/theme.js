@@ -34,6 +34,30 @@ export const BASE_THEME = {
     Input: { colorBorder: '#c3c8d0', activeBorderColor: '#16855f' },
     DatePicker: { colorBorder: '#c3c8d0', activeBorderColor: '#16855f' },
     Select: { colorBorder: '#c3c8d0', optionSelectedBg: '#d8ede4' },
+
+    // ── Segmented: the UNSELECTED options have to be readable ─────────
+    //
+    // antd draws them at colorTextLabel — colorText at 65% alpha — which
+    // over the control's own grey track lands at about #767a83, 3.98:1.
+    // Below AA for normal text, and this app renders at 85% zoom, so it
+    // is smaller than that number assumes. The calendar toolbar is three
+    // segmented controls in a row (view, kind, who), so most of that bar
+    // was sitting under the line.
+    //
+    // A segmented control does need its selected option to dominate, and
+    // it still does: #676f7c against the selected #323844 on white is
+    // 4.69:1 against 11.77:1. Two and a half times the contrast is a
+    // clear winner without the losers being hard to read — the unselected
+    // options are the ones you are choosing BETWEEN, so they are exactly
+    // the labels you need to be able to read.
+    //
+    // #676f7c is --text-muted, the same token and the same reasoning as
+    // the date picker's disabled days.
+    Segmented: {
+      itemColor: '#676f7c',          // --text-muted, 4.69:1 on the track
+      itemHoverColor: '#323844',     // --text-body: hover previews selection
+      itemSelectedColor: '#323844',  // --text-body
+    },
   },
 }
 

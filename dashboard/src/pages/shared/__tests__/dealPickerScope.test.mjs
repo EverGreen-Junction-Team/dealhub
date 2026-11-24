@@ -126,6 +126,23 @@ for (const [name, src] of EDITORS) {
     assert.match(dealPicker(src), /saves fine without one/);
   });
 
+  test(`${name}: the COMPANY picker does not borrow the deal wording`, () => {
+    // Easy to copy and wrong. The deal list is scoped to the contact, so
+    // empty means "not one of theirs". The company list is scoped to
+    // nothing — searchBusinesses asks the whole sub-account — so empty
+    // means there are none here at all. Blaming the contact would send a
+    // rep looking for a problem nowhere near them.
+    const at = src.indexOf('search={searchBusinesses}');
+    assert.notEqual(at, -1, 'the company picker must use the unscoped search');
+    const el = src.slice(src.lastIndexOf('<RemotePicker', at), src.indexOf('</Field>', at));
+    assert.match(el, /No companies in this sub-account yet/);
+    // Comments stripped before the negative assertion. The comment beside
+    // this prop explains the trap by quoting the wrong wording, and
+    // matching against that failed the test for saying why it exists.
+    const shown = el.replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(shown, /this contact/i, 'an empty company list is not about the contact');
+  });
+
   test(`${name}: the search stays bound to the contact`, () => {
     assert.match(
       src, /searchDeals\(q, \{ contactId \}\)/,

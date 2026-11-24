@@ -50,6 +50,64 @@ function ago(ts) {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+// The same window appointmentsSync sweeps. Asking over a different window
+// would produce a count that cannot be compared with what we hold.
+const WINDOW_DAYS_BACK = 30;
+const WINDOW_DAYS_FORWARD = 180;
+// Calendars to sample when counting GHL's side. The point is "is there
+// anything there at all", and a sub-account's work is rarely spread thinly
+// across dozens of diaries.
+const MAX_CALENDARS_SAMPLED = 8;
+
+/**
+ * How many events GHL has in the window, across a sample of calendars.
+ *
+ * ── WHY THIS IS THE QUESTION THAT MATTERS ────────────────────────────
+ *
+ * Without it, a location holding nothing reads as "nothing has arrived at
+ * all" — and that sentence covers two completely different situations: a
+ * sub-account that has genuinely booked nothing, and a sweep that is not
+ * working. They look identical from our table, and only one of them is a
+ * problem. So we ask GHL.
+ *
+ * Returns null when a calendar could not be read, the same distinction
+ * appointmentsSync makes: "empty" and "we could not look" are not the same
+ * answer and must not be printed as the same number.
+ */
+async function countAtGhl(install, locationId, calendars) {
+  const now = Date.now();
+  const startMs = now - WINDOW_DAYS_BACK * 86400000;
+  const endMs = now + WINDOW_DAYS_FORWARD * 86400000;
+
+  let events = 0;
+  let blocked = 0;
+  let unreadable = 0;
+
+  for (const cal of calendars.slice(0, MAX_CALENDARS_SAMPLED)) {
+    const id = cal.id || cal._id;
+    if (!id) continue;
+    for (const path of ['/calendars/events', '/calendars/blocked-slots']) {
+      try {
+        const { data } = await ghlRequest(install, {
+          method: 'GET',
+          url: path,
+          params: {
+            locationId, calendarId: id,
+            startTime: String(startMs), endTime: String(endMs)
+          },
+          scopeOptional: true
+        });
+        const rows = data?.events || data?.blockedSlots || data?.data || [];
+        const n = Array.isArray(rows) ? rows.length : 0;
+        if (path === '/calendars/events') events += n; else blocked += n;
+      } catch {
+        unreadable++;
+      }
+    }
+  }
+  return { events, blocked, unreadable, sampled: Math.min(calendars.length, MAX_CALENDARS_SAMPLED) };
+}
+
 /**
  * Can we read this location's calendars at all?
  *
@@ -66,7 +124,8 @@ async function checkScopes(install, locationId) {
       scopeOptional: true
     });
     const list = data?.calendars || data?.data || [];
-    return { ok: true, calendars: Array.isArray(list) ? list.length : 0 };
+    const calendarList = Array.isArray(list) ? list.filter((c) => c.isActive !== false) : [];
+    return { ok: true, calendars: calendarList.length, calendarList };
   } catch (err) {
     return {
       ok: false,
@@ -99,7 +158,24 @@ async function probeLocation(locationId) {
   );
 
   const scopes = await checkScopes(install, locationId);
-  return { locationId, counts, scopes };
+
+  // Has the sweep ever run at all? A location holding nothing because the
+  // nightly job has never fired is a different problem from one holding
+  // nothing because there is nothing to hold, and the table cannot say
+  // which. sync_runs can.
+  const { rows: [lastRun] } = await rawQuery(
+    `SELECT status, finished_at, counts
+       FROM sync_runs
+      WHERE run_type = 'appointmentsSync'
+      ORDER BY started_at DESC
+      LIMIT 1`
+  );
+
+  const ghl = scopes.ok && scopes.calendarList.length > 0
+    ? await countAtGhl(install, locationId, scopes.calendarList)
+    : null;
+
+  return { locationId, counts, scopes, ghl, lastRun };
 }
 
 // The one-line reading of a location. Ordered by how badly it wants
@@ -107,12 +183,26 @@ async function probeLocation(locationId) {
 function verdict(r) {
   if (!r.scopes.ok) return 'CANNOT READ CALENDARS — scopes not granted';
   if (r.scopes.calendars === 0) return 'no calendars in this sub-account';
-  if (r.counts.live === 0) return 'nothing has arrived at all';
-  if (r.counts.by_webhook === 0) return 'ALL from the sweep — no webhook has ever landed';
-  if (r.counts.by_sync === 0 && r.counts.blocked === 0) {
-    return 'webhooks landing; the sweep has added nothing (incl. blocked time)';
+
+  const atGhl = r.ghl ? r.ghl.events + r.ghl.blocked : null;
+
+  // An empty table is only a problem if GHL has something to give us. This
+  // is the distinction the first version of this probe could not make, and
+  // it reported three healthy sub-accounts as "nothing has arrived at all".
+  if (r.counts.live === 0) {
+    if (atGhl === 0) return 'nothing booked in GHL either — nothing to sync';
+    if (atGhl === null) return 'we hold nothing; could not count GHL\'s side';
+    return `SWEEP NOT WORKING — GHL has ${atGhl} in this window, we have 0`;
   }
-  if (r.counts.blocked === 0) return 'webhooks landing; no blocked time has ever arrived';
+
+  if (atGhl !== null && atGhl > r.counts.live) {
+    return `MISSING ${atGhl - r.counts.live} — GHL has ${atGhl}, we have ${r.counts.live}`;
+  }
+  if (r.counts.by_webhook === 0) return 'all from the sweep — no webhook has landed yet';
+  if (r.ghl && r.ghl.blocked > 0 && r.counts.blocked === 0) {
+    return 'BLOCKED TIME NOT ARRIVING — GHL has some, we have none';
+  }
+  if (r.counts.blocked === 0) return 'webhooks landing; no blocked time exists in GHL';
   return 'webhooks and sweep both landing, blocked time included';
 }
 
@@ -137,6 +227,19 @@ function report(r) {
     );
   }
 
+  if (r.ghl) {
+    console.log(`\nWhat GHL has  (30 days back, 180 forward, ${r.ghl.sampled} calendar(s))`);
+    line('appointments', r.ghl.events);
+    line('blocked time', r.ghl.blocked);
+    if (r.ghl.unreadable > 0) {
+      line('endpoints unreadable', r.ghl.unreadable);
+      console.log(
+        '\n  → Some calendar reads failed, so GHL\'s numbers above are a\n'
+        + '    floor, not a total. The sweep skips those calendars too.'
+      );
+    }
+  }
+
   console.log('\nWhat we hold');
   line('live', r.counts.live);
   line('soft-deleted', r.counts.deleted);
@@ -155,15 +258,28 @@ function report(r) {
     );
   }
 
-  if (r.scopes.ok && r.counts.blocked === 0) {
+  console.log('\nThe nightly sweep');
+  if (r.lastRun) {
+    line('last run', `${r.lastRun.status}, ${ago(r.lastRun.finished_at)}`);
+    line('counts', JSON.stringify(r.lastRun.counts || {}));
+  } else {
+    line('last run', 'NEVER — nothing has swept yet');
+  }
+
+  if (r.ghl && r.ghl.blocked > 0 && r.counts.blocked === 0) {
     console.log(
-      '\n  → No blocked time has ever arrived. There is no webhook for it —\n'
-      + '    HighLevel documents none — so the nightly sweep is its only\n'
-      + '    route in. Either nobody has blocked any time out, or that sweep\n'
-      + '    has never read the blocked-slots endpoint successfully. Block an\n'
-      + '    hour in GHL, run npm run sync:appointments, and look again: a\n'
-      + "    calendar that hides a rep's unavailability will offer a slot\n"
-      + '    they are already driving across.'
+      '\n  → GHL HAS blocked time and we hold none. There is no webhook for it —\n'
+      + '    HighLevel documents none — so the nightly sweep is its only route\n'
+      + '    in, and it is not bringing it. Run npm run sync:appointments and\n'
+      + "    look again: a calendar that hides a rep's unavailability will\n"
+      + '    offer a slot they are already driving across.'
+    );
+  } else if (r.ghl && r.ghl.blocked === 0 && r.counts.blocked === 0) {
+    console.log(
+      '\n  → No blocked time here, and none in GHL either, so there is\n'
+      + '    nothing to conclude from the zero. Block an hour in GHL, run\n'
+      + '    npm run sync:appointments, and check this line again — that is\n'
+      + '    the only way to prove the one route it has actually works.'
     );
   }
   console.log('');
@@ -188,7 +304,8 @@ async function main() {
   console.log(`\nProbing ${rows.length} location${rows.length === 1 ? '' : 's'}.\n`);
   console.log(
     '  ' + 'LOCATION'.padEnd(26)
-    + 'LIVE'.padStart(6) + 'HOOK'.padStart(6) + 'SWEEP'.padStart(7) + 'BLOCK'.padStart(7)
+    + 'OURS'.padStart(6) + 'GHL'.padStart(6) + 'HOOK'.padStart(6)
+    + 'SWEEP'.padStart(7) + 'BLOCK'.padStart(7)
     + '  READING'
   );
 
@@ -209,6 +326,7 @@ async function main() {
     console.log(
       '  ' + id.padEnd(26)
       + String(r.counts.live).padStart(6)
+      + String(r.ghl ? r.ghl.events + r.ghl.blocked : '?').padStart(6)
       + String(r.counts.by_webhook).padStart(6)
       + String(r.counts.by_sync).padStart(7)
       + String(r.counts.blocked).padStart(7)
@@ -216,14 +334,44 @@ async function main() {
     );
   }
 
+  const atGhl = (r) => (r.ghl ? r.ghl.events + r.ghl.blocked : null);
+  const behind = found.filter((r) => atGhl(r) !== null && atGhl(r) > r.counts.live);
+  const noHook = found.filter((r) => r.counts.live > 0 && r.counts.by_webhook === 0);
+
   console.log('\nSummary');
   line('locations probed', found.length);
   line('cannot read calendars', found.filter((r) => !r.scopes.ok).length);
-  line('no webhook ever landed', found.filter((r) => r.counts.live > 0 && r.counts.by_webhook === 0).length);
-  line('no blocked time ever', found.filter((r) => r.scopes.ok && r.counts.blocked === 0).length);
+  line('behind GHL', behind.length);
+  line('no webhook has landed', noHook.length);
+  line(
+    'blocked time in GHL',
+    found.reduce((n, r) => n + (r.ghl ? r.ghl.blocked : 0), 0)
+  );
 
-  const worst = found.find((r) => !r.scopes.ok)
-    || found.find((r) => r.counts.live > 0 && r.counts.by_webhook === 0);
+  // Whether the nightly job runs at all, which no per-location number can
+  // say: a location with nothing to sync and a job that never fires look
+  // the same from the appointments table.
+  const run = found.find((r) => r.lastRun)?.lastRun;
+  if (run) {
+    line('last appointmentsSync', `${run.status}, ${ago(run.finished_at)}`);
+    line('its counts', JSON.stringify(run.counts || {}));
+  } else {
+    line('last appointmentsSync', 'NEVER RUN — nothing has swept yet');
+  }
+
+  if (found.every((r) => r.counts.by_webhook === 0)) {
+    console.log(
+      '\nNo webhook has landed in ANY location. Two innocent explanations\n'
+      + 'before suspecting the wiring: the three Appointment events may not be\n'
+      + 'subscribed on the marketplace app, or nobody may have created an\n'
+      + 'appointment since the server was last restarted — webhooks only fire\n'
+      + 'on new activity, and the rows above came from the sweep backfilling\n'
+      + 'history. Create one in GHL and run this again; it should appear\n'
+      + 'within seconds under HOOK.'
+    );
+  }
+
+  const worst = found.find((r) => !r.scopes.ok) || behind[0] || noHook[0];
   if (worst) {
     console.log(`\nStart here: npm run probe:appointments -- ${worst.locationId}`);
   }

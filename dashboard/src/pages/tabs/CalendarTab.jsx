@@ -570,6 +570,10 @@ export default function CalendarTab({ onOpenDeal }) {
             selectedCalendars={selectedCalendars}
             onChangeCalendars={setSelectedCalendars}
             calendarCounts={calendarCounts}
+            day={fromDay}
+            span={span}
+            zone={zone}
+            onPickDay={setFromDay}
           />
         )}
 

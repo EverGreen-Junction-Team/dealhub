@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Checkbox, Tooltip } from 'antd'
 import { UNASSIGNED } from './boardLayout'
+import MiniMonth from './MiniMonth'
 
 // The calendar list, as Google Calendar's left rail: CALENDARS first, then
 // PEOPLE, a checkbox each, tick what you want to see.
@@ -74,7 +75,11 @@ export function colourFor(resources, userId) {
 
 export default function CalendarSidebar({
   resources, selected, onChange, counts,
-  calendars = [], selectedCalendars, onChangeCalendars, calendarCounts
+  calendars = [], selectedCalendars, onChangeCalendars, calendarCounts,
+  // The month picker at the top. Optional so a caller that has no notion
+  // of a current day — there is none today, but the sidebar should not
+  // require one — still renders.
+  day, span, zone, onPickDay
 }) {
   // null/undefined selection means EVERYONE, which is different from an empty
   // array meaning nobody. A fresh board shows all the work; a board where
@@ -112,7 +117,11 @@ export default function CalendarSidebar({
   return (
     <aside
       style={{
-        width: 196, flex: '0 0 196px',
+        // 196 fitted the two checkbox lists; seven day columns need more.
+        // At 196 the mini-month's cells came out under 24px, which is below
+        // a comfortable click target and made the numbers crowd their own
+        // highlight.
+        width: 224, flex: '0 0 224px',
         // CLIPS. A calendar called "Vault Suite Vaultsuite's Personal
         // Calendar" is wider than this box, and without this it was drawn
         // straight across the border and over the grid beside it.
@@ -129,6 +138,14 @@ export default function CalendarSidebar({
         padding: 'var(--space-3)'
       }}
     >
+      {/* FIRST, above the filters. The rail answers two questions and they
+          are not equal: "when am I looking at" comes before "what am I
+          looking at", because you pick the week and then narrow it. It is
+          also the control used most, so it goes where the eye lands. */}
+      {day && onPickDay && (
+        <MiniMonth value={day} span={span} zone={zone} onPick={onPickDay} />
+      )}
+
       {calendars.length > 0 && (
         <>
           <SectionHead

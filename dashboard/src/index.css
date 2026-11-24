@@ -42,8 +42,51 @@
  * of bare page below it. `calc(100vh / var(--app-zoom))` gives back a box
  * that covers the real viewport once scaled — see DealHubShell and Screens.
  */
-:root { --app-zoom: 0.85; }
+/* BOTH OF THESE ARE NOW SETTINGS, not constants. The values here are the
+ * fallback the app draws at before the preferences request answers, and
+ * for ever if it never does — AppearanceContext overwrites them on <html>
+ * once the real ones arrive. 0.85 is what was hardcoded here before the
+ * setting existed, so nothing moves for anybody until somebody chooses.
+ *
+ * Changing them in the Control panel, not here: Settings → Appearance,
+ * saved per sub-account and per person. */
+:root {
+  --app-zoom: 0.85;
+  /* Type only, on top of the zoom. See the token block below. */
+  --app-text-scale: 1;
+}
 body { zoom: var(--app-zoom); }
+
+/* ── Text size as a setting ──────────────────────────────────────────
+ *
+ * The type scale lives in dealhub-tokens.css as plain pixel values on
+ * .pp-portal. Re-declaring it here as `base × --app-text-scale` is what
+ * turns a fixed scale into an adjustable one WITHOUT editing the ~40
+ * components that use the tokens, or the tokens file itself — the numbers
+ * below are exactly the ones it defines, so with the scale at 1 this block
+ * changes nothing at all.
+ *
+ * WHY NOT just scale `font-size` on <html> and move the tokens to rem.
+ * That is the textbook answer and it would be a much larger change: every
+ * px length in the app — paddings, card heights, the calendar's
+ * pixels-per-minute — would stay put while the text grew, which is exactly
+ * the mismatch that clips a line inside a box. Scaling the tokens alone has
+ * the same hazard but confined to type, and the ranges are chosen so it
+ * stays within what the boxes can take.
+ *
+ * .pp-menu and .pp-cal keep their own smaller overrides, as they already
+ * did: a dropdown's type should not grow with the page's. */
+.pp-portal {
+  --text-xs: calc(11px * var(--app-text-scale));
+  --text-sm: calc(12px * var(--app-text-scale));
+  --text-base: calc(13px * var(--app-text-scale));
+  --text-md: calc(14px * var(--app-text-scale));
+  --text-lg: calc(15px * var(--app-text-scale));
+  --text-xl: calc(18px * var(--app-text-scale));
+  --text-2xl: calc(24px * var(--app-text-scale));
+  --text-3xl: calc(28px * var(--app-text-scale));
+  --text-display: calc(34px * var(--app-text-scale));
+}
 
 /* The one thing zoom cannot reach is the page behind body. If any rounding
  * leaves a sliver uncovered at the bottom edge, it shows this rather than

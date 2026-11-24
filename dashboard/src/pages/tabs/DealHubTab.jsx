@@ -74,10 +74,12 @@ import { useTabState } from '../../hooks/useTabState'
 // If the hub still reads too large, the next lever is row padding and
 // heights — not shrinking this type further, which is how the labels became
 // unreadable the first time.
+// Multiplied by --app-text-scale, like the tokens they override, so the
+// Settings text size still reaches these three headings.
 const HUB_TYPE_SCALE = {
-  '--text-display': '30px',
-  '--text-3xl': '24px',
-  '--text-2xl': '20px'
+  '--text-display': 'calc(30px * var(--app-text-scale))',
+  '--text-3xl': 'calc(24px * var(--app-text-scale))',
+  '--text-2xl': 'calc(20px * var(--app-text-scale))'
 }
 
 

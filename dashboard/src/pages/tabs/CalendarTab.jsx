@@ -43,10 +43,14 @@ import { useTabState } from '../../hooks/useTabState'
 //
 // The grid grew with it: see PIXELS_PER_MINUTE in boardLayout. Bigger text
 // in boxes of the same height would clip the second line of a short booking.
+//
+// Multiplied by --app-text-scale like every other token (see index.css), so
+// a person who raises the text size in Settings raises the calendar's too
+// rather than pinning it at these three numbers.
 const CALENDAR_TYPE_SCALE = {
-  '--text-xs': '13px',
-  '--text-sm': '14px',
-  '--text-md': '16px'
+  '--text-xs': 'calc(13px * var(--app-text-scale))',
+  '--text-sm': 'calc(14px * var(--app-text-scale))',
+  '--text-md': 'calc(16px * var(--app-text-scale))'
 }
 
 // ── WHY A BOARD AND NOT A SHARED WEEK ────────────────────────────────

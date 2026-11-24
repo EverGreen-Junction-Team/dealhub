@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { controlAPI } from '../../api/control'
 import MeddicMappingSection from '../control/MeddicMappingSection'
 import SkillsSection from '../control/SkillsSection'
+import AppearanceSection from '../control/AppearanceSection'
 import SectionCard, { PrimaryButton, GhostButton } from '../control/SectionCard'
 import SyncButton from '../shared/SyncButton'
 import { Bar, SkeletonStyles, formatDate, Panel } from '../shared/ListChrome'
@@ -84,8 +85,15 @@ export default function ControlCentreTab() {
 
   return (
     <Shell>
-      {/* First: it belongs to the rep reading the page, where everything
-          below is account-wide configuration. */}
+      {/* The two sections that belong to the rep reading the page, before
+          the account-wide configuration below.
+
+          Appearance leads: it is the only thing here that changes what the
+          whole app looks like, and someone who finds the dashboard hard to
+          read needs it before they can comfortably use anything else on
+          this page. It also loads instantly — it has no data of its own —
+          so it is drawn while the rest of the tab is still fetching. */}
+      <AppearanceSection />
       <SignatureSection />
       <BusinessContextSection
         file={data.businessContext}

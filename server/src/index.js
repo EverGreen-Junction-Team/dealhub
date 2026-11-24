@@ -15,6 +15,7 @@ import { tasksRouter } from './routes/tasks.js';
 import { appointmentsRouter } from './routes/appointments.js';
 import { notesRouter } from './routes/notes.js';
 import { savedViewsRouter } from './routes/savedViews.js';
+import { preferencesRouter } from './routes/preferences.js';
 import { providersRouter } from './routes/providers.js';
 import { summaryRouter } from './routes/summary.js';
 import { controlRouter } from './routes/control.js';
@@ -115,6 +116,7 @@ async function main() {
   app.use('/api/notes',    dashboardCors, express.json(), notesRouter);
   app.use('/api/appointments', dashboardCors, express.json(), appointmentsRouter);
   app.use('/api/saved-views', dashboardCors, express.json(), savedViewsRouter);
+  app.use('/api/preferences', dashboardCors, express.json(), preferencesRouter);
   app.use('/api/providers', dashboardCors, express.json(), providersRouter);
   app.use('/api/summary',  dashboardCors, express.json(), summaryRouter);
   // Pre-aggregated insight views, one request per chart — see routes/insights.js.

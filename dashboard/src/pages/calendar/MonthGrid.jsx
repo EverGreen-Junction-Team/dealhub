@@ -34,7 +34,12 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 export default function MonthGrid({
   appointments, zone, fromDay,
-  onOpenDeal, onMove, onBookAt, onOpenDay, busyIds
+  onOpenDeal, onMove, onBookAt, onOpenDay, busyIds,
+  // The slot the open booking card is aiming at. A month cell has no
+  // vertical position to place it at, so it is a chip at the top of the
+  // day rather than a block — which is also where it would sit once
+  // saved, since the cell lists by time.
+  draft
 }) {
   const dragging = useRef(null)
   const [hover, setHover] = useState(null)
@@ -152,6 +157,35 @@ export default function MonthGrid({
                 >
                   {d.format('D')}
                 </div>
+
+                {draft && draft.day === day && (
+                  <div
+                    aria-hidden
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      margin: '1px 0',
+                      padding: '1px 5px',
+                      border: '1px dashed var(--brand-primary)',
+                      borderRadius: 'var(--radius-pill)',
+                      background: 'var(--tint-pine)',
+                      color: 'var(--accent-pine-text)',
+                      fontSize: 'var(--text-xs)',
+                      whiteSpace: 'nowrap', overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {/* Dashed, like the day view's block, because it is the
+                        same unsaved thing and must not be counted as work
+                        by anyone glancing at the month. */}
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {String(Math.floor(draft.minutes / 60)).padStart(2, '0')}
+                      :{String(draft.minutes % 60).padStart(2, '0')}
+                    </span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {draft.title?.trim() || 'New appointment'}
+                    </span>
+                  </div>
+                )}
 
                 {items.slice(0, MAX_PER_CELL).map((a) => (
                   <MonthChip

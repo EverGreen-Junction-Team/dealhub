@@ -84,7 +84,11 @@ export default function BookAppointment({
   zone,
   resources,
   onClose,
-  onBooked
+  onBooked,
+  // Called on every change to when/how long/what it is called, so the grid
+  // behind can draw the slot being booked. See DraftSlot: the card says
+  // roughly where, and only the grid can say exactly.
+  onDraft
 }) {
   const modalRef = useModal()
 
@@ -189,6 +193,21 @@ export default function BookAppointment({
       setSaving(false)
     }
   }
+
+  // Push the draft out on every change, and withdraw it on close. The
+  // effect is the only place that does this, so the block cannot be left
+  // behind by a path that forgot to clear it — closing unmounts this
+  // component, and the cleanup runs.
+  useEffect(() => {
+    onDraft?.({
+      day: day.format('YYYY-MM-DD'),
+      minutes: time.hour() * 60 + time.minute(),
+      duration,
+      title,
+      userId: assignedUserId || null
+    })
+    return () => onDraft?.(null)
+  }, [day, time, duration, title, assignedUserId, onDraft])
 
   const place = useAnchoredCard(initial?.anchor, modalRef)
 

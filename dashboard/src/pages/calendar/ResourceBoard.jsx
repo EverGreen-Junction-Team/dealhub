@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
+import DraftSlot from './DraftSlot'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
@@ -44,7 +45,12 @@ function dayList(from, days) {
 export default function ResourceBoard({
   appointments, resources, zone, fromDay, days = 1,
   onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
-  hideEmpty = false
+  hideEmpty = false,
+  // The slot the open booking card is aiming at. Here it also has to land
+  // in the right PERSON's column — booking from this board picks the
+  // person by which column you clicked, so a draft in the wrong one would
+  // misreport the only thing this view exists to show.
+  draft
 }) {
   // What is being dragged, and where it was grabbed. Held in a ref rather
   // than state: it changes during a drag and re-rendering the whole board on
@@ -338,6 +344,24 @@ export default function ResourceBoard({
                         }}
                       />
                     )}
+
+                    {draft
+                      && draft.day === day
+                      && (draft.userId || UNASSIGNED) === col.id
+                      && (() => {
+                        const start = draft.minutes
+                        const end = start + (draft.duration || 30)
+                        const geo = clampToWindow(start, end)
+                        return (
+                          <DraftSlot
+                            top={geo.top}
+                            height={geo.height}
+                            startMin={start}
+                            endMin={end}
+                            title={draft.title}
+                          />
+                        )
+                      })()}
 
                     {items.map((item) => {
                       const geo = clampToWindow(item.startMin, item.endMin)

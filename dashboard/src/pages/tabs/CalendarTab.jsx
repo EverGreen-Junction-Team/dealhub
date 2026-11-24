@@ -179,6 +179,11 @@ export default function CalendarTab({ onOpenDeal }) {
   // to book (a double-clicked slot, or the toolbar button with nothing
   // prefilled but the day on screen).
   const [booking, setBooking] = useState(null)
+  // The slot the open booking card is currently aiming at, so the grid can
+  // draw it. Separate from `booking`, which is where the rep CLICKED and
+  // never changes — this one follows the card's own date, time and
+  // duration as they are edited. See DraftSlot.
+  const [draft, setDraft] = useState(null)
 
   const zone = useMemo(() => boardZone(data.timezone), [data.timezone])
 
@@ -600,6 +605,7 @@ export default function CalendarTab({ onOpenDeal }) {
           // cell — a month row that expands pushes the weeks below it off
           // screen, which is worse than one more click.
           onOpenDay={(day) => { setFromDay(dayjs(day)); setView('day') }}
+          draft={draft}
         />
       )}
 
@@ -615,6 +621,7 @@ export default function CalendarTab({ onOpenDeal }) {
           onMove={handleMove}
           onSetStatus={handleSetStatus}
           onBookAt={setBooking}
+          draft={draft}
         />
       )}
 
@@ -631,6 +638,7 @@ export default function CalendarTab({ onOpenDeal }) {
           onMove={handleMove}
           onSetStatus={handleSetStatus}
           onBookAt={setBooking}
+          draft={draft}
         />
       )}
 
@@ -640,6 +648,7 @@ export default function CalendarTab({ onOpenDeal }) {
       {booking && (
         <BookAppointment
           initial={booking}
+          onDraft={setDraft}
           zone={zone}
           resources={data.resources}
           onClose={() => setBooking(null)}

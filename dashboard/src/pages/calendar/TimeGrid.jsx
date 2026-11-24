@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
+import DraftSlot from './DraftSlot'
 import { colourFor } from './CalendarSidebar'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
@@ -39,7 +40,9 @@ const GUTTER_W = 56
 
 export default function TimeGrid({
   appointments, resources = [], zone, fromDay, days = 7,
-  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds
+  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
+  // The slot currently being booked, if the card is open: see DraftSlot.
+  draft
 }) {
   const dragging = useRef(null)
   const [hover, setHover] = useState(null)
@@ -329,6 +332,23 @@ export default function TimeGrid({
                   />
                 </div>
               )}
+
+              {/* The slot being booked, drawn before the real cards so a
+                  booking that overlaps one is visibly on top of it. */}
+              {draft && draft.day === day && (() => {
+                const start = draft.minutes
+                const end = start + (draft.duration || 30)
+                const geo = clampToWindow(start, end)
+                return (
+                  <DraftSlot
+                    top={geo.top}
+                    height={geo.height}
+                    startMin={start}
+                    endMin={end}
+                    title={draft.title}
+                  />
+                )
+              })()}
 
               {items.map((item) => {
                 const geo = clampToWindow(item.startMin, item.endMin)

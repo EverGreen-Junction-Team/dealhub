@@ -263,9 +263,26 @@ export default function TimeGrid({
                 boxSizing: 'border-box',
                 position: 'relative', height,
                 borderLeft: '1px solid var(--border-default)',
+                // ── TODAY IS NOT A TINTED COLUMN ────────────────────
+                //
+                // It was var(--tint-sky) down the whole height, which is
+                // what Google's week view looks like it does and does not.
+                // Google's day columns are all the same white; the pale
+                // blue strips in its grid are the gaps BETWEEN columns, on
+                // every day equally. Today is marked once, in the header,
+                // by the circled date — and by the red now-line, which
+                // says where in today you are as well as which day it is.
+                //
+                // The tint cost more than it looked. A column with a
+                // background is a column whose cards sit on a different
+                // colour from every other day's, so the status tints that
+                // tell a cancelled visit from a confirmed one read
+                // differently on today than on tomorrow. The one day a
+                // dispatcher looks at hardest was the one day the colour
+                // coding was off.
                 background: hover === day
                   ? 'var(--surface-selected)'
-                  : (isToday ? 'var(--tint-sky)' : 'var(--surface-card)'),
+                  : 'var(--surface-card)',
                 cursor: onBookAt ? 'cell' : 'default',
                 transition: 'background 90ms linear'
               }}

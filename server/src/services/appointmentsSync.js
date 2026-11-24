@@ -7,11 +7,12 @@
 //   BLOCKED TIME HAS NO WEBHOOK.
 //
 // A rep blocking out travel, a holiday or an admin afternoon creates a
-// calendar event that is not an appointment. HighLevel's webhook
-// documentation does not mention blocked slots anywhere — no event is
-// listed, and the three Appointment events say nothing about them. So on the
-// current reading, blocked time can reach this database through THIS FILE
-// AND NOWHERE ELSE.
+// calendar event that is not an appointment. HighLevel's webhook index
+// (docs/category/webhook, read 24 Nov 2026) lists 78 events, and the only
+// three that touch a calendar are AppointmentCreate, AppointmentUpdate and
+// AppointmentDelete. No blocked-slot event, no calendar-event event, no
+// availability event. So blocked time reaches this database through THIS
+// FILE AND NOWHERE ELSE — not as a fallback, as the only route.
 //
 // That matters more than it sounds. A calendar that shows bookings but not
 // blocks does not show the gaps, and showing the gaps is the whole point of

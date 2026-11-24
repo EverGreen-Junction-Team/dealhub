@@ -1,7 +1,9 @@
 // tasksSync.js — daily reconciliation for the `tasks` table.
 //
 // WHY THIS EXISTS. GHL fires TaskCreate, TaskComplete and TaskDelete — but
-// there is NO TaskUpdate event. So editing a task's title, body, due date or
+// there is NO TaskUpdate event. Re-checked against HighLevel's webhook index
+// (docs/category/webhook, 24 Nov 2026): 78 events documented, three of them
+// task events, and none of them an update. So editing a task's title, body, due date or
 // assignee in GHL reached us through nothing at all: the row kept whatever it
 // had when it was created, forever. That is the bug this closes.
 //

@@ -73,7 +73,9 @@ const NOTE_TYPES = new Set(['NoteCreate', 'NoteUpdate', 'NoteDelete']);
 //
 // HighLevel's AppointmentUpdate and AppointmentDelete doc pages both show an
 // example payload whose `type` field reads "AppointmentCreate". The examples
-// were copied from the Create page and never corrected.
+// were copied from the Create page and never corrected — re-read 24 Nov 2026
+// and all three pages are still byte-identical apart from their one-line
+// description.
 //
 // That is a documentation bug, not a protocol one — but it means the example
 // is no evidence of what the live `type` string is, and anyone wiring this up
@@ -87,11 +89,18 @@ const NOTE_TYPES = new Set(['NoteCreate', 'NoteUpdate', 'NoteDelete']);
 // something unexpected it shows up in the logs as itself rather than being
 // dropped as an unknown event type.
 //
-// Blocked slots are NOT here. HighLevel's webhook documentation does not
-// mention blocked time anywhere, so we assume no event fires for it and
-// catch it in the nightly reconcile (appointmentsSync.js). Unverified
-// against a live sub-account — if a block does arrive, it will surface in
-// the unrecognised-type log below, which is the cheapest way to find out.
+// Blocked slots are NOT here, and this is now checked rather than assumed.
+// HighLevel's webhook index (docs/category/webhook, read 24 Nov 2026) lists
+// 78 events, and the ONLY three touching a calendar are the three below.
+// There is no event for blocked time, no calendar-event webhook, and nothing
+// for availability. So the nightly reconcile in appointmentsSync.js is not a
+// belt-and-braces second path for blocked time — it is the only path there
+// is, and if it stops running, blocked time silently stops arriving.
+//
+// Still unverified against a LIVE sub-account, which is a different claim: a
+// documented absence is not proof that nothing fires. If a block does arrive,
+// it surfaces in the unrecognised-type log below, which is the cheapest way
+// to find out we were wrong.
 const APPOINTMENT_TYPES = new Set([
   'AppointmentCreate', 'AppointmentUpdate', 'AppointmentDelete'
 ]);

@@ -53,7 +53,12 @@ function dealPicker(src) {
   const at = src.indexOf('search={dealSearchForContact}');
   assert.notEqual(at, -1, 'the deal picker must use the contact-scoped search');
   const open = src.lastIndexOf('<RemotePicker', at);
-  const close = src.indexOf('/>', at);
+  // Bounded by the enclosing </Field>, NOT by the first '/>'. The picker's
+  // own props contain JSX — a <br /> inside the empty-state message — so
+  // the first self-closing tag is somewhere in the middle of the element,
+  // and slicing there silently drops the props after it. The two
+  // assertions about the empty state passed vacuously until this changed.
+  const close = src.indexOf('</Field>', at);
   assert.ok(open !== -1 && close !== -1, 'could not bound the deal picker');
   return src.slice(open, close);
 }
@@ -101,6 +106,24 @@ for (const [name, src] of EDITORS) {
       src, /const seenContact = useRef\(contactId\)/,
       'the ref must start AT the current contact, not at null'
     );
+  });
+
+  test(`${name}: an empty list says WHY it is empty`, () => {
+    // The list is scoped to the contact, so empty is a fact about them —
+    // not a prompt to search harder. RemotePicker's generic default,
+    // "Nothing to choose from yet", left a rep unable to tell a loading
+    // list from one they had to type into from a contact with no deals.
+    const el = dealPicker(src);
+    assert.match(el, /noneText=/, 'the deal picker must explain its own empty state');
+    assert.match(el, /isn&apos;t on any deals/);
+  });
+
+  test(`${name}: and says the record saves without a deal`, () => {
+    // The question an empty state raises is "so can I still save this?".
+    // Both editors allow it — neither canSave nor the server requires an
+    // opportunityId — so the answer belongs here rather than being found
+    // out by pressing the button.
+    assert.match(dealPicker(src), /saves fine without one/);
   });
 
   test(`${name}: the search stays bound to the contact`, () => {

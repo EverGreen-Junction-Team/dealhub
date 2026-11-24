@@ -641,6 +641,21 @@ export default function TaskEditor({
                   invalid={errorField === 'opportunityId'}
                   placeholder={contactId ? 'Not linked to a deal' : 'Pick a contact first'}
                   emptyText="No deal matches that"
+                  // The list is scoped to the chosen contact, so an empty
+                  // one is a FACT ABOUT THEM, not a prompt to search
+                  // harder. Saying which also answers the question the
+                  // empty state raises — whether the task can still be
+                  // saved — rather than leaving the rep to find out by
+                  // pressing the button.
+                  noneText={
+                    <span>
+                      This contact isn&apos;t on any deals.
+                      <br />
+                      <span style={{ color: 'var(--text-faint)' }}>
+                        The task saves fine without one.
+                      </span>
+                    </span>
+                  }
                   style={{ width: '100%' }}
                 />
               </Field>

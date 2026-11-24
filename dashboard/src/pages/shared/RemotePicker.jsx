@@ -45,7 +45,18 @@ export default function RemotePicker({
   disabled = false,
   allowClear = true,
   invalid = false,
+  // Shown when a SEARCH came back with nothing — "no match for what you
+  // typed".
   emptyText = 'No matches',
+  // Shown when the FIRST fetch came back with nothing, before anything was
+  // typed — "there is nothing here to offer you".
+  //
+  // TWO DIFFERENT FACTS, and the generic default could not tell them apart.
+  // "Nothing to choose from yet" left a rep wondering whether the list was
+  // still loading, whether they had to type something first, or whether
+  // their contact genuinely has no deals. Callers that know which it is
+  // should say so; this default is only for the ones that do not.
+  noneText,
   style
 }) {
   const [query, setQuery] = useState('')
@@ -133,7 +144,7 @@ export default function RemotePicker({
               // Reached only when the initial fetch itself came back empty,
               // since showInitial now loads a first page. "Type to search"
               // would be a dead end.
-              : showInitial ? 'Nothing to choose from yet' : 'Type to search'
+              : showInitial ? (noneText || 'Nothing to choose from yet') : 'Type to search'
       }
     />
   )

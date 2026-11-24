@@ -67,11 +67,12 @@ export default function DraftSlot({ top, height, startMin, endMin, title }) {
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
         }}
       >
-        {/* Mirrors the title as it is typed. "New appointment" rather than
-            Google's "(No title)" — this block is captioned for someone who
-            has not looked at the card yet, and a parenthesised absence
-            describes the form rather than the thing. */}
-        {title?.trim() || 'New appointment'}
+        {/* Mirrors the title as it is typed. "(No title)" is Google's
+            wording and the right one: the block is already obviously a
+            new thing, being dashed and the only one of its kind on the
+            grid, so the caption's job is the title — and when there is
+            none, saying so is shorter and truer than naming the form. */}
+        {title?.trim() || '(No title)'}
       </div>
       {/* The times, because the block's own edges are only accurate to the
           nearest few pixels and the question being asked is exact. */}

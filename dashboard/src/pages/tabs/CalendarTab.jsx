@@ -481,8 +481,22 @@ export default function CalendarTab({ onOpenDeal }) {
           display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)',
           alignItems: 'center',
           position: 'sticky', top: 60, zIndex: 6,
+          // Padding left at space-2: the sidebar sticks at top 118, which
+          // is the nav plus this bar, and growing it would slide the
+          // sidebar underneath.
           margin: '0 -20px', padding: 'var(--space-2) 20px',
-          background: 'var(--surface-page)'
+          // WHITE, not the page grey. antd's Segmented draws its own track
+          // in a light grey, so on a grey bar the unselected options were
+          // grey on grey — darkening the text helped and could not fix the
+          // underlying problem, which was that the control had no edge. On
+          // white the track reads as a control and its options separate
+          // from it.
+          //
+          // It also makes the bar a bar. Sticky chrome that shares the
+          // page's own colour does not look pinned, it looks like content
+          // that failed to scroll.
+          background: 'var(--surface-card)',
+          borderBottom: '1px solid var(--border-default)'
         }}
       >
         <Button onClick={() => step(-1)} aria-label="Previous">←</Button>

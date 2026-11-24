@@ -78,6 +78,50 @@ export default function TimeGrid({
   // hours it falls back to 08:00 rather than parking at midnight-adjacent
   // emptiness.
   const scroller = useRef(null)
+
+  // ── HOW TALL THE GRID IS ALLOWED TO BE, MEASURED ────────────────────
+  //
+  // It was `calc(100vh / var(--app-zoom) - 250px)`. The 250 was a guess at
+  // the chrome above the grid, and a guess is exactly what it could not
+  // be: the toolbar, the Shell padding and the GHL iframe's own header all
+  // changed since it was written, so the grid ran past the bottom of the
+  // window and the last hours were unreachable — the scroll looked broken
+  // because the thing it was scrolling inside was already too tall.
+  //
+  // Measuring the scroller's own top removes the guess entirely. Whatever
+  // is above it, of whatever height, this is the room that is left.
+  //
+  // DIVIDED BY THE ZOOM, because getBoundingClientRect and innerHeight are
+  // real pixels while a px height set on an element inside the zoomed body
+  // is scaled by it. The zoom is read from the custom property so it
+  // follows the Appearance setting rather than assuming 0.85.
+  const [maxH, setMaxH] = useState(null)
+  useEffect(() => {
+    const measure = () => {
+      const el = scroller.current
+      if (!el) return
+      const zoom = Number(
+        getComputedStyle(document.documentElement).getPropertyValue('--app-zoom')
+      ) || 1
+      const top = el.getBoundingClientRect().top
+      // A little air under the grid so it does not sit flush on the edge.
+      const room = window.innerHeight - top - 16
+      setMaxH(Math.max(360, room / zoom))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    // The toolbar above can change height — a wrapped row on a narrow
+    // window — without the window resizing.
+    const ro = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(measure)
+      : null
+    if (ro && scroller.current?.parentElement) ro.observe(scroller.current.parentElement)
+    return () => {
+      window.removeEventListener('resize', measure)
+      ro?.disconnect()
+    }
+  }, [])
+
   const scrolledOnce = useRef(false)
   useEffect(() => {
     const el = scroller.current
@@ -188,16 +232,20 @@ export default function TimeGrid({
           scroll instead would take the day headings away with it, and a week
           grid whose columns are unlabelled is unreadable.
 
-          The height is the viewport less the chrome above it — divided by
-          the app zoom, because a viewport unit inside a zoomed body resolves
-          in body own coordinate space (see index.css). The floor keeps it
-          usable on a short window rather than collapsing to nothing. */}
+          The height is MEASURED rather than calculated from a guess at the
+          chrome above — see the note on maxH. The floor keeps it usable on
+          a short window rather than collapsing to nothing. */}
       <div
         ref={scroller}
         style={{
           display: 'flex', position: 'relative',
-          maxHeight: 'max(360px, calc(100vh / var(--app-zoom) - 250px))',
-          overflowY: 'auto'
+          maxHeight: maxH ? `${Math.round(maxH)}px` : '70vh',
+          overflowY: 'auto',
+          // So the FIRST hour label is not cut in half by the top edge. It
+          // is drawn 7px above its line, and at the top of the grid that
+          // put it outside the scroll box — which is why the day started
+          // at a sliced "07:00".
+          paddingTop: 8
         }}
       >
         <div

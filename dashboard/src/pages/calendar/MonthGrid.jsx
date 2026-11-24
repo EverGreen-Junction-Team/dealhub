@@ -182,7 +182,7 @@ export default function MonthGrid({
                       :{String(draft.minutes % 60).padStart(2, '0')}
                     </span>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {draft.title?.trim() || 'New appointment'}
+                      {draft.title?.trim() || '(No title)'}
                     </span>
                   </div>
                 )}

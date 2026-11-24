@@ -64,6 +64,10 @@ export const AuthProvider = ({ children }) => {
       // tab authenticated LAST won for ALL of them, and tab A's next click
       // fetched tab B's data. sessionStorage is scoped to one tab.
       sessionStorage.setItem('sessionToken', res.sessionToken)
+      // A fresh token means the recovery worked, so the next lost session
+      // gets a reload of its own rather than being refused by a guard set
+      // during an unrelated one an hour ago.
+      try { sessionStorage.removeItem('pp.authReloadAt') } catch { /* private mode */ }
       // The authoritative sub-account for this session, written where
       // non-React code can read it. useTabState needs it to decide whether a
       // persisted snapshot belongs to the location now on screen; it used to

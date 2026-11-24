@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL } from '../constants/api'
+import { isLostSession } from './lostSession'
 
 // Axios instance with the session Bearer token attached automatically.
 const apiClient = axios.create({
@@ -18,18 +19,70 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+// ── Recovering a lost session ────────────────────────────────────────
+//
+// TWO WAYS THE TOKEN GOES, AND BOTH END THE SAME WAY FOR THE REP.
+//
+//   TOKEN_EXPIRED  we sent a token and the server says it has aged out.
+//   NO_TOKEN       we sent no token at all, because sessionStorage has
+//                  none — it was cleared, evicted, or never written.
+//
+// Only the first was handled, and the second is the nastier of the two.
+// React keeps `session` in memory, so the app still believes it is signed
+// in: every page renders, names resolve from data already fetched, and the
+// only symptom is that each new request fails. The rep fills in a whole
+// task and is told "Missing bearer token" — a protocol string, shown to a
+// salesperson, naming nothing they can do.
+//
+// Partitioned storage in the GHL iframe makes this ordinary rather than
+// exotic: a browser may evict it mid-session without reloading the frame.
+//
+// RELOADING IS THE FIX, and it has to be bounded. A reload re-runs the GHL
+// handshake and mints a fresh token, which is exactly right when the token
+// was simply lost — and an infinite loop when the handshake itself is the
+// thing failing. So one reload per minute, remembered across the reload in
+// the same storage the token lives in.
+const RELOAD_GUARD_KEY = 'pp.authReloadAt'
+const RELOAD_GUARD_MS = 60_000
+
+function tryRecoverSession() {
+  let last = null
+  try {
+    last = Number(sessionStorage.getItem(RELOAD_GUARD_KEY)) || 0
+    // Written BEFORE the reload, so the next load can see it. If this
+    // throws, sessionStorage is unavailable — and then reloading cannot
+    // help anyway, because the fresh token would have nowhere to go.
+    sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now()))
+    sessionStorage.removeItem('sessionToken')
+  } catch {
+    return false
+  }
+  if (Date.now() - last < RELOAD_GUARD_MS) return false
+  window.location.reload()
+  return true
+}
+
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // On a session-expired 401 (not during initial verify), reload to
-    // re-acquire the GHL context and mint a fresh token.
     const status = error.response?.status
     const code = error.response?.data?.code
     const url = error.config?.url || ''
-    if (status === 401 && code === 'TOKEN_EXPIRED' && !url.includes('/auth/verify')) {
-      sessionStorage.removeItem('sessionToken')
-      window.location.reload()
-      return
+
+    const lostSession = isLostSession({ status, code, url })
+
+    if (lostSession && tryRecoverSession()) return
+
+    if (lostSession) {
+      // Reloading did not fix it, or we are not allowed to try again yet.
+      // Say what happened and what to do, in those words — the server's
+      // own text here is written for a developer reading a log.
+      const stuck = new Error(
+        'Your session has ended. Reload the page to sign back in — nothing was saved.'
+      )
+      stuck.status = status
+      stuck.code = code
+      return Promise.reject(stuck)
     }
     // The server's own `error` field is written FOR a rep, so it is used as
     // given. Everything after it is a fallback for when the server said

@@ -232,20 +232,26 @@ export default function BookAppointment({
           onPressEnter={() => { if (!saving) submit() }}
         />
         <p className="pp-quick-sub">
-          Optional — your CRM names it from the calendar&apos;s own template
-          if you leave it empty.
+          {/* Shortened. It sat directly under the one field with focus and
+              was the longest sentence on the card, which made the first
+              thing you read a caveat about a field you can skip. */}
+          Optional — your CRM will name it.
         </p>
 
-        <Row icon={<ClockCircleOutlined />}>
+        <Row icon={<ClockCircleOutlined />} label="When">
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <DatePicker
               variant="borderless"
               value={day}
               onChange={(d) => d && setDay(d)}
               allowClear={false}
-              format="dddd, D MMMM"
+              // "Thursday, 26 November" at 160px was cut to "26 Novem|".
+              // The full weekday is not worth a line of its own here — the
+              // card springs from the day you clicked — so it is the short
+              // form, and the box is wide enough for the longest of them.
+              format="ddd, D MMM YYYY"
               suffixIcon={null}
-              style={{ width: 160 }}
+              style={{ width: 150 }}
             />
             <TimePicker
               variant="borderless"
@@ -276,15 +282,17 @@ export default function BookAppointment({
           {zone && <Hint>Times are {zone.replace(/_/g, ' ')}</Hint>}
         </Row>
 
-        <Row icon={<UserOutlined />}>
+        <Row icon={<UserOutlined />} label="Customer">
           <ContactPicker value={contactId} onChange={setContactId} />
-          <Hint>
-            Required. To hold time with nobody, block it out in the calendar
-            instead.
-          </Hint>
+          {/* Was two sentences, the second explaining that holding time
+              with nobody means blocking it out instead. True, and it was
+              being read by everyone booking normally to answer a question
+              almost none of them had. The short form says the rule; the
+              rarer case is one the rep meets in GHL, not here. */}
+          <Hint>Required — an appointment is always with somebody.</Hint>
         </Row>
 
-        <Row icon={<TeamOutlined />}>
+        <Row icon={<TeamOutlined />} label="Who is going">
           <Select
             variant="borderless"
             style={{ width: '100%' }}
@@ -296,7 +304,7 @@ export default function BookAppointment({
           />
         </Row>
 
-        <Row icon={<CalendarOutlined />}>
+        <Row icon={<CalendarOutlined />} label="Calendar">
           <Select
             variant="borderless"
             style={{ width: '100%' }}
@@ -309,13 +317,13 @@ export default function BookAppointment({
               calendarsError || (loadingCalendars ? 'Loading…' : 'No calendars')
             }
           />
-          <Hint>Sets the working hours, the timezone and who gets notified.</Hint>
+          <Hint>Sets the working hours and the timezone.</Hint>
           {calendarsError && <Problem>{calendarsError}</Problem>}
         </Row>
 
         {more && (
           <>
-            <Row icon={<EnvironmentOutlined />}>
+            <Row icon={<EnvironmentOutlined />} label="Where">
               <Input
                 variant="borderless"
                 placeholder="Add an address or a meeting link"
@@ -324,7 +332,7 @@ export default function BookAppointment({
               />
             </Row>
 
-            <Row icon={<BellOutlined />}>
+            <Row icon={<BellOutlined />} label="Confirmation">
               <Checkbox
                 checked={notifyCustomer}
                 onChange={(e) => setNotifyCustomer(e.target.checked)}
@@ -433,11 +441,34 @@ function useAnchoredCard(anchor, ref) {
   }
 }
 
-function Row({ icon, children }) {
+/**
+ * One labelled row: icon, name of the thing, the control.
+ *
+ * ── WHY THE LABELS CAME BACK ─────────────────────────────────────────
+ *
+ * The first version of this card dropped them, copying Google's, where an
+ * icon and a filled-in value are enough. That works there because every
+ * row is self-evident: a time reads as a time, and "Add guests" names
+ * itself in its own placeholder.
+ *
+ * It did not work here. Two of these rows are PEOPLE — the customer being
+ * visited and the person going — and one outline of a head is not
+ * distinguishable from two. "Unassigned" sitting on its own said nothing
+ * about what was unassigned. Worse, the controls are borderless until
+ * hovered, so with no labels either, the whole card read as a paragraph of
+ * grey text with nothing in it that looked editable.
+ *
+ * The labels are small and quiet, so the card is still a card rather than
+ * a form, but every row now says what it is before you have to guess.
+ */
+function Row({ icon, label, children }) {
   return (
     <div className="pp-quick-row">
       <span className="pp-quick-icon" aria-hidden>{icon}</span>
-      <div style={{ minWidth: 0 }}>{children}</div>
+      <div style={{ minWidth: 0 }}>
+        {label && <div className="pp-quick-label">{label}</div>}
+        {children}
+      </div>
     </div>
   )
 }
@@ -475,11 +506,22 @@ function Problem({ children }) {
 // no styling of its own; one rule here covers every control on the card and
 // keeps them consistent, which eight separate `variant` props would not.
 const QUICK_CSS = `
+/* ── Borderless, but not INVISIBLE ───────────────────────────────────
+ *
+ * The first version made every control fully transparent until hovered,
+ * so the card read as a paragraph of grey text with nothing in it that
+ * looked like it could be changed. "Unassigned" and "Choose a calendar"
+ * were indistinguishable from the help text beneath them.
+ *
+ * A faint fill fixes that at no cost to the look: the row still reads as
+ * a fact rather than a form field, but the shape of the box tells you
+ * where the fact ends and where you can click. Hover darkens it, focus
+ * draws a real border — three steps instead of two. */
 .pp-quick .ant-select-selector,
 .pp-quick .ant-picker,
 .pp-quick .ant-input-number,
 .pp-quick .ant-input {
-  background: transparent;
+  background: var(--surface-sunken);
   border-color: transparent !important;
   box-shadow: none !important;
   transition: background 110ms linear, border-color 110ms linear;
@@ -488,7 +530,7 @@ const QUICK_CSS = `
 .pp-quick .ant-picker:hover,
 .pp-quick .ant-input-number:hover,
 .pp-quick .ant-input:hover {
-  background: var(--surface-sunken);
+  background: var(--gray-100);
 }
 /* Focus still draws a real border. Hover is a hint that something is
    editable; focus has to say exactly which box the keyboard is in. */
@@ -502,6 +544,9 @@ const QUICK_CSS = `
 .pp-quick .ant-picker-input > input { cursor: pointer; }
 
 .pp-quick-title.ant-input {
+  /* The exception: it already has focus and an underline, so a fill as
+     well would make the loudest thing on the card louder still. */
+  background: transparent;
   font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
   color: var(--text-heading);
@@ -529,10 +574,22 @@ const QUICK_CSS = `
   min-width: 0;
   padding: 3px 0;
 }
+/* Small, quiet, and above its control — enough to name the row without
+   turning the card back into a stack of form fields. */
+.pp-quick-label {
+  margin: 0 0 1px 12px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .pp-quick-icon {
   display: flex;
   justify-content: center;
-  padding-top: 8px;
+  /* Aligns with the LABEL now, not with the control below it. */
+  padding-top: 2px;
   font-size: 15px;
   color: var(--text-muted);
 }

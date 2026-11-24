@@ -184,17 +184,28 @@ t('ordering is stable when two start at the same minute', () => {
 
 console.log('the visible window — nothing may be silently dropped')
 
-t('an appointment before the first hour is pinned and flagged', () => {
-  // THE IMPORTANT ONE. A 06:00 start on a board that opens at 07:00 must not
-  // vanish: a dispatcher would read the morning as free.
+t('an early start is drawn in full, not pinned to the top', () => {
+  // THE REASON THE WINDOW WENT. On the old 07:00 board this was a clipped
+  // sliver at the top edge — visible, but unreadable as an appointment and
+  // impossible to drag. The grid covers the whole day now, so a 06:00 is
+  // an ordinary two-hour block.
   const geo = clampToWindow(6 * 60, 8 * 60)
-  assert.equal(geo.top, 0)
-  assert.equal(geo.clippedBefore, true)
-  assert.ok(geo.height > 0)
+  assert.equal(geo.top, 6 * 60 * PIXELS_PER_MINUTE)
+  assert.equal(geo.clippedBefore, false)
+  assert.equal(geo.height, 2 * 60 * PIXELS_PER_MINUTE)
 })
 
-t('an appointment running past the last hour is flagged, not truncated away', () => {
+t('a late finish is drawn in full too', () => {
   const geo = clampToWindow(19 * 60, 22 * 60)
+  assert.equal(geo.clippedAfter, false)
+  assert.equal(geo.height, 3 * 60 * PIXELS_PER_MINUTE)
+})
+
+t('something running past midnight is still held inside the grid', () => {
+  // clampToWindow has no working hours left to clamp to, but it is still
+  // what stops a malformed or multi-day row drawing off the end of the
+  // day it belongs to.
+  const geo = clampToWindow(23 * 60, 26 * 60)
   assert.equal(geo.clippedAfter, true)
   assert.ok(geo.height > 0)
   assert.ok(geo.top + geo.height <= (DAY_END_MIN - DAY_START_MIN) * PIXELS_PER_MINUTE + 1)
@@ -213,12 +224,15 @@ t('an ordinary booking sits where the arithmetic says', () => {
   assert.equal(geo.clippedAfter, false)
 })
 
-t('the gutter marks every hour of the window, inclusive', () => {
+t('the gutter marks every hour of the day, inclusive', () => {
   const marks = hourMarks()
   assert.equal(marks[0].minutes, DAY_START_MIN)
   assert.equal(marks.at(-1).minutes, DAY_END_MIN)
-  assert.equal(marks[0].label, '07:00')
+  assert.equal(marks[0].label, '00:00')
   assert.equal(marks[0].top, 0)
+  // 25, not 24: both midnights, so the grid is closed at the bottom
+  // rather than ending on an unlabelled edge.
+  assert.equal(marks.length, 25)
 })
 
 console.log('drops — where the rep meant, not where the pixel was')

@@ -42,7 +42,10 @@ export default function TimeGrid({
   appointments, resources = [], zone, fromDay, days = 7,
   onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
   // The slot currently being booked, if the card is open: see DraftSlot.
-  draft
+  draft,
+  // The sticky toolbar above. The grid's height is the room below it, and
+  // that cannot be worked out from the grid alone once the page scrolls.
+  topRef
 }) {
   const dragging = useRef(null)
   const [hover, setHover] = useState(null)
@@ -103,34 +106,61 @@ export default function TimeGrid({
       const zoom = Number(
         getComputedStyle(document.documentElement).getPropertyValue('--app-zoom')
       ) || 1
-      const top = el.getBoundingClientRect().top
+
+      // ── WHY THE PREVIOUS MEASUREMENT WAS STILL WRONG ──────────────
+      //
+      // It used the scroller's own top, measured once. But THE PAGE
+      // SCROLLS: as you scroll down, the grid's top rises towards zero
+      // and then past it, so the room below it appears to grow and the
+      // grid was sized for space it did not have. Hence still cut off,
+      // and worse the further down you had scrolled.
+      //
+      // The grid can never actually rise above the sticky chrome — the
+      // app nav and the calendar toolbar are pinned there — so the real
+      // ceiling is the bottom of that chrome, not the element's own
+      // position. Measured from the toolbar itself rather than assumed,
+      // since its height changes when the row wraps.
+      const chromeBottom = topRef?.current?.getBoundingClientRect().bottom ?? 0
+      const top = Math.max(el.getBoundingClientRect().top, chromeBottom)
       // A little air under the grid so it does not sit flush on the edge.
       const room = window.innerHeight - top - 16
       setMaxH(Math.max(360, room / zoom))
     }
+    // Twice: once now, once after layout has settled. Fonts and the
+    // sidebar arriving a frame later both move the chrome, and a single
+    // early measurement banks a top that is about to change.
     measure()
+    const raf = requestAnimationFrame(measure)
+
     window.addEventListener('resize', measure)
-    // The toolbar above can change height — a wrapped row on a narrow
-    // window — without the window resizing.
+    // THE SCROLL LISTENER IS THE FIX, not an optimisation: the numbers
+    // above are only true for the current scroll position.
+    window.addEventListener('scroll', measure, { passive: true })
     const ro = typeof ResizeObserver !== 'undefined'
       ? new ResizeObserver(measure)
       : null
-    if (ro && scroller.current?.parentElement) ro.observe(scroller.current.parentElement)
+    if (ro && topRef?.current) ro.observe(topRef.current)
     return () => {
+      cancelAnimationFrame(raf)
       window.removeEventListener('resize', measure)
+      window.removeEventListener('scroll', measure)
       ro?.disconnect()
     }
-  }, [])
+  }, [topRef])
 
   const scrolledOnce = useRef(false)
   useEffect(() => {
     const el = scroller.current
     if (!el || scrolledOnce.current) return
     scrolledOnce.current = true
-    const anchor = (nowMin > DAY_START_MIN && nowMin < DAY_END_MIN)
-      ? nowMin - 60
-      : 8 * 60
-    el.scrollTop = Math.max(0, (anchor - DAY_START_MIN) * PIXELS_PER_MINUTE)
+    // An hour before now, so the next appointment is in view rather than
+    // level with the top edge.
+    //
+    // There is no longer an "outside the window" case to fall back from —
+    // the grid covers the whole day — and with 24 hours on it, WHERE IT
+    // OPENS is what keeps the working day on screen. That is the job the
+    // 07:00–20:00 window used to do by hiding the rest.
+    el.scrollTop = Math.max(0, (nowMin - 60 - DAY_START_MIN) * PIXELS_PER_MINUTE)
     // Mount only: re-running would yank the grid back every minute when the
     // now-line ticks.
     // eslint-disable-next-line react-hooks/exhaustive-deps

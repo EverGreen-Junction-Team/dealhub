@@ -184,6 +184,8 @@ export default function CalendarTab({ onOpenDeal }) {
   // never changes — this one follows the card's own date, time and
   // duration as they are edited. See DraftSlot.
   const [draft, setDraft] = useState(null)
+  // The sticky toolbar, so the grid can measure the room left below it.
+  const toolbarRef = useRef(null)
 
   const zone = useMemo(() => boardZone(data.timezone), [data.timezone])
 
@@ -477,6 +479,7 @@ export default function CalendarTab({ onOpenDeal }) {
           the grid: without them a card sliding under a transparent toolbar
           shows through it. */}
       <div
+        ref={toolbarRef}
         style={{
           display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)',
           alignItems: 'center',
@@ -640,6 +643,7 @@ export default function CalendarTab({ onOpenDeal }) {
           onSetStatus={handleSetStatus}
           onBookAt={setBooking}
           draft={draft}
+          topRef={toolbarRef}
         />
       )}
 

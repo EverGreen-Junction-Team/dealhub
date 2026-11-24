@@ -9,12 +9,34 @@ import {
 // or a drop that lands fifteen minutes early, looks entirely plausible on
 // screen — so it is tested directly instead (see __tests__/boardLayout).
 
-// The visible day. Not 00:00–24:00: two thirds of that is empty for every
-// sub-account here, and the hours people actually work get squeezed into a
-// third of the screen as a result. A card outside this range is not hidden —
-// see clampToWindow.
-export const DAY_START_MIN = 7 * 60   // 07:00
-export const DAY_END_MIN = 20 * 60    // 20:00
+// ── THE WHOLE DAY ────────────────────────────────────────────────────
+//
+// This was 07:00–20:00, and the argument for it was real: two thirds of a
+// 24-hour grid is empty for these sub-accounts, and showing it squeezes the
+// working day into a third of the screen.
+//
+// It was still wrong, for two reasons the window could not answer.
+//
+// A 06:30 start was drawn as a sliver pinned to the top edge with a clipped
+// marker — visible, but not readable as an appointment, and impossible to
+// drag correctly. Anybody who works outside those hours even occasionally
+// had a calendar that lied about part of their day.
+//
+// And it made the grid a fixed 13 hours tall whatever the window could
+// show, which is what the "cut off" reports were really about: a box that
+// cannot show its contents and cannot be scrolled past them.
+//
+// With the full day, nothing is ever clipped, nothing is ever outside, and
+// the grid simply scrolls — opening at the current hour, as it already did.
+// The squeeze the window was avoiding is handled by WHERE IT OPENS rather
+// than by hiding hours: you still land on the working day, you can just
+// reach the rest.
+//
+// clampToWindow stays. It no longer has a working window to clamp to, but
+// it is still what keeps a malformed row — an end before its start, a
+// multi-day span — inside the grid instead of drawing off the end of it.
+export const DAY_START_MIN = 0          // 00:00
+export const DAY_END_MIN = 24 * 60      // 24:00
 // ~78px an hour. Raised from 1.1 when the calendar's text went up (see
 // CALENDAR_TYPE_SCALE in CalendarTab): a 30-minute card carries two lines —
 // the name and the time — and at the old height the second one was being

@@ -56,6 +56,7 @@
     "sync:businesses": "node src/scripts/syncBusinesses.js",
     "sync:providers": "node src/scripts/syncConversationProviders.js",
     "sync:tasks": "node src/scripts/syncTasks.js",
+    "sync:appointments": "node src/scripts/syncAppointments.js",
     "test:emailaddr": "node src/routes/__tests__/emailAddr.test.mjs",
     "test:emailattach": "node src/services/__tests__/emailAttachments.test.mjs",
     "test:contactlabel": "node src/utils/__tests__/contactLabel.test.mjs",

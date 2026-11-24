@@ -53,6 +53,66 @@ export function looksUnknownId(detail) {
 }
 
 /**
+ * Is GHL's own text safe to put in front of a rep?
+ *
+ * ── WHY THIS REPLACES "NEVER SHOW IT" ────────────────────────────────
+ *
+ * The old rule was absolute, and the reason given was a real one:
+ *
+ *   "Contact not found for id:88qfhZVULZ41Bl7BipOA"
+ *
+ * A sales rep shown a raw record id has been told nothing. But the rule
+ * threw out the good messages with the bad, and the result was a banner
+ * reading "check the values and try again" over a form whose values were
+ * all fine — because what GHL had actually said was something like "The
+ * slot is not available" or "endTime must be after startTime". Those are
+ * the whole answer, and we were deleting them.
+ *
+ * So the test is not "did GHL write it" but "does it name anything the rep
+ * should not see, or cannot act on". Anything carrying an id, a UUID, an
+ * email, a URL, a field path or a stack is suppressed; a plain sentence
+ * about what was wrong is shown.
+ *
+ * Deliberately strict. A false negative costs one generic banner, the one
+ * we would have shown anyway. A false positive puts a database id, or
+ * somebody else's email address, on a screen the whole team reads.
+ */
+export function safeDetail(detail) {
+  const d = (detail || '').trim();
+  if (!d) return null;
+  // Long enough to be a dump rather than a sentence.
+  if (d.length > 160) return null;
+  // GHL ids are 20+ chars of mixed case with no spaces. Also catches
+  // Mongo-style ids, JWTs and anything else opaque.
+  if (/[A-Za-z0-9_-]{18,}/.test(d)) return null;
+  // UUIDs, which are shorter than the run above but just as meaningless.
+  if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(d)) return null;
+  // Somebody's personal data. Never ours to broadcast, whatever it explains.
+  if (/[^\s@]+@[^\s@]+\.[^\s@]+/.test(d)) return null;
+  if (/https?:\/\//i.test(d)) return null;
+  // A field path or an object dump is developer output, not a sentence.
+  if (/[{}[\]]|\w+\.\w+\.\w+/.test(d)) return null;
+  return d;
+}
+
+/**
+ * Round a detail off into a sentence.
+ *
+ * GHL is inconsistent about capitals and full stops, and a banner that
+ * sometimes ends in one and sometimes does not looks like a bug.
+ */
+function asSentence(d) {
+  const t = d.replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, '');
+  // Leave a camelCase first word alone. GHL names the offending field in
+  // its own casing — "endTime must be after startTime" — and capitalising
+  // it to "EndTime" turns the one useful token in the sentence into
+  // something that does not match anything in the API or the UI.
+  const first = t.split(' ')[0] || '';
+  if (/[A-Z]/.test(first.slice(1))) return t;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/**
  * Build the user-facing message for a rejected write.
  *
  * ── WHY `action` EXISTS ──────────────────────────────────────────────
@@ -100,6 +160,21 @@ export function rejectionMessage(noun, detail, { action = 'change' } = {}) {
         + `removed from your list`
     };
   }
+  // GHL'S OWN REASON, WHEN IT IS ONE A REP CAN USE. This is the common
+  // case for an appointment — "that slot is not available", "outside the
+  // calendar's working hours" — and it is the entire answer. Replacing it
+  // with "check the values" sent people looking through a form for a
+  // problem that was never in the form.
+  const safe = safeDetail(detail);
+  if (safe) {
+    return {
+      missing,
+      status: 422,
+      message: `Your CRM would not ${action === 'delete' ? 'delete' : 'accept'} that `
+        + `${noun}: ${asSentence(safe)}`
+    };
+  }
+
   return {
     missing,
     status: 422,

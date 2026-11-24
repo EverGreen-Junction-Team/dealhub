@@ -115,9 +115,27 @@ breaks; nothing arrives either.
 
 ### Then verify
 
+```bash
+npm run probe:appointments
+```
+
+Read-only, a line per location: how many appointments we hold, how many
+arrived **by webhook** versus **by the nightly sweep**, and whether any
+blocked time has ever come in. It checks `GET /calendars/` first, because
+until that works every other number means nothing.
+
+The webhook/sweep split is the useful column. `from_backfill` is set false by
+the webhook path and true by the sweep, and neither updates it on conflict,
+so it records how each row FIRST arrived. A location whose appointments are
+**all** from the sweep is a location whose webhooks are not arriving — the
+data looks healthy, because the sweep covers it, while the calendar is up to
+a day stale all the time.
+
+Then, by hand:
+
 1. Create an appointment in GHL on a calendar in this sub-account.
-2. `SELECT id, title, start_time, assigned_user_id FROM appointments ORDER BY created_at DESC LIMIT 5;`
-3. It should be there within seconds, by webhook.
+2. `SELECT appointment_id, title, starts_at, from_backfill FROM appointments ORDER BY imported_at DESC LIMIT 5;`
+3. It should be there within seconds, with `from_backfill = false`.
 
 **Blocked time has no webhook** — GHL fires nothing when you block an hour
 out. Its only path is the nightly reconcile, and that path has not been

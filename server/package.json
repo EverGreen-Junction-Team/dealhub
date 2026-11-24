@@ -144,6 +144,7 @@
     "test:cp": "node --test src/conversationPoint/__tests__/conversationPoint.test.mjs",
     "test:appointments": "node src/services/__tests__/appointmentPayload.test.mjs",
     "test:apptwrite": "node src/services/__tests__/appointmentWrite.test.mjs",
+    "probe:appointments": "node src/scripts/probeAppointments.js",
     "probe:tasksweep": "node src/scripts/probeTaskSweep.js",
     "probe:task": "node src/scripts/probeTask.js",
     "test:sweepreach": "node --test src/services/__tests__/taskSweepReach.test.mjs",

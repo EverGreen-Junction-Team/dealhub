@@ -40,6 +40,25 @@
 // create webhook can hide a task entirely — and the search path, once scoped,
 // closes even that.
 //
+// ── WHAT THE DELETE PASS CANNOT FIX, MEASURED ───────────────────────
+//
+// probe:tasksweep, run across all four production locations (24 Nov 2026):
+// the search path works everywhere, and GHL returned EVERY task we hold —
+// 80/80, 41/41, 1097 against our 1095, 958 against our 956. Zero stale rows
+// anywhere.
+//
+// So ten nights of `deleted: 0` were ten nights of there being nothing to
+// delete. This sweep was healthy the whole time. The phantom tasks — the
+// ones a rep cannot edit because GHL answers "The task id is invalid" — are
+// IN GHL's own search results while its write endpoints reject them. No
+// amount of reconciliation here can clear them, because from this side they
+// do not look stale. That is what ghlTaskWrite's forgetUnknownTask is for:
+// the only moment the inconsistency is visible is a write that fails.
+//
+// The two locations where GHL returned slightly MORE than we hold are a
+// different, smaller thing: a couple of tasks whose upsert failed. They are
+// logged individually at warn with the Postgres code and constraint.
+//
 // Deletes are reconciled: a task that no longer comes back from GHL is
 // soft-deleted, matching what the TaskDelete webhook does. Guarded so a failed
 // or truncated sweep can never be read as "GHL has no tasks" — see

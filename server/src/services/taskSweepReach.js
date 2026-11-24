@@ -12,11 +12,17 @@
 //                                                  nobody
 //   SAFETY  which rows may we delete against?      the covered list
 //
-// Conflating them cost ten nights of reconciliation. A single failed contact
-// out of up to 1500 set a `truncated` flag that abandoned the delete pass
-// for the entire location — when the covered list had already made that
-// contact's tasks untouchable, so the flag bought nothing and cost
-// everything.
+// Conflating them was a latent bug, not — as first supposed — the cause of
+// the ten nights of `deleted: 0`. probe:tasksweep settled that: all four
+// production locations are on the SEARCH path, so this fallback never runs
+// there, and the sweep was correctly deleting nothing.
+//
+// It is still fixed, and still worth fixing. A single failed contact out of
+// up to 1500 set a `truncated` flag that abandoned the delete pass for the
+// entire location — when the covered list had already made that contact's
+// tasks untouchable, so the flag bought nothing. The day the search scope
+// lapses and a location falls back to this path, it would have reconciled
+// nothing and reported success.
 
 // A ceiling on calls per run, so a location with a large contact base cannot
 // turn the nightly job into an hours-long crawl. Reaching it is safe: a

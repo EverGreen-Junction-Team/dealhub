@@ -203,6 +203,51 @@ export default function TaskEditor({
     [contactId]
   )
 
+  // ── THE SEED HAS TO BE SCOPED TOO ───────────────────────────────────
+  //
+  // The search above was already bound to the contact, but the picker also
+  // shows a SEED before anything is typed — and that was `linkTargets.deals`,
+  // 25 deals from across the whole sub-account. So the dropdown opened on a
+  // list of deals the chosen contact is mostly not on, the rep picked one
+  // without typing, and the server refused it: "That deal is not on this
+  // contact, so the task cannot be filed against it." A correct refusal to
+  // an offer we should never have made.
+  //
+  // The seed is now only the deal this task is ALREADY filed against, which
+  // is the one thing the scoped search might not return — a task can
+  // legitimately be on a deal the contact has since been removed from, and
+  // dropping it from the list would silently unfile the task on the next
+  // save. Everything else comes from the contact-scoped search, which
+  // RemotePicker runs on open.
+  const dealSeed = useMemo(() => {
+    const existing = task?.opportunityId
+    if (!existing) return []
+    const known = deals.find((d) => d.id === existing)
+    return [known
+      ? dealOption(known)
+      // Not in the seed list we were handed: keep the id visible with
+      // whatever name the task carries, rather than dropping the link.
+      : { value: existing, label: task?.deal?.name || task?.deals?.[0]?.name || existing }]
+  }, [task, deals])
+
+  // Changing the contact invalidates the deal.
+  //
+  // A deal belongs to the person it is on, so the moment the rep picks a
+  // different contact the chosen deal is almost certainly not one of
+  // theirs — and the picker, now correctly scoped, will not even offer it.
+  // Leaving it selected means the box shows a deal that is no longer in its
+  // own list and the save is refused on a field the rep never touched.
+  //
+  // Skipped on the FIRST render, so opening an existing task does not
+  // immediately discard the link it was saved with.
+  const seenContact = useRef(contactId)
+  useEffect(() => {
+    if (seenContact.current === contactId) return
+    seenContact.current = contactId
+    setOpportunityId(null)
+    setDealName(null)
+  }, [contactId])
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [errorField, setErrorField] = useState(null)
@@ -586,10 +631,15 @@ export default function TaskEditor({
                   // Scoped to this contact's deals — a task lives on a
                   // contact, so a deal they are not on is never a valid answer.
                   search={dealSearchForContact}
-                  seed={deals.map(dealOption)}
-                  disabled={saving}
+                  seed={dealSeed}
+                  // DISABLED UNTIL A CONTACT IS CHOSEN. With no contact
+                  // the scoped search has nothing to scope to and falls
+                  // back to the whole sub-account — the same wrong list,
+                  // reached a different way. A task needs a contact
+                  // regardless, so there is nothing to lose by waiting.
+                  disabled={saving || !contactId}
                   invalid={errorField === 'opportunityId'}
-                  placeholder="Not linked to a deal"
+                  placeholder={contactId ? 'Not linked to a deal' : 'Pick a contact first'}
                   emptyText="No deal matches that"
                   style={{ width: '100%' }}
                 />

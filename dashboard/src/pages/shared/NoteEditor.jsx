@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useModal } from '../../hooks/useModal'
 import { Input } from 'antd'
 import { notesAPI } from '../../api/notes'
@@ -157,6 +157,38 @@ export default function NoteEditor({
     (q) => searchDeals(q, { contactId }),
     [contactId]
   )
+
+  // The SEED needed the same scoping, and did not have it: it was the 25
+  // deals the link-targets hook preloads for the whole sub-account, so the
+  // dropdown opened on deals this contact is mostly not on and the server
+  // refused the save — "That deal is not on this contact". See the longer
+  // note in TaskEditor, which had the identical bug.
+  //
+  // What stays in the seed is only the deal this note is already filed
+  // against: the scoped search may not return it (a contact can be removed
+  // from a deal after the fact) and dropping it would silently unfile the
+  // note on the next save.
+  const dealSeed = useMemo(() => {
+    const existing = note?.opportunityId
+    if (!existing) return []
+    const known = deals.find((d) => d.id === existing)
+    return [known
+      ? dealOption(known)
+      : { value: existing, label: note?.deal?.name || existing }]
+  }, [note, deals])
+
+  // Changing the contact invalidates the deal — it is almost certainly not
+  // one of the new contact's, and the scoped picker will not offer it, so
+  // leaving it selected shows a value absent from its own list and fails
+  // the save on a field the rep never touched. Not on first render, or
+  // opening an existing note would discard the link it was saved with.
+  const seenContact = useRef(contactId)
+  useEffect(() => {
+    if (seenContact.current === contactId) return
+    seenContact.current = contactId
+    setOpportunityId(null)
+    setDealName(null)
+  }, [contactId])
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -554,10 +586,15 @@ export default function NoteEditor({
                   // valid answer. Re-created when the contact changes so the
                   // picker never offers the previous contact's deals.
                   search={dealSearchForContact}
-                  seed={deals.map(dealOption)}
-                  disabled={saving}
+                  seed={dealSeed}
+                  // DISABLED UNTIL A CONTACT IS CHOSEN. With no contact
+                  // the scoped search has nothing to scope to and falls
+                  // back to the whole sub-account — the same wrong list,
+                  // reached a different way. A note needs a contact
+                  // regardless, so there is nothing to lose by waiting.
+                  disabled={saving || !contactId}
                   invalid={errorField === 'opportunityId'}
-                  placeholder="Not linked to a deal"
+                  placeholder={contactId ? 'Not linked to a deal' : 'Pick a contact first'}
                   emptyText="No deal matches that"
                   style={{ width: '100%' }}
                 />

@@ -11,6 +11,7 @@ import {
 import { ghlRequest } from '../services/ghlClient.js';
 import { userMessage } from '../utils/userMessage.js';
 import { logger } from '../utils/logger.js';
+import { pickSlots, slotWindow } from '../services/freeSlots.js';
 
 export const appointmentsRouter = express.Router();
 appointmentsRouter.use(requireSession);
@@ -307,6 +308,49 @@ appointmentsRouter.get('/', async (req, res, next) => {
 // Requires `calendars.readonly`. Without it the booking form has nothing to
 // offer, so the error says which permission is missing rather than
 // presenting an empty dropdown that looks like "no calendars exist".
+// ── GET /api/appointments/free-slots ──────────────────────────────────
+//
+// The times a calendar will accept, for one day, so the booking card can
+// say BEFORE Save whether the chosen time is open — and offer ones that
+// are. See services/freeSlots.js for the shape and why.
+//
+//   calendarId   required
+//   from, to     ISO, the day's window in the board's zone (end exclusive)
+//   timezone     the board's zone, so slots come back in it
+//   userId       optional — the person going, when one is chosen
+appointmentsRouter.get('/free-slots', async (req, res, next) => {
+  const locationId = req.locationId;
+  const { calendarId, from, to, timezone, userId } = req.query || {};
+  if (!calendarId) return res.status(400).json({ error: 'Pick a calendar first', field: 'calendarId' });
+  const window = slotWindow(from, to);
+  if (!window) return res.status(400).json({ error: 'That is not a valid day to check', field: 'from' });
+  try {
+    const install = await getActiveInstall(locationId);
+    if (!install) {
+      const why = await explainInactiveInstall(locationId);
+      return res.status(409).json({ error: userMessage(why) });
+    }
+    const { data } = await ghlRequest(install, {
+      method: 'GET',
+      url: `/calendars/${encodeURIComponent(calendarId)}/free-slots`,
+      params: {
+        ...window,
+        ...(timezone ? { timezone } : {}),
+        ...(userId ? { userId } : {})
+      },
+      // Optional by nature: a missing scope must not mark the install for
+      // reauth and halt every sync — the card simply shows no hint.
+      scopeOptional: true
+    });
+    res.json({ slots: pickSlots(data) });
+  } catch (err) {
+    // Never blocks a booking: the card treats any failure as "unknown" and
+    // Save still works (and GHL still has the final say).
+    logger.warn({ err, locationId, calendarId }, 'GET /api/appointments/free-slots failed');
+    res.status(502).json({ error: 'Could not check availability' });
+  }
+});
+
 appointmentsRouter.get('/calendars', async (req, res, next) => {
   const locationId = req.locationId;
   try {

@@ -284,3 +284,12 @@ test('a long booking ends visibly on its last day, at its end time', async () =>
   const card = readFileSync(new URL('../AppointmentCard.jsx', import.meta.url), 'utf8')
   assert.match(card, /a\._edge === 'end' \? `until \$\{clockTime\(whole\.endsAt, zone\)\}`/)
 })
+
+test('the booking card checks availability before Save, without blocking it', () => {
+  const b = readFileSync(new URL('../BookAppointment.jsx', import.meta.url), 'utf8')
+  assert.match(b, /appointmentsAPI\.freeSlots\(\{/)
+  assert.match(b, /const isOpen = avail\.slots\.some\(\(s\) => Date\.parse\(s\) === chosenStartMs\)/)
+  assert.match(b, /onClick=\{\(\) => pickSlot\(s\)\}/, 'no way to pick an accepted time')
+  // A failed check must never stop a booking.
+  assert.match(b, /\.catch\(\(\) => \{ if \(!cancelled\) setAvail\(\{ status: 'error', slots: \[\] \}\) \}\)/)
+})

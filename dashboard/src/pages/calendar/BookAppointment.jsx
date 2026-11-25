@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import ContactPicker from '../shared/ContactPicker'
 import { useModal } from '../../hooks/useModal'
 import { appointmentsAPI } from '../../api/appointments'
-import { isoForSlot, DEFAULT_SLOT_MINUTES } from '../../utils/calendarTime'
+import { isoForSlot, DEFAULT_SLOT_MINUTES, inZone, clockTime } from '../../utils/calendarTime'
 
 // ── The look ──────────────────────────────────────────────────────────
 //
@@ -159,6 +159,33 @@ const QUICK_CSS = `
   cursor: pointer;
 }
 .pp-quick-more:hover { text-decoration: underline; }
+.pp-avail {
+  margin: 6px 0 0 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+.pp-avail-ok {
+  color: var(--accent-pine-text);
+  background: var(--tint-pine);
+}
+.pp-avail-warn {
+  color: var(--text-body);
+  background: var(--tint-gold, #fdf3dc);
+  border-left: 3px solid var(--accent-gold);
+}
+.pp-avail-chip {
+  border: 1px solid var(--border-strong);
+  background: var(--surface-card);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-heading);
+  cursor: pointer;
+}
+.pp-avail-chip:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
 .pp-quick-dim {
   font-size: var(--text-sm);
   color: var(--text-muted);
@@ -261,6 +288,14 @@ export default function BookAppointment({
       : dayjs().startOf('day').add(9 * 60, 'minute')
   ))
   const [duration, setDuration] = useState(DEFAULT_SLOT_MINUTES)
+
+  // ── IS THE CHOSEN TIME ONE GHL WILL ACCEPT? ────────────────────────────
+  // Found on the live board: GHL refused a visibly empty slot ("no longer
+  // available") because of the calendar's own hours and interval, which the
+  // grid cannot show. So the card asks GHL for the day's open times as soon
+  // as a calendar and a day are chosen, and says so under When — before
+  // Save, not after. Never blocking: a failed check just shows nothing.
+  const [avail, setAvail] = useState({ status: 'idle', slots: [] })
   const [assignedUserId, setAssignedUserId] = useState(initial?.userId || null)
   const [title, setTitle] = useState('')
   const [address, setAddress] = useState('')
@@ -319,6 +354,39 @@ export default function BookAppointment({
     () => (resources || []).filter((r) => r.assignable && !r.isUnassigned),
     [resources]
   )
+
+  const dayKey = day.format('YYYY-MM-DD')
+  useEffect(() => {
+    if (!calendarId) { setAvail({ status: 'idle', slots: [] }); return undefined }
+    let cancelled = false
+    setAvail((a) => ({ status: 'loading', slots: a.slots }))
+    // The whole day in the board's zone, end exclusive — as the API wants.
+    const { startTime: from, endTime: to } = isoForSlot(dayKey, 0, 24 * 60, zone)
+    appointmentsAPI.freeSlots({
+      calendarId, from, to, timezone: zone,
+      ...(assignedUserId ? { userId: assignedUserId } : {})
+    })
+      .then((r) => { if (!cancelled) setAvail({ status: 'ok', slots: r?.slots || [] }) })
+      .catch(() => { if (!cancelled) setAvail({ status: 'error', slots: [] }) })
+    return () => { cancelled = true }
+  }, [calendarId, dayKey, assignedUserId, zone])
+
+  const chosenStartMs = Date.parse(
+    isoForSlot(dayKey, time.hour() * 60 + time.minute(), duration, zone).startTime
+  )
+  const isOpen = avail.slots.some((s) => Date.parse(s) === chosenStartMs)
+  // The nearest open times, earlier and later, so a refused 14:15 can
+  // become an accepted 14:30 in one click.
+  const nearby = avail.slots
+    .map((s) => ({ s, d: Math.abs(Date.parse(s) - chosenStartMs) }))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 6)
+    .map((x) => x.s)
+    .sort((a, b) => Date.parse(a) - Date.parse(b))
+  const pickSlot = (iso) => {
+    const t = inZone(iso, zone)
+    setTime(time.hour(t.hour()).minute(t.minute()))
+  }
 
   const chosenCalendar = calendars.find((c) => c.id === calendarId)
 
@@ -496,6 +564,29 @@ export default function BookAppointment({
               own machine can all be in different zones, and this is the one
               line that says which one these numbers mean. */}
           {zone && <Hint>Times are {zone.replace(/_/g, ' ')}</Hint>}
+          {calendarId && avail.status === 'loading' && (
+            <Hint>Checking {chosenCalendar?.name || 'the calendar'}&rsquo;s availability…</Hint>
+          )}
+          {calendarId && avail.status === 'ok' && (
+            isOpen
+              ? <div className="pp-avail pp-avail-ok">Open on {chosenCalendar?.name || 'this calendar'}</div>
+              : (
+                <div className="pp-avail pp-avail-warn">
+                  {avail.slots.length === 0
+                    ? `${chosenCalendar?.name || 'This calendar'} has no open times on ${day.format('ddd D MMM')}. Saving will ask you to book it anyway.`
+                    : `Not an open time on ${chosenCalendar?.name || 'this calendar'}. Pick one it accepts, or save and book it anyway:`}
+                  {nearby.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                      {nearby.map((s) => (
+                        <button key={s} type="button" className="pp-avail-chip" onClick={() => pickSlot(s)}>
+                          {clockTime(s, zone)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                )
+          )}
         </Row>
 
         <Row icon={<UserOutlined />} label="Customer">

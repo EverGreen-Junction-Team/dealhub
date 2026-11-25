@@ -22,6 +22,11 @@ export const appointmentsAPI = {
   // than asking on every modal open.
   calendars: () => apiClient.get('/api/appointments/calendars'),
 
+  // The times a calendar will accept on one day — so the booking card can
+  // say before Save whether the chosen time is open. { slots: [iso, …] }.
+  //   calendarId, from, to (ISO, end exclusive), timezone, userId?
+  freeSlots: (params) => apiClient.get('/api/appointments/free-slots', { params }),
+
   // Book one. Needs a calendar AND a customer: GHL has no concept of an
   // appointment with nobody, and time held with no customer is blocked time,
   // which is a different object entirely.

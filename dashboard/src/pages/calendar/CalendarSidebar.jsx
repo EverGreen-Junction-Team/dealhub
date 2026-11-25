@@ -136,10 +136,14 @@ export default function CalendarSidebar({
         // disappears while you scroll. The offset is measured by the
         // caller rather than guessed — see stickyTop.
         position: 'sticky', top: stickyTop,
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-md)',
+        // NOT A CARD. It was a bordered, rounded white box floating on
+        // the page grey; with the page white it would have been a box
+        // outlined on the same colour it contains, which is the worst of
+        // both. Google's rail is part of the sheet and separated from the
+        // grid by a single rule — so that is what this is now.
+        borderRight: '1px solid var(--border-default)',
         background: 'var(--surface-card)',
-        padding: 'var(--space-3)'
+        padding: 'var(--space-3) var(--space-3) var(--space-4) 0'
       }}
     >
       {/* FIRST, above the filters. The rail answers two questions and they

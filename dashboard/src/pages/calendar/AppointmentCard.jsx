@@ -186,13 +186,39 @@ export default function AppointmentCard({
           top, height,
           left: `calc(${leftPct}% + 2px)`,
           width: `calc(${widthPct}% - 4px)`,
-          background: style.tint,
-          // The status bar down the left edge. Doing the colour work here
-          // rather than tinting the whole card keeps the text legible.
-          borderLeft: `3px solid ${style.bar}`,
-          border: '1px solid var(--border-default)',
-          borderLeftWidth: 3,
+          // ── ONE COLOUR, AND THE CARD IS WHITE ──────────────────
+          //
+          // It used to carry two: the fill said what STATUS the booking
+          // was in, the bar said WHOSE it was. Both facts are worth
+          // having and the pairing was still wrong — the status tints are
+          // hues of their own, so a purple bar on a teal fill had no
+          // relationship to it and read as a rendering fault before it
+          // read as two pieces of information.
+          //
+          // So the card is white, on a white grid, and exactly one colour
+          // survives: the bar. Status moves onto things that are not hue
+          // — cancelled is struck through, no-show says the word,
+          // blocked is hatched — which it half did already, deliberately,
+          // because roughly one man in twelve cannot separate the
+          // red-green pair this palette would otherwise lean on.
+          //
+          // WHAT THIS COSTS, stated rather than discovered later:
+          // `confirmed` and `showed` no longer differ at a glance. They
+          // differ in the tooltip and nowhere else.
+          background: isBlocked ? style.tint : 'var(--surface-card)',
+          // The one colour. On the time views it is the PERSON — their
+          // work is mixed into one column per day and the bar is what
+          // separates it. On the resource board the column already says
+          // whose it is, so it falls back to the status instead.
+          //
+          // Load-bearing now in a way it was not before: a white card on
+          // a white grid is its border and this bar. Hence 4px rather
+          // than 3, and a real border rather than a hairline.
+          border: '1px solid var(--border-strong, var(--gray-200))',
+          borderLeftWidth: 4,
+          borderLeftStyle: 'solid',
           borderLeftColor: isBlocked ? style.bar : (accent || style.bar),
+          boxShadow: 'var(--shadow-xs, 0 1px 1px rgba(23, 33, 46, 0.06))',
           borderRadius: 'var(--radius-sm)',
           padding: '3px 6px',
           overflow: 'hidden',
@@ -242,7 +268,11 @@ export default function AppointmentCard({
         <div
           style={{
             fontWeight: 'var(--weight-semibold)',
-            color: style.text,
+            // Neutral, not the status accent. On a white card a coloured
+            // heading would put the patchwork straight back: seven
+            // statuses, seven heading colours, and the one colour the
+            // card is allowed is the bar.
+            color: cancelled ? 'var(--text-muted)' : 'var(--text-heading)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             // Never colour alone: a cancelled visit is struck through too.
             textDecoration: cancelled ? 'line-through' : 'none'

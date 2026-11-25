@@ -50,7 +50,23 @@ import { useTabState } from '../../hooks/useTabState'
 const CALENDAR_TYPE_SCALE = {
   '--text-xs': 'calc(13px * var(--app-text-scale))',
   '--text-sm': 'calc(14px * var(--app-text-scale))',
-  '--text-md': 'calc(16px * var(--app-text-scale))'
+  '--text-md': 'calc(16px * var(--app-text-scale))',
+
+  // ── THE CALENDAR IS WHITE, AND THE REST OF DEAL HUB IS NOT ─────────
+  //
+  // Everywhere else the page is a cool grey (#eef1f5) and white cards sit
+  // on it, which is right for a page that IS a stack of cards. A calendar
+  // is not: it is one sheet, and the grey only ever showed as a frame
+  // around the sheet and a gutter between the sheet and the rail. That
+  // frame is what made the toolbar's controls look washed out — a grey
+  // background behind a grey Segmented track — and what made the grid
+  // look like a widget dropped onto a page rather than the page itself.
+  //
+  // Overridden as a TOKEN rather than a background, so everything inside
+  // that reads --surface-page (the rail, the toolbar, the grid's own
+  // chrome) follows without each one being told separately.
+  '--surface-page': 'var(--white)',
+  background: 'var(--white)'
 }
 
 // ── WHY A BOARD AND NOT A SHARED WEEK ────────────────────────────────
@@ -709,6 +725,10 @@ export default function CalendarTab({ onOpenDeal }) {
           appointments={visible}
           zone={zone}
           fromDay={fromDay}
+          // Same list the week view colours its bars from, so a rep is the
+          // same colour in both — the dot and the bar must agree or the
+          // colour coding is worse than none.
+          resources={data.resources}
           busyIds={busyIds}
           onOpenDeal={onOpenDeal}
           onMove={handleMove}

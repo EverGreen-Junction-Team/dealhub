@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import dayjs from 'dayjs'
 import AppointmentCard from './AppointmentCard'
 import DraftSlot from './DraftSlot'
 import { colourFor } from './CalendarSidebar'
@@ -328,8 +327,11 @@ export default function TimeGrid({
                 fontSize: 'var(--text-xs)',
                 color: m.minutes >= WORK_START_MIN && m.minutes < WORK_END_MIN
                   ? 'var(--text-muted)'
-                  // Off-hours labels recede with their band, so the column
-                  // and its gutter tell the same story.
+                  // The working day, now that no shading says it. With the
+                  // grid one flat white, the gutter is where 09:00 is told
+                  // from 03:00 — so the hours inside it are set a step
+                  // darker and the night recedes. It is the whole
+                  // off-hours cue in two tokens.
                   : 'var(--text-faint)',
                 fontVariantNumeric: 'tabular-nums'
               }}
@@ -341,7 +343,6 @@ export default function TimeGrid({
 
         {dayKeys.map((day) => {
           const items = cells.get(day) || []
-          const isWeekend = [0, 6].includes(dayjs(day).day())
           const isToday = day === todayKey
           return (
             <div
@@ -408,53 +409,25 @@ export default function TimeGrid({
                 transition: 'background 90ms linear'
               }}
             >
-              {/* ── THE HOURS NOBODY WORKS ───────────────────────────
-                  Now that the grid runs 00:00–24:00, 03:00 looks exactly
-                  like 11:00 and the working day has stopped being visible
-                  at all — which is the one thing the old 07:00–20:00
-                  window did well. This puts it back WITHOUT hiding
-                  anything: the hours outside the working day are shaded,
-                  so the eye finds the part that matters and the rest is
-                  still there to scroll to and book into.
+              {/* ── ONE WHITE SURFACE ────────────────────────────────
+                  There were three greys here and they are all gone: two
+                  bands shading the hours outside 07:00–20:00, and a half
+                  strength wash over Saturday and Sunday.
 
-                  Drawn as two bands rather than tinting the working hours,
-                  because the working hours are where the CARDS go — a
-                  background under them would shift every status colour, the
-                  mistake the today-column tint made. */}
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute', left: 0, right: 0, top: 0,
-                  height: (WORK_START_MIN - DAY_START_MIN) * PIXELS_PER_MINUTE,
-                  background: 'var(--surface-sunken)',
-                  pointerEvents: 'none'
-                }}
-              />
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute', left: 0, right: 0,
-                  top: (WORK_END_MIN - DAY_START_MIN) * PIXELS_PER_MINUTE,
-                  bottom: 0,
-                  background: 'var(--surface-sunken)',
-                  pointerEvents: 'none'
-                }}
-              />
-              {/* A weekend reads as a weekend. Half the strength of the
-                  off-hours shading, so a Saturday afternoon is still
-                  plainly more available than a Tuesday at 4am. */}
-              {isWeekend && (
-                <div
-                  aria-hidden
-                  style={{
-                    position: 'absolute', inset: 0,
-                    background: 'var(--surface-sunken)',
-                    opacity: 0.5,
-                    pointerEvents: 'none'
-                  }}
-                />
-              )}
+                  Each was defensible on its own and together they made the
+                  grid a patchwork — five different backgrounds across one
+                  week, so a card at 6am on a Saturday sat on a third
+                  colour that no card at 10am on a Tuesday ever sat on.
+                  Google's week is one white sheet and the structure comes
+                  entirely from the rules: hairlines between the days,
+                  hairlines between the hours. That is enough, and it is
+                  the only version where every card is on the same ground.
 
+                  What the off-hours shading did well — finding the working
+                  day in a 24 hour column — the hour labels and the
+                  half-hour rules still do: half-hour lines are drawn
+                  inside working hours only, so the part of the day that
+                  matters is visibly finer-grained than 3am. */}
               {marks.map((m) => (
                 <React.Fragment key={m.minutes}>
                   <div

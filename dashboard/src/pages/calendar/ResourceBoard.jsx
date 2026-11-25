@@ -216,7 +216,13 @@ export default function ResourceBoard({
                 style={{
                   position: 'sticky', top: 0, zIndex: 4,
                   padding: '5px 10px',
-                  background: day === todayKey ? 'var(--tint-teal)' : 'var(--surface-sunken)',
+                  // White, like every other surface on the board. Today is
+                  // marked by the dot beside its date and by the now-line,
+                  // not by tinting a whole day — the same correction the
+                  // week view's today-column got, for the same reason: a
+                  // tinted day is a day whose cards sit on different
+                  // ground from everyone else's.
+                  background: 'var(--surface-card)',
                   borderBottom: '1px solid var(--border-default)',
                   fontSize: 'var(--text-sm)',
                   fontWeight: 'var(--weight-semibold)',
@@ -249,9 +255,13 @@ export default function ResourceBoard({
                     style={{
                       height: HEADER_H, boxSizing: 'border-box',
                       position: 'sticky', top: 0, zIndex: 2,
+                      // Unassigned keeps its tint: it is not a person, it
+                      // is a pile of work with nobody's name on it, and
+                      // that is worth seeing from across the room. Today
+                      // does not — see above.
                       background: col.isUnassigned
                         ? 'var(--tint-gold)'
-                        : (day === todayKey ? 'var(--tint-teal)' : 'var(--surface-card)'),
+                        : 'var(--surface-card)',
                       borderBottom: '1px solid var(--border-default)',
                       padding: '4px 8px',
                       display: 'flex', flexDirection: 'column', justifyContent: 'center'
@@ -318,6 +328,14 @@ export default function ResourceBoard({
                     style={{
                       position: 'relative', height,
                       background: isHover ? 'var(--surface-selected)' : 'var(--surface-card)',
+                      // A rule per person, matching the one on the column
+                      // head above it. The head had one and the body did
+                      // not, which was invisible while each column had a
+                      // tint of its own to end at and obvious the moment
+                      // the board went white: eight reps' work running
+                      // together in one undivided field.
+                      borderRight: '1px solid var(--border-default)',
+                      boxSizing: 'border-box',
                       transition: 'background 90ms linear'
                     }}
                   >

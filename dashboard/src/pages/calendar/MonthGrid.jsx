@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Tooltip } from 'antd'
 import { monthWeeks, groupByDay, movePatch } from './boardLayout'
+import { colourFor } from './CalendarSidebar'
 import {
   isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, durationMinutes
 } from '../../utils/calendarTime'
@@ -34,6 +35,9 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 export default function MonthGrid({
   appointments, zone, fromDay,
+  // For the chip dots. Defaulted, because a caller that has not loaded
+  // the rep list yet should get grey dots rather than no month view.
+  resources = [],
   onOpenDeal, onMove, onBookAt, onOpenDay, busyIds,
   // The slot the open booking card is aiming at. A month cell has no
   // vertical position to place it at, so it is a chip at the top of the
@@ -136,9 +140,14 @@ export default function MonthGrid({
                   boxSizing: 'border-box',
                   padding: '4px 5px',
                   borderLeft: '1px solid var(--border-default)',
+                  // One white surface here too. The neighbouring month's
+                  // days were shaded, which made five of the thirty-five
+                  // cells a different colour from the rest; their DATE is
+                  // already dimmed, which says the same thing without
+                  // putting the cards on two different grounds.
                   background: hover === day
                     ? 'var(--surface-selected)'
-                    : (outside ? 'var(--surface-sunken)' : 'var(--surface-card)'),
+                    : 'var(--surface-card)',
                   cursor: onBookAt ? 'cell' : 'default'
                 }}
               >
@@ -193,6 +202,7 @@ export default function MonthGrid({
                     appointment={a}
                     zone={zone}
                     busy={busyIds?.has(a.id)}
+                    accent={colourFor(resources, a.assignedUserId)}
                     onOpenDeal={onOpenDeal}
                     onDragStart={(appointment) => { dragging.current = { appointment } }}
                   />
@@ -228,7 +238,7 @@ export default function MonthGrid({
 // The time leads: in a month view the time is the only thing distinguishing
 // two visits to the same customer, and it is what you are scanning for once
 // you have found the day.
-function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart }) {
+function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent }) {
   const isBlocked = a.kind === 'blocked'
   const status = (a.status || '').toLowerCase()
   const cancelled = status === 'cancelled'
@@ -268,8 +278,13 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart }) {
           display: 'flex', alignItems: 'center', gap: 4,
           padding: '1px 4px', marginBottom: 1,
           borderRadius: 'var(--radius-sm)',
-          background: isBlocked ? 'var(--gray-100)' : 'var(--tint-teal)',
-          color: isBlocked ? 'var(--text-muted)' : 'var(--accent-teal-text)',
+          // White, like the day view's card and for the same reason. A
+          // month cell holds four of these; four filled chips made the
+          // cell read as a block of colour whose SHAPE carried no
+          // meaning. The colour moves to the dot, which is where Google
+          // puts it and which scales to four lines without shouting.
+          background: isBlocked ? 'var(--gray-100)' : 'transparent',
+          color: 'var(--text-body)',
           fontSize: 'var(--text-xs)',
           lineHeight: 1.5,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -278,6 +293,18 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart }) {
           textDecoration: cancelled ? 'line-through' : 'none'
         }}
       >
+        {/* The dot IS the colour coding now. Six pixels of the person's
+            hue, in the one place on a single-line chip where a colour can
+            sit without competing with the words beside it. */}
+        {!isBlocked && (
+          <span
+            aria-hidden
+            style={{
+              flex: 'none', width: 6, height: 6, borderRadius: '50%',
+              background: accent || 'var(--accent-teal)'
+            }}
+          />
+        )}
         <span style={{ fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
           {clockTime(a.startsAt, zone)}
         </span>

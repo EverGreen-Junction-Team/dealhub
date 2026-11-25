@@ -103,21 +103,20 @@
 
 ---
 
-## Open items (not fixed)
+## Open items — follow-up pass (same day)
 
-| # | Item | Why not fixed / what's needed |
+| # | Item | Outcome |
 |---|---|---|
-| O1 | Reassign lets you drop onto someone not on the calendar's team, then GHL refuses | Needs calendar team membership from GHL to grey those columns out during a drag. A feature, not a bug fix |
-| O2 | GHL refused a visibly empty slot on James.io | GHL's own availability settings on that calendar (hours / slot interval / notice). Check the calendar in GHL; the override works meanwhile |
-| O3 | 2 of 6 menu clicks did not register on first try | One explained (card replaced mid-click by the slow refresh, which `047f61e` removes). The other unexplained — watch for it |
-| O4 | Blocked time not tested | No blocked time exists in either sub-account; block an hour in GHL and recheck |
-| O5 | Person colours repeat after 9 people | Palette has 9 hues; 12-person sub-account has collisions |
-| O6 | Home has no Calendar tile | Every other tab has one |
-| O7 | Server changes need deploying | `42bae71` (store `description` as the note) and `c909b33` (plain-English refusal). The note already shows live; the server change makes it hold for the nightly sweep too |
-| O8 | 11 dashboard test files were already broken before this work | Most point at a folder that no longer exists (`pipelinePulse/server`); `npm test` stops at the first, so most of the suite never runs |
-
----
+| O1 | Reassign lets you drop onto someone not on the calendar's team | **Open.** Needs calendar team membership from GHL to grey columns during a drag. The refusal is now in plain English (`c909b33`) |
+| O2 | GHL refused a visibly empty slot | **Fixed in the app** (`7afcd26`): the booking card asks GHL for the day's open times and says "Open on …", or "Not an open time" with up to six accepted times as one-click chips. **Needs the server deploy** — verified live that the card stays silent until then |
+| O3 | 2 of 6 menu clicks did not register | **Explained and fixed.** Both were the stale-reload bug (`047f61e`): the write succeeded, then a reload of our not-yet-updated database showed the old status. After the fix every menu action registered first time live (reinstate, cancel) |
+| O4 | Blocked time not tested | **Display verified** by rendering every view with a blocked slot: hatched, grey, labelled, not draggable, no person dot. **Still untested:** GHL actually sending one — block an hour in GHL to check |
+| O5 | Person colours repeat after 9 | **Fixed** (`4b533e9`): 12 colours (indigo, olive, magenta added, each ≥4.5:1 on white) |
+| O6 | Home has no Calendar tile | **Fixed** (`4b533e9`), behind the same feature flag as the tab |
+| O7 | Server changes need deploying | **Open — needs you.** No server access from this machine. Pending: `42bae71`, `c909b33`, `4b533e9`, `7afcd26` (no migrations) |
+| O8 | Broken test files | **Fixed** (`4b533e9`). Both full suites now run end to end and pass — dashboard 782 checks, server all green. Real bugs found on the way and fixed in code: clipped text with no tooltip app-wide, an attachment with no URL tried as an image, two log sites dropping error detail. A server test had been silently skipping its dashboard checks |
+| — | Monday showed nothing at a long booking's end | **Fixed** (`b758983`): an end marker "until 11:00" at 10:30–11:00 on the last day, verified live |
 
 ## Commits
 
-`0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` — all on `main`, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).
+`0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` `b758983` `4b533e9` `7afcd26` — all on `main`, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).

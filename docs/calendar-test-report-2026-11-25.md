@@ -117,6 +117,26 @@
 | O8 | Broken test files | **Fixed** (`4b533e9`). Both full suites now run end to end and pass — dashboard 782 checks, server all green. Real bugs found on the way and fixed in code: clipped text with no tooltip app-wide, an attachment with no URL tried as an image, two log sites dropping error detail. A server test had been silently skipping its dashboard checks |
 | — | Monday showed nothing at a long booking's end | **Fixed** (`b758983`): an end marker "until 11:00" at 10:30–11:00 on the last day, verified live |
 
+## Final pass — "test completely"
+
+| Area | Result | Detail |
+|---|---|---|
+| Daily-window booking, Week | ✅ Verified live | One bar "10:30–11:00 james stevens · Daily, Tue 24 Nov → Mon 30 Nov" across Tue–Sun (`d5989ed`); falls back to per-day cards when something overlaps (rendered) |
+| Daily-window booking, People | ✅ Verified live | Wed 25: James Stevens "1 booked", 10:30 card "Daily until Mon 30 Nov"; Busy only shows only him |
+| Daily-window booking, Month | ✅ Verified live | "10:30 james stevens" on 24–30 Nov |
+| Reassign by drag | ⚠️ Cannot succeed in this sub-account | All 9 calendars are **Personal** (one owner each), so GHL refuses any move to another person — correctly handled (card restored, plain-English reason). A successful reassign needs a round-robin/collective calendar; not created, since that is a settings change. Recommendation: grey out people who cannot take a booking while dragging |
+| **Blocked time** | ❌ **Bug found and fixed** (`d17374a`) | GHL shows "Busy 09:00–11:30" Mon 23 Nov for James Stevens, classed by GHL as a blocked slot; our board showed nothing and every sweep logged blocked: 0. Cause: the sweep asked GHL for blocks **per calendar** only, and GHL's docs say person-level blocks (incl. Google-synced busy time) are only returned **per user**. Now fetched per person, with narrow delete rules. **Live check pending:** deploy + sweep |
+| Server-side features | ⏳ Waiting on deploy | Availability hint, notes via sweep, team-refusal wording, person-level blocks — no server access from here (no CI, no SSH host) |
+
+**To finish the last checks:** deploy, then run the sweep once so it doesn't wait for 03:00:
+
+```
+cd ~/pipelinepulse/server && git pull && npm ci --omit=dev && pm2 restart pipelinepulse-server
+npm run sync:appointments
+```
+
+Then: the Mon 23 Nov 09:00–11:30 block should appear (grey, hatched) for James Stevens, and picking James.io in the booking card should show "Open on James.io" or the nearest open times.
+
 ## Commits
 
-`0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` `b758983` `4b533e9` `7afcd26` — all on `main`, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).
+`0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` `b758983` `4b533e9` `7afcd26` `15eb64a` `d5989ed` `d17374a` — all on `main`, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).

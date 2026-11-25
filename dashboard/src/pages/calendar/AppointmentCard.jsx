@@ -308,7 +308,10 @@ export default function AppointmentCard({
             textDecoration: cancelled ? 'line-through' : 'none'
           }}
         >
-          {clippedBefore ? '↑ ' : ''}{clockTime(a.startsAt, zone)} {label}
+          {clippedBefore ? '↑ ' : ''}
+          {/* The end marker leads with when it ENDS — "10:30" on the last
+              day would read as a fresh start. */}
+          {a._edge === 'end' ? `until ${clockTime(whole.endsAt, zone)}` : clockTime(a.startsAt, zone)} {label}
         </div>
         {/* The second line only survives on a card tall enough to show it. */}
         {height > 34 && (
@@ -326,7 +329,9 @@ export default function AppointmentCard({
             {isBlocked
               ? 'Blocked'
               : isPiece
-                ? `until ${inZone(whole.endsAt, zone).format('ddd D MMM, HH:mm')}`
+                ? (a._edge === 'end'
+                    ? `from ${inZone(whole.startsAt, zone).format('ddd D MMM, HH:mm')}`
+                    : `until ${inZone(whole.endsAt, zone).format('ddd D MMM, HH:mm')}`)
                 : (showOwner
                 ? (a.assignedUserName || 'Unassigned')
                 : (a.dealName || (status === 'noshow' ? 'No-show' : 'No deal')))}

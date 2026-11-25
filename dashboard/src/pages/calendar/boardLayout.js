@@ -324,7 +324,8 @@ export function longStartPiece(appointment) {
   return {
     ...appointment,
     endsAt: new Date(start + 30 * 60000).toISOString(),
-    _whole: appointment
+    _whole: appointment,
+    _edge: 'start'
   }
 }
 
@@ -353,6 +354,31 @@ export function longDayLabel(appointment, day, zone, clock) {
   if (day === startKey) return startMin === 0 ? 'All day' : clock(appointment.startsAt)
   if (day === endKey) return endsAtMidnight ? 'All day' : `until ${clock(appointment.endsAt)}`
   return 'All day'
+}
+
+/**
+ * The matching card at a long appointment's END, on its last day.
+ *
+ * Asked for on the live board: "james stevens" runs 10:30 Tuesday to 11:00
+ * the next Monday, and on Monday the timeline showed nothing — the bar said
+ * "→ Mon 30 Nov 11:00" but 11:00 itself was empty. This is the last half
+ * hour, ending exactly when the booking does, labelled "until 11:00".
+ *
+ * None when it ends at midnight (an all-day booking has no end time to
+ * point at — the month and the bar already say "All day"), or so early in
+ * the day that the last half hour would begin on the previous day.
+ */
+export function longEndPiece(appointment, zone) {
+  const endMin = minutesFromMidnight(appointment.endsAt, zone)
+  if (endMin === 0 || endMin >= 23 * 60 + 59 || endMin < 30) return null
+  const end = new Date(appointment.endsAt).getTime()
+  return {
+    ...appointment,
+    startsAt: new Date(end - 30 * 60000).toISOString(),
+    endsAt: appointment.endsAt,
+    _whole: appointment,
+    _edge: 'end'
+  }
 }
 
 export function groupByDay(appointments, zone) {

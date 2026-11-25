@@ -4,7 +4,7 @@ import DraftSlot from './DraftSlot'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
-  groupIntoCells, cellKey, isLong, longSpan, longStartPiece, minutesForDrop, isRealMove, movePatch,
+  groupIntoCells, cellKey, isLong, longSpan, longStartPiece, longEndPiece, minutesForDrop, isRealMove, movePatch,
   UNASSIGNED, PIXELS_PER_MINUTE, WORK_START_MIN, WORK_END_MIN
 } from './boardLayout'
 import {
@@ -83,7 +83,11 @@ export default function ResourceBoard({
   // double-clicking a slot there still books.
   const long = useMemo(() => appointments.filter(isLong), [appointments])
   const cells = useMemo(
-    () => groupIntoCells([...appointments.filter((a) => !isLong(a)), ...long.map(longStartPiece)], zone),
+    () => groupIntoCells([
+      ...appointments.filter((a) => !isLong(a)),
+      ...long.map(longStartPiece),
+      ...long.map((a) => longEndPiece(a, zone)).filter(Boolean)
+    ], zone),
     [appointments, long, zone]
   )
   const longByCell = useMemo(() => {

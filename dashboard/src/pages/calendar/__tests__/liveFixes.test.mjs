@@ -142,8 +142,11 @@ test('a days-long appointment is a bar across its days, not a slab', async () =>
   const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
   // The time columns get timed bookings plus each long one's half-hour
   // START MARKER — never the long appointment itself, which is the slab.
-  assert.match(grid, /groupByDay\(\[\.\.\.timed, \.\.\.long\.map\(longStartPiece\)\], zone\)/,
-    'long appointments drawn as timed cards again')
+  const call = grid.slice(grid.indexOf('groupByDay(['), grid.indexOf('], zone)', grid.indexOf('groupByDay([')))
+  assert.match(call, /\.\.\.timed,/)
+  assert.match(call, /\.\.\.long\.map\(longStartPiece\)/)
+  assert.match(call, /longEndPiece\(a, zone\)/)
+  assert.ok(!/\.\.\.long[,\s\]]/.test(call), 'long appointments drawn as timed cards again')
 })
 
 test('the detail card says how long in words, and which day it ends', () => {
@@ -267,4 +270,17 @@ test('the booking card re-fits when it grows', () => {
   const b = readFileSync(new URL('../BookAppointment.jsx', import.meta.url), 'utf8')
   assert.match(b, /new ResizeObserver\(fit\)/)
   assert.ok(!/settled\.current === key/.test(b), 'measured once on open again')
+})
+
+test('a long booking ends visibly on its last day, at its end time', async () => {
+  const { longEndPiece } = await import('../boardLayout.js')
+  const live = { id: 'L', startsAt: '2026-11-24T10:30:00Z', endsAt: '2026-11-30T11:00:00Z' }
+  const p = longEndPiece(live, 'Europe/London')
+  assert.equal(p.startsAt, '2026-11-30T10:30:00.000Z')
+  assert.equal(p.endsAt, live.endsAt)
+  assert.equal(p._edge, 'end')
+  assert.equal(p._whole, live)
+  assert.equal(longEndPiece({ startsAt: '2026-10-26T00:00:00Z', endsAt: '2026-10-31T23:59:00Z' }, 'Europe/London'), null)
+  const card = readFileSync(new URL('../AppointmentCard.jsx', import.meta.url), 'utf8')
+  assert.match(card, /a\._edge === 'end' \? `until \$\{clockTime\(whole\.endsAt, zone\)\}`/)
 })

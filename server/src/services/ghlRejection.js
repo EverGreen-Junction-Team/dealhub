@@ -160,6 +160,15 @@ export function rejectionMessage(noun, detail, { action = 'change' } = {}) {
         + `removed from your list`
     };
   }
+  // KNOWN REFUSALS, IN PLAIN WORDS. GHL's own text is passed through below
+  // when it is usable, but some of it is usable only after a second read.
+  // Seen on the live board dragging a booking to another rep:
+  //   "The user id not part of calendar team"
+  // — true, and it does not say what to do. These are the ones worth
+  // translating: the rule is the CRM's, so the fix is in the CRM.
+  const known = translateKnown(detail);
+  if (known) return { missing: false, status: 422, message: known };
+
   // GHL'S OWN REASON, WHEN IT IS ONE A REP CAN USE. This is the common
   // case for an appointment — "that slot is not available", "outside the
   // calendar's working hours" — and it is the entire answer. Replacing it
@@ -239,4 +248,20 @@ export function isSlotUnavailable(detail) {
   if (!detail || typeof detail !== 'string') return false;
   const d = detail.toLowerCase();
   return OVERRIDABLE.some((phrase) => d.includes(phrase));
+}
+
+// Plain-English versions of GHL refusals that are accurate but terse.
+// Matched loosely and case-insensitively; anything unlisted falls through to
+// the normal safeDetail handling.
+const KNOWN = [
+  [/user id not part of calendar team/i,
+    "That person isn't on this calendar's team in your CRM, so it can't be "
+    + 'given to them. Add them to the calendar\'s team first, or book it on a '
+    + 'calendar they are on.'],
+];
+
+export function translateKnown(detail) {
+  if (!detail || typeof detail !== 'string') return null;
+  for (const [re, msg] of KNOWN) if (re.test(detail)) return msg;
+  return null;
 }

@@ -34,7 +34,7 @@ import assert from 'node:assert/strict';
 
 process.env.DATABASE_URL ||= 'postgres://unused';
 process.env.SESSION_JWT_SECRET ||= 'unused';
-const { safeDetail, rejectionMessage, isSlotUnavailable } = await import('../ghlRejection.js');
+const { safeDetail, rejectionMessage, isSlotUnavailable, translateKnown } = await import('../ghlRejection.js');
 
 // ── What a rep should see ─────────────────────────────────────────────
 
@@ -191,4 +191,10 @@ test('nothing is overridable by default', () => {
   for (const d of ['', null, undefined, 42, {}]) {
     assert.equal(isSlotUnavailable(d), false, String(d));
   }
+});
+
+test('the calendar-team refusal is said in plain words', () => {
+  const m = rejectionMessage('appointment', 'The user id not part of calendar team');
+  assert.match(m.message, /isn't on this calendar's team/);
+  assert.equal(translateKnown('something else entirely'), null);
 });

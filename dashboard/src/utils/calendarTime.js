@@ -126,6 +126,50 @@ export function zoneNote(appointmentZone, zone) {
 }
 
 /**
+ * The short name for the board's zone, for the label at the head of the
+ * hour gutter: "GMT", "GMT+5:30", "EST".
+ *
+ * ── WHY A SHORT NAME AND NOT THE IANA ONE ────────────────────────────
+ *
+ * "Europe/London" is the precise answer and the wrong one for a 56px
+ * column. The gutter label is not there to identify the zone — the title
+ * attribute does that — it is there so the hours beside it are never read
+ * as the reader's own clock. Three characters do that job.
+ *
+ * ── IT DEPENDS ON THE DATE, NOT ON TODAY ─────────────────────────────
+ *
+ * Half the world's zones have two of these, and which one applies is a
+ * fact about the week on screen. A board showing July in a London office
+ * is labelled GMT+1; the same board in January is GMT. Passing today's
+ * date would label a week in July with January's name — right for eight
+ * months of the year and silently wrong for four, which is the failure
+ * mode this whole file exists to avoid. So the CALLER passes the day it
+ * is drawing.
+ *
+ * @param {string} zone      IANA zone; an unusable one falls back, as everywhere here.
+ * @param {string} [atIso]   A day inside the range being drawn. Defaults to now.
+ */
+export function zoneAbbrev(zone, atIso) {
+  const tz = isUsableZone(zone) ? zone : FALLBACK_ZONE
+  let at = atIso ? new Date(atIso) : new Date()
+  // A malformed date must not take the label down with it; the zone is
+  // still worth naming, just at today's reading of it.
+  if (Number.isNaN(at.getTime())) at = new Date()
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz,
+      timeZoneName: 'short'
+    }).formatToParts(at)
+    const name = parts.find((p) => p.type === 'timeZoneName')?.value
+    // No abbreviation is a real possibility on an older engine. The IANA
+    // name is long but true, and the gutter ellipsises it.
+    return name || tz
+  } catch {
+    return tz
+  }
+}
+
+/**
  * Build the ISO strings a reschedule sends to GHL.
  *
  * WITH THE OFFSET, ALWAYS. GHL's appointment endpoints accept ISO 8601 and

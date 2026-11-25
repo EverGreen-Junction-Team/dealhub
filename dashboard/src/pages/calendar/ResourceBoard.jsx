@@ -8,7 +8,7 @@ import {
   UNASSIGNED, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
-  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES
+  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES, zoneAbbrev
 } from '../../utils/calendarTime'
 
 // The board: a column per person, read down the day.
@@ -163,7 +163,24 @@ export default function ResourceBoard({
             borderRight: '1px solid var(--border-default)'
           }}
         >
-          <div style={{ height: HEADER_H, borderBottom: '1px solid var(--border-default)' }} />
+          {/* The zone the hours below are in. Same label, same place as
+              the week view's — one idiom across the tab, so a rep moving
+              between them is not relearning where to look. */}
+          <div
+            title={`Times shown in ${zone}`}
+            style={{
+              height: HEADER_H,
+              borderBottom: '1px solid var(--border-default)',
+              boxSizing: 'border-box',
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
+              padding: '0 6px 6px 0',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-faint)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+            }}
+          >
+            {zoneAbbrev(zone, dayKeys[0] ? `${dayKeys[0]}T12:00:00Z` : undefined)}
+          </div>
           <div style={{ position: 'relative', height }}>
             {marks.map((m) => (
               <div

@@ -584,15 +584,24 @@ export default function CalendarTab({ onOpenDeal }) {
           >
             {rangeLabel}
           </h2>
-          {/* The zone is stated, always, and now under the title where it
-              reads as a property of what you are looking at. A board
-              silently drawn in the wrong timezone looks exactly like one
-              drawn in the right timezone, so saying which is the only
-              defence a reader has. */}
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-            Times shown in {zone}
-            {data.timezone == null ? ' — this sub-account has no timezone set' : ''}
-          </span>
+          {/* The zone is stated ALWAYS, and exactly ONCE.
+              
+              A board silently drawn in the wrong timezone looks exactly
+              like one drawn in the right timezone, so naming it is the
+              only defence a reader has. But the time views now carry it at
+              the head of their own hour gutter, which is a better place
+              for it — beside the hours rather than up in the chrome — so
+              repeating it here would just be two labels for one fact.
+
+              The month view has no gutter to put it in, and a missing
+              sub-account timezone is a WARNING rather than a label, so
+              both of those still say it here. */}
+          {(view === 'month' || data.timezone == null) && (
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+              Times shown in {zone}
+              {data.timezone == null ? ' — this sub-account has no timezone set' : ''}
+            </span>
+          )}
         </div>
 
         <div

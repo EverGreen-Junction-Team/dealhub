@@ -9,7 +9,7 @@ import {
   groupByDay, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
-  isoForSlot, minutesNow, dayKeyNow, inZone
+  isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev
 } from '../../utils/calendarTime'
 
 // The day and week views — the shape everybody already knows from Google
@@ -209,8 +209,29 @@ export default function TimeGrid({
           borderBottom: '1px solid var(--border-default)'
         }}
       >
-        {/* Lines up with the hour gutter below. */}
-        <div style={{ width: GUTTER_W, flex: `0 0 ${GUTTER_W}px` }} />
+        {/* Lines up with the hour gutter below, and names the zone those
+            hours are in — where Google puts it, and the only place it can
+            go that a reader cannot mistake for anything else: directly
+            above the column of times it qualifies.
+
+            Read for the FIRST DAY DRAWN, not for today. A week in July is
+            labelled BST even when it is looked at in January; see
+            zoneAbbrev. The full IANA name is on the title, because three
+            letters say "not your clock" but do not say which clock. */}
+        <div
+          title={`Times shown in ${zone}`}
+          style={{
+            width: GUTTER_W, flex: `0 0 ${GUTTER_W}px`,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
+            boxSizing: 'border-box',
+            padding: '0 6px 6px 0',
+            fontSize: 'var(--text-xs)',
+            color: 'var(--text-faint)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+          }}
+        >
+          {zoneAbbrev(zone, dayKeys[0] ? `${dayKeys[0]}T12:00:00Z` : undefined)}
+        </div>
         {dayKeys.map((day) => {
           const d = inZone(`${day}T12:00:00`, zone)
           const isToday = day === todayKey

@@ -121,11 +121,15 @@ export default function CalendarSidebar({
   return (
     <aside
       style={{
-        // 196 fitted the two checkbox lists; seven day columns need more.
-        // At 196 the mini-month's cells came out under 24px, which is below
-        // a comfortable click target and made the numbers crowd their own
-        // highlight.
-        width: 224, flex: '0 0 224px',
+        // 196 fitted the two checkbox lists; seven day columns need more,
+        // and at 196 the mini-month's cells came out under 24px — below a
+        // comfortable click target, with the numbers crowding their own
+        // highlight. 256 buys back what the truncation was eating: at 224
+        // every calendar whose name carries the owner ("Vault Suite
+        // Vaultsuite's P…", "Marketing London's Pers…") ellipsised in the
+        // same place, so the rows that needed telling apart were the ones
+        // cut at the same word.
+        width: 256, flex: '0 0 256px',
         // CLIPS. A calendar called "Vault Suite Vaultsuite's Personal
         // Calendar" is wider than this box, and without this it was drawn
         // straight across the border and over the grid beside it.
@@ -143,7 +147,22 @@ export default function CalendarSidebar({
         // grid by a single rule — so that is what this is now.
         borderRight: '1px solid var(--border-default)',
         background: 'var(--surface-card)',
-        padding: 'var(--space-3) var(--space-3) var(--space-4) 0'
+        padding: 'var(--space-3) var(--space-4) var(--space-5) 0',
+
+        // ── THE RAIL OWNS ITS OWN RHYTHM ───────────────────────────
+        //
+        // The three sections ran together: the month ended and CALENDARS
+        // began 16px later, which at that type size reads as one list
+        // with headings in it rather than as three separate controls.
+        //
+        // A grid gap rather than a margin on each piece, because margins
+        // here were being set in three different files — the month set
+        // its own bottom margin, the calendar list set another, and the
+        // people list set none — so the gaps were never going to agree.
+        // One gap, declared once, and the sections cannot drift.
+        display: 'grid',
+        gap: 'var(--space-5)',
+        alignContent: 'start'
       }}
     >
       {/* FIRST, above the filters. The rail answers two questions and they
@@ -155,13 +174,13 @@ export default function CalendarSidebar({
       )}
 
       {calendars.length > 0 && (
-        <>
+        <div style={{ minWidth: 0 }}>
           <SectionHead
             label="Calendars"
             action={calsAreAll ? 'None' : 'All'}
             onAction={() => onChangeCalendars(calsAreAll ? [] : null)}
           />
-          <div style={{ display: 'grid', gap: 2, minWidth: 0, marginBottom: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
             {calendars.map((c) => (
               <Row
                 key={c.id}
@@ -175,37 +194,40 @@ export default function CalendarSidebar({
               />
             ))}
           </div>
-        </>
+        </div>
       )}
 
-      <SectionHead
-        label="People"
-        action={isAll ? 'None' : 'All'}
-        onAction={() => onChange(isAll ? [] : null)}
-      />
-
-      <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
-        {resources.map((r) => (
-          <Row
-            key={r.id}
-            colour={colourFor(resources, r.id)}
-            label={r.name}
-            count={counts?.get(r.id) || 0}
-            checked={checked.includes(r.id)}
-            onToggle={() => toggle(r.id)}
-          />
-        ))}
-
-        {/* Always listed, even with nothing in it. Work nobody owns is the
-            most likely to be missed, so it needs a box you can tick to go
-            looking for it — not one that appears only once there is some. */}
-        <Row
-          colour="var(--gray-450)"
-          label="Unassigned"
-          count={counts?.get(UNASSIGNED) || 0}
-          checked={checked.includes(UNASSIGNED)}
-          onToggle={() => toggle(UNASSIGNED)}
+      <div style={{ minWidth: 0 }}>
+        <SectionHead
+          label="People"
+          action={isAll ? 'None' : 'All'}
+          onAction={() => onChange(isAll ? [] : null)}
         />
+
+        <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
+          {resources.map((r) => (
+            <Row
+              key={r.id}
+              colour={colourFor(resources, r.id)}
+              label={r.name}
+              count={counts?.get(r.id) || 0}
+              checked={checked.includes(r.id)}
+              onToggle={() => toggle(r.id)}
+            />
+          ))}
+
+          {/* Always listed, even with nothing in it. Work nobody owns is
+              the most likely to be missed, so it needs a box you can tick
+              to go looking for it — not one that appears only once there
+              is some. */}
+          <Row
+            colour="var(--gray-450)"
+            label="Unassigned"
+            count={counts?.get(UNASSIGNED) || 0}
+            checked={checked.includes(UNASSIGNED)}
+            onToggle={() => toggle(UNASSIGNED)}
+          />
+        </div>
       </div>
     </aside>
   )

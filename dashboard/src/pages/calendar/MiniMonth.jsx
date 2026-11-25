@@ -64,7 +64,10 @@ export default function MiniMonth({ value, span, zone, onPick }) {
   const thisMonth = cursor.format('YYYY-MM')
 
   return (
-    <div style={{ marginBottom: 'var(--space-4)' }}>
+    // No bottom margin: the rail is a grid and owns the gap between its
+    // sections. A margin here would stack on top of that gap and make the
+    // month sit further from CALENDARS than CALENDARS sits from PEOPLE.
+    <div style={{ minWidth: 0 }}>
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',

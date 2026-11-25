@@ -3334,3 +3334,37 @@
 .pp-portal .pp-att-tile:hover .pp-att-dl { opacity: 1; }
 [data-dealhub] .pp-att-tile .pp-att-thumb { transition: transform 200ms ease; }
 [data-dealhub] .pp-att-tile:hover .pp-att-thumb { transform: scale(1.03); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * Segmented: WEIGHT, after colour was not enough
+ * ═══════════════════════════════════════════════════════════════════════
+ *
+ * The unselected options in these controls have now been reported as too
+ * light twice. The first fix was colour — antd draws them at colorTextLabel,
+ * which over the control's own grey track lands near 3.98:1, so they moved
+ * to --text-muted at 4.69:1 (see theme.js). That was a genuine failure and
+ * fixing it was correct, but it did not fix what was being reported.
+ *
+ * Contrast is not weight. At 400, at this size, under the app's 85% zoom,
+ * a label is thin before it is pale — and the calendar toolbar puts seven
+ * of them in a row, so the whole right-hand side of the bar reads as faint
+ * no matter what the ratio measures.
+ *
+ * 500 for every option and 600 for the selected one. The selected option
+ * has to keep winning: it already has a white pill and a darker colour, and
+ * this keeps the gap between them a full step rather than closing it.
+ *
+ * There is no antd token for this — Segmented exposes itemColor and
+ * itemSelectedColor but no weight — so it is CSS, scoped to both halves of
+ * the app: [data-dealhub] for the tree and .pp-portal for anything drawn
+ * in a portal. A rule carrying only one of those silently does nothing for
+ * the other half, which has bitten this file before.
+ */
+[data-dealhub] .ant-segmented-item-label,
+.pp-portal     .ant-segmented-item-label {
+  font-weight: var(--weight-medium);
+}
+[data-dealhub] .ant-segmented-item-selected .ant-segmented-item-label,
+.pp-portal     .ant-segmented-item-selected .ant-segmented-item-label {
+  font-weight: var(--weight-semibold);
+}

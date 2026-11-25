@@ -140,7 +140,10 @@ test('a days-long appointment is a bar across its days, not a slab', async () =>
   assert.equal(isLong({ startsAt: '2026-11-24T23:00:00Z', endsAt: '2026-11-25T01:00:00Z' }), false, 'overnight is still timed')
   assert.equal(longSpan({ startsAt: '2026-12-02T09:00:00Z', endsAt: '2026-12-04T09:00:00Z' }, week, 'UTC'), null)
   const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
-  assert.match(grid, /const cells = useMemo\(\(\) => groupByDay\(timed, zone\)/, 'long appointments drawn as timed cards again')
+  // The time columns get timed bookings plus each long one's half-hour
+  // START MARKER — never the long appointment itself, which is the slab.
+  assert.match(grid, /groupByDay\(\[\.\.\.timed, \.\.\.long\.map\(longStartPiece\)\], zone\)/,
+    'long appointments drawn as timed cards again')
 })
 
 test('the detail card says how long in words, and which day it ends', () => {

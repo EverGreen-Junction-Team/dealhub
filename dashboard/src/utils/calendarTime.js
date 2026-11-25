@@ -149,6 +149,19 @@ export function isoForSlot(day, mins, durationMins, zone) {
   }
 }
 
+// What an appointment with no usable end is drawn as, and the granularity a
+// drag snaps to. 30 minutes because that is what the calendars in this
+// account are set up in; it is one constant rather than a scattering of 30s
+// so changing it is a one-line decision.
+export const DEFAULT_SLOT_MINUTES = 30
+export const SNAP_MINUTES = 15
+
+// Declared ABOVE its first use on purpose. durationMinutes below only reads
+// it when CALLED, by which time it is initialised — so this was never a
+// runtime problem — but it is the same shape as one that is, and static
+// analysis cannot tell the two apart. Moving it costs nothing and keeps
+// no-use-before-define strict enough to catch the next real one.
+
 /** How long an appointment runs, in minutes. */
 export function durationMinutes(startsAt, endsAt) {
   if (!startsAt) return DEFAULT_SLOT_MINUTES
@@ -161,13 +174,6 @@ export function durationMinutes(startsAt, endsAt) {
   // booking actually means.
   return mins > 0 ? mins : DEFAULT_SLOT_MINUTES
 }
-
-// What an appointment with no usable end is drawn as, and the granularity a
-// drag snaps to. 30 minutes because that is what the calendars in this
-// account are set up in; it is one constant rather than a scattering of 30s
-// so changing it is a one-line decision.
-export const DEFAULT_SLOT_MINUTES = 30
-export const SNAP_MINUTES = 15
 
 /**
  * Minutes from midnight RIGHT NOW, in the board's zone.

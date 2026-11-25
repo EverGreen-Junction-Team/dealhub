@@ -36,6 +36,16 @@ module.exports = {
     // Warn only: a missing dep is often deliberate here, and the existing
     // eslint-disable comments explain each case.
     'react-hooks/exhaustive-deps': 'warn',
+    // A `const` read before its declaration is a guaranteed
+    // ReferenceError, not a style question: `const` is not hoisted into
+    // scope the way `function` is. One of these took the whole Calendar tab
+    // down — a useMemo placed above the memo it read — and both the build
+    // and this linter passed it, because neither of them runs the
+    // component. `functions: false` because a function declaration IS
+    // hoisted, and calling one defined lower in the file is normal here.
+    'no-use-before-define': ['error', {
+      functions: false, classes: true, variables: true
+    }],
     'no-dupe-keys': 'error',
     'no-unreachable': 'error'
   },

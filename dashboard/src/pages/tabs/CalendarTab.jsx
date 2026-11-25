@@ -214,24 +214,6 @@ export default function CalendarTab({ onOpenDeal }) {
     return () => { ro?.disconnect(); window.removeEventListener('resize', measure) }
   }, [])
 
-  // What the bar is titled. Named from the SPAN, not from fromDay, so it
-  // says what is actually on screen: picking Wednesday in week view shows
-  // Mon–Sun and the title has to agree with the seven columns, not with
-  // the day that was clicked.
-  const rangeLabel = useMemo(() => {
-    if (view === 'month') return fromDay.format('MMMM YYYY')
-    if (view === 'day') return fromDay.format('ddd D MMMM YYYY')
-    const to = span.from.add(span.days - 1, 'day')
-    // "24 – 30 November 2026" rather than repeating the month and the year
-    // on both ends, except across a boundary where both are needed.
-    if (span.from.isSame(to, 'month')) {
-      return `${span.from.format('D')} – ${to.format('D MMMM YYYY')}`
-    }
-    if (span.from.isSame(to, 'year')) {
-      return `${span.from.format('D MMM')} – ${to.format('D MMM YYYY')}`
-    }
-    return `${span.from.format('D MMM YYYY')} – ${to.format('D MMM YYYY')}`
-  }, [view, fromDay, span])
 
   const zone = useMemo(() => boardZone(data.timezone), [data.timezone])
 
@@ -262,6 +244,31 @@ export default function CalendarTab({ onOpenDeal }) {
     if (view === 'day') return { from: fromDay, days: 1 }
     return { from: fromDay, days }
   }, [view, fromDay, days])
+
+  // What the bar is titled. DECLARED AFTER `span`, which it reads:
+  // `const` is not hoisted, so a useMemo placed above span's
+  // declaration threw "Cannot access 'span' before initialization" on
+  // the first render and took the whole tab down with it. The build and
+  // the linter both passed — neither of them runs the component.
+  //
+  // What the bar is titled. Named from the SPAN, not from fromDay, so it
+  // says what is actually on screen: picking Wednesday in week view shows
+  // Mon–Sun and the title has to agree with the seven columns, not with
+  // the day that was clicked.
+  const rangeLabel = useMemo(() => {
+    if (view === 'month') return fromDay.format('MMMM YYYY')
+    if (view === 'day') return fromDay.format('ddd D MMMM YYYY')
+    const to = span.from.add(span.days - 1, 'day')
+    // "24 – 30 November 2026" rather than repeating the month and the year
+    // on both ends, except across a boundary where both are needed.
+    if (span.from.isSame(to, 'month')) {
+      return `${span.from.format('D')} – ${to.format('D MMMM YYYY')}`
+    }
+    if (span.from.isSame(to, 'year')) {
+      return `${span.from.format('D MMM')} – ${to.format('D MMM YYYY')}`
+    }
+    return `${span.from.format('D MMM YYYY')} – ${to.format('D MMM YYYY')}`
+  }, [view, fromDay, span])
 
   const load = useCallback(async () => {
     // Already showing something? Then this is a refresh, not a load.

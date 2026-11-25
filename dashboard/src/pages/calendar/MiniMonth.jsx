@@ -61,6 +61,11 @@ export default function MiniMonth({ value, span, zone, onPick }) {
     return out
   }, [span])
 
+  // The ends of the visible range, so the band can be capped like a pill
+  // rather than stopping square as though it had been cut off.
+  const firstKey = span ? span.from.format('YYYY-MM-DD') : null
+  const lastKey = span ? span.from.add(span.days - 1, 'day').format('YYYY-MM-DD') : null
+
   const thisMonth = cursor.format('YYYY-MM')
 
   return (
@@ -118,34 +123,63 @@ export default function MiniMonth({ value, span, zone, onPick }) {
               aria-current={isToday ? 'date' : undefined}
               title={d.format('dddd D MMMM YYYY')}
               style={{
+                // ── TWO JOBS, TWO ELEMENTS ─────────────────────────
+                //
+                // The band and the disc were both painted on this one
+                // button, and they fought. `background` was set for the
+                // span and then overwritten for today, so the one day
+                // that is almost always INSIDE the visible week was the
+                // one day that lost the week's tint — a white hole in
+                // the middle of the band. And `borderRadius: 50%` on a
+                // cell wider than it is tall is an ellipse, not a disc,
+                // so white showed at its corners too.
+                //
+                // Now the button carries the BAND, square and full-cell
+                // so it meets its neighbours with no seam, and the span
+                // inside carries the DISC at a fixed square size. They
+                // cannot overwrite each other because they are no
+                // longer the same declaration.
                 border: 'none',
                 padding: 0,
-                height: 24,
+                height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
                 fontSize: 'var(--text-xs)',
                 fontVariantNumeric: 'tabular-nums',
-                // THE SPAN, not the single day. A week view highlighting one
-                // date would contradict the seven columns beside it.
                 background: isShown ? 'var(--tint-pine)' : 'transparent',
-                // Today is a filled disc, the same mark the grid's own day
-                // headings use — one idiom for "today" across the tab.
-                borderRadius: isToday ? '50%' : 0,
-                ...(isToday
-                  ? { background: 'var(--brand-primary)', color: '#fff' }
-                  : {
-                      color: outside
-                        // Days from the neighbouring month are reachable —
-                        // clicking the 1st of next month should work — but
-                        // they are context, so they recede.
-                        ? 'var(--text-faint)'
-                        : 'var(--text-body)'
-                    }),
+                // Capped at the ends, square in the middle: a range with
+                // rounded ends reads as one run of days, where a square
+                // stripe reads as a stripe that ran out of room.
+                borderTopLeftRadius: isShown && day === firstKey ? 999 : 0,
+                borderBottomLeftRadius: isShown && day === firstKey ? 999 : 0,
+                borderTopRightRadius: isShown && day === lastKey ? 999 : 0,
+                borderBottomRightRadius: isShown && day === lastKey ? 999 : 0,
+                color: outside
+                  // Days from the neighbouring month are reachable —
+                  // clicking the 1st of next month should work — but
+                  // they are context, so they recede.
+                  ? 'var(--text-faint)'
+                  : 'var(--text-body)',
                 fontWeight: isToday || isShown
                   ? 'var(--weight-semibold)'
                   : 'var(--weight-regular)'
               }}
             >
-              {d.date()}
+              <span
+                style={{
+                  // A real circle: square box, so 50% is a circle at any
+                  // column width. The cell is wider than this and the
+                  // band shows around it, which is the point.
+                  width: 24, height: 24,
+                  display: 'inline-flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: isToday ? 'var(--brand-primary)' : 'transparent',
+                  color: isToday ? '#fff' : 'inherit'
+                }}
+              >
+                {d.date()}
+              </span>
             </button>
           )
         })}

@@ -172,6 +172,7 @@ export default function AppointmentCard({
           e.dataTransfer.setData('text/plain', a.id)
           e.dataTransfer.effectAllowed = 'move'
         }}
+        className={!isBlocked && !cancelled ? 'pp-appt' : undefined}
         onClick={() => { if (!isBlocked && a.dealId) onOpenDeal?.(a.dealId) }}
         role={!isBlocked && a.dealId ? 'button' : undefined}
         tabIndex={!isBlocked && a.dealId ? 0 : undefined}
@@ -186,34 +187,57 @@ export default function AppointmentCard({
           top, height,
           left: `calc(${leftPct}% + 2px)`,
           width: `calc(${widthPct}% - 4px)`,
-          // ── ONE COLOUR, AND THE CARD IS WHITE ──────────────────
+          // ── ONE COLOUR, TWO STRENGTHS ──────────────────────────
           //
-          // It used to carry two: the fill said what STATUS the booking
-          // was in, the bar said WHOSE it was. Both facts are worth
-          // having and the pairing was still wrong — the status tints are
-          // hues of their own, so a purple bar on a teal fill had no
-          // relationship to it and read as a rendering fault before it
-          // read as two pieces of information.
+          // The card used to carry two unrelated colours: the fill said
+          // what STATUS the booking was in, the bar said WHOSE it was.
+          // The status tints are hues of their own, so a purple bar on a
+          // teal fill had no relationship to it and read as a rendering
+          // fault before it read as two facts.
           //
-          // So the card is white, on a white grid, and exactly one colour
-          // survives: the bar. Status moves onto things that are not hue
-          // — cancelled is struck through, no-show says the word,
-          // blocked is hatched — which it half did already, deliberately,
-          // because roughly one man in twelve cannot separate the
-          // red-green pair this palette would otherwise lean on.
+          // Making the card white fixed that and broke something else: a
+          // white card on a white grid is barely an object, and a week
+          // with work in it read as an empty week. So a BOOKED slot is
+          // filled again — with a wash of its own bar, set from the one
+          // --pp-accent below, so the fill and the edge are the same
+          // colour at two strengths and cannot drift apart.
+          //
+          // Colour therefore means "somebody is booked here", and its
+          // HUE means who. Status is carried by things that are not hue,
+          // which was always the rule in this file: cancelled is struck
+          // through, no-show says the word, blocked is hatched. Roughly
+          // one man in twelve cannot separate the red-green pair a
+          // status palette leans on, so status was never safe in colour
+          // alone.
           //
           // WHAT THIS COSTS, stated rather than discovered later:
-          // `confirmed` and `showed` no longer differ at a glance. They
+          // `confirmed` and `showed` do not differ at a glance. They
           // differ in the tooltip and nowhere else.
-          background: isBlocked ? style.tint : 'var(--surface-card)',
-          // The one colour. On the time views it is the PERSON — their
-          // work is mixed into one column per day and the bar is what
-          // separates it. On the resource board the column already says
-          // whose it is, so it falls back to the status instead.
+
+          // The one colour, and the only place it is chosen. On the time
+          // views it is the PERSON: their work is mixed into one column
+          // per day, and the hue is what separates it. On the resource
+          // board the column already says whose it is, so it falls back
+          // to the status.
+          '--pp-accent': accent || style.bar,
+
+          // Blocked time keeps its grey and its hatching — it is the
+          // absence of availability, not a booking, and must not be
+          // counted as work by anyone glancing at the week.
           //
-          // Load-bearing now in a way it was not before: a white card on
-          // a white grid is its border and this bar. Hence 4px rather
-          // than 3, and a real border rather than a hairline.
+          // CANCELLED IS NOT COLOURED EITHER, and that is the point of
+          // the rule above: the slot is still spoken for, which is why
+          // it still occupies Tuesday afternoon, but nobody is coming.
+          // A pale card that is struck through says both. Leaving it
+          // tinted would have made a dead afternoon look booked, which
+          // is the exact question a dispatcher opens this view to ask.
+          //
+          // Anything else is a live booking and gets its wash from the
+          // .pp-appt class, which is why background is left unset here:
+          // an inline background would beat the class.
+          background: isBlocked
+            ? style.tint
+            : (cancelled ? 'var(--surface-card)' : undefined),
           border: '1px solid var(--border-strong, var(--gray-200))',
           borderLeftWidth: 4,
           borderLeftStyle: 'solid',
@@ -284,7 +308,12 @@ export default function AppointmentCard({
         {height > 34 && (
           <div
             style={{
-              color: 'var(--text-muted)',
+              // Body, not muted, now that the card has a fill behind it.
+              // --text-muted is 4.69:1 on plain white — a pass with
+              // nothing to spare — and every one of the nine accent
+              // washes takes it under 4.5, to 4.12 at the worst.
+              // --text-body is 9.57 at the worst on the same fills.
+              color: 'var(--text-body)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
             }}
           >

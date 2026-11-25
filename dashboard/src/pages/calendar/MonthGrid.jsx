@@ -263,6 +263,7 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent
   return (
     <Tooltip title={tip} mouseEnterDelay={0.4}>
       <div
+        className={!isBlocked && !cancelled ? 'pp-appt-chip' : undefined}
         draggable={!isBlocked && !busy}
         onDragStart={(e) => {
           if (isBlocked || busy) return
@@ -278,12 +279,16 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent
           display: 'flex', alignItems: 'center', gap: 4,
           padding: '1px 4px', marginBottom: 1,
           borderRadius: 'var(--radius-sm)',
-          // White, like the day view's card and for the same reason. A
-          // month cell holds four of these; four filled chips made the
-          // cell read as a block of colour whose SHAPE carried no
-          // meaning. The colour moves to the dot, which is where Google
-          // puts it and which scales to four lines without shouting.
-          background: isBlocked ? 'var(--gray-100)' : 'transparent',
+          // Same rule as the day view's card, at half strength: a booked
+          // slot is washed in its own accent, blocked time stays grey,
+          // and a cancelled one stays plain because nobody is coming.
+          // Four chips stack in one 116px cell, so 10% rather than 14%
+          // — at full strength the cell became a block of colour whose
+          // shape said nothing.
+          '--pp-accent': accent || 'var(--accent-teal)',
+          background: isBlocked
+            ? 'var(--gray-100)'
+            : (cancelled ? 'transparent' : undefined),
           color: 'var(--text-body)',
           fontSize: 'var(--text-xs)',
           lineHeight: 1.5,

@@ -830,6 +830,43 @@ function Toast({ children, tone = 'error' }) {
 // "something is happening", with nothing moving. A looping animation is
 // exactly what that setting exists to switch off.
 const REFRESH_CSS = `
+/* ── A BOOKED SLOT IS COLOURED, AND IT IS ONE COLOUR ─────────────────
+ *
+ * White cards on a white grid made every booking the same object and
+ * left the grid reading as empty at a glance — which is the one thing a
+ * week view must never do. So a live booking is filled again.
+ *
+ * It is filled with a WASH OF ITS OWN BAR, not with a second colour.
+ * That is the whole point: --pp-accent is set once, inline, from the
+ * person (time views) or the status (resource board, where the column
+ * already says who), and both the fill and the 4px edge are derived
+ * from that one value. They cannot drift apart the way a hand-paired
+ * tint and bar did.
+ *
+ * The first declaration is the fallback. color-mix landed in Chrome
+ * 111, Safari 16.2 and Firefox 113; anything older ignores the second
+ * line and gets the white card, which is legible rather than broken.
+ *
+ * 14% measured across all nine hues in PERSON_COLOURS: the heading
+ * (--text-heading) sits at 12.6:1 at worst, the second line
+ * (--text-body) at 9.6:1. The card's second line used to be
+ * --text-muted, which is 4.69:1 on plain white and fell to 4.12 on
+ * these fills — so it moved to --text-body rather than the fill being
+ * weakened. Any tint at all breaks --text-muted here; that is a fact
+ * about the token, not about this percentage.
+ */
+.pp-appt {
+  background: var(--surface-card);
+  background: color-mix(in srgb, var(--pp-accent) 14%, #fff);
+}
+/* The chips in a month cell, same rule at half strength — four of these
+ * stack in one 116px cell, and at full strength the cell became a block
+ * of colour whose shape said nothing. */
+.pp-appt-chip {
+  background: var(--surface-card);
+  background: color-mix(in srgb, var(--pp-accent) 10%, #fff);
+}
+
 @keyframes pp-cal-refresh {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }

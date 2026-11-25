@@ -62,22 +62,49 @@ test('the resource board divides the column BODY, not just its head', () => {
   assert.ok(rules.length >= 2, 'only one divider on the board — the body is undivided')
 })
 
-test('the appointment card is white, and blocked time is not', () => {
+test('a booked card is filled, and only a booked card', () => {
+  // Colour means "somebody is booked here". Blocked time is the absence
+  // of availability and keeps its grey hatch; a cancelled slot is still
+  // spoken for but nobody is coming, so it stays plain — a tinted one
+  // would make a dead afternoon look booked, which is the exact
+  // question this view is opened to answer.
   const src = code('AppointmentCard.jsx')
-  assert.match(src, /background: isBlocked \? style\.tint : 'var\(--surface-card\)'/,
-    'the card is tinted by status again')
-  // Blocked keeps its hatch: it is the absence of availability, a surface
-  // rather than an item, and must not read as a booking.
+  assert.match(src, /className=\{!isBlocked && !cancelled \? 'pp-appt' : undefined\}/,
+    'the fill is no longer limited to live bookings')
+  assert.match(src, /background: isBlocked\s*\n\s*\? style\.tint\s*\n\s*: \(cancelled \? 'var\(--surface-card\)' : undefined\)/,
+    'an inline background would beat the class that paints the wash')
   assert.match(src, /repeating-linear-gradient/, 'blocked time lost its hatching')
 })
 
-test('the card carries exactly one colour, and it is the bar', () => {
+test('the fill and the bar are ONE colour at two strengths', () => {
+  // The bug this replaced: a fill that said status and a bar that said
+  // person, two unrelated hues on one 60px object. Both now derive from
+  // a single --pp-accent, so they cannot drift apart.
   const src = code('AppointmentCard.jsx')
-  // The heading must not be the status accent — seven statuses would mean
-  // seven heading colours on a white card.
-  assert.ok(!/color: style\.text/.test(src), 'the card heading is coloured by status again')
+  assert.match(src, /'--pp-accent': accent \|\| style\.bar/, 'the single colour source is gone')
   assert.match(src, /borderLeftColor: isBlocked \? style\.bar : \(accent \|\| style\.bar\)/,
-    'the one remaining colour channel is gone')
+    'the bar no longer follows --pp-accent')
+  // The heading must not be the status accent on top of that.
+  assert.ok(!/color: style\.text/.test(src), 'the card heading is coloured by status again')
+})
+
+test('the wash is defined once, with a fallback, and is readable', () => {
+  const tab = readFileSync(new URL('../../tabs/CalendarTab.jsx', import.meta.url), 'utf8')
+  // color-mix is recent enough to need a plain background first;
+  // without it an older engine paints nothing at all.
+  for (const cls of ['pp-appt', 'pp-appt-chip']) {
+    const m = tab.match(new RegExp('\\.' + cls + '\\s*\\{([^}]*)\\}'))
+    assert.ok(m, `${cls} is not defined`)
+    const decls = m[1].match(/background:/g) || []
+    assert.equal(decls.length, 2, `${cls} has no pre-color-mix fallback`)
+    assert.match(m[1], /color-mix\(in srgb, var\(--pp-accent\)/, `${cls} does not derive from the accent`)
+  }
+  // The second line was --text-muted, which is 4.69:1 on white and falls
+  // to 4.12 on these fills. It must not go back.
+  const card = code('AppointmentCard.jsx')
+  const secondLine = card.slice(card.indexOf('height > 34'))
+  assert.ok(!/color: 'var\(--text-muted\)'/.test(secondLine.slice(0, 400)),
+    'the card subtitle is back below AA on a tinted card')
 })
 
 test('status still reads without hue', () => {

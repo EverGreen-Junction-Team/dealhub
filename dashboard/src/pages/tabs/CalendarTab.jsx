@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DatePicker, Segmented, Button } from 'antd'
+import { Segmented, Button } from 'antd'
 import dayjs from 'dayjs'
 import ResourceBoard from '../calendar/ResourceBoard'
 import TimeGrid from '../calendar/TimeGrid'
@@ -186,6 +186,52 @@ export default function CalendarTab({ onOpenDeal }) {
   const [draft, setDraft] = useState(null)
   // The sticky toolbar, so the grid can measure the room left below it.
   const toolbarRef = useRef(null)
+
+  // Where the sidebar should stick: directly under the toolbar.
+  //
+  // It was `top: 118`, a hand-added figure for the app nav plus the bar —
+  // and the bar's height has changed three times since, each time leaving
+  // the sidebar either floating in a gap or sliding under it. Measured, it
+  // tracks whatever the bar becomes, including the taller wrapped row on a
+  // narrow window.
+  const [stickyTop, setStickyTop] = useState(118)
+  useEffect(() => {
+    const measure = () => {
+      const el = toolbarRef.current
+      if (!el) return
+      // The bar is itself sticky at the nav's height, so its own bottom —
+      // once it is pinned — is exactly where the sidebar's top belongs.
+      // Read in CSS pixels, since that is what `top` takes here.
+      const zoom = Number(
+        getComputedStyle(document.documentElement).getPropertyValue('--app-zoom')
+      ) || 1
+      setStickyTop(el.getBoundingClientRect().height / zoom + 60)
+    }
+    measure()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    if (ro && toolbarRef.current) ro.observe(toolbarRef.current)
+    window.addEventListener('resize', measure)
+    return () => { ro?.disconnect(); window.removeEventListener('resize', measure) }
+  }, [])
+
+  // What the bar is titled. Named from the SPAN, not from fromDay, so it
+  // says what is actually on screen: picking Wednesday in week view shows
+  // Mon–Sun and the title has to agree with the seven columns, not with
+  // the day that was clicked.
+  const rangeLabel = useMemo(() => {
+    if (view === 'month') return fromDay.format('MMMM YYYY')
+    if (view === 'day') return fromDay.format('ddd D MMMM YYYY')
+    const to = span.from.add(span.days - 1, 'day')
+    // "24 – 30 November 2026" rather than repeating the month and the year
+    // on both ends, except across a boundary where both are needed.
+    if (span.from.isSame(to, 'month')) {
+      return `${span.from.format('D')} – ${to.format('D MMMM YYYY')}`
+    }
+    if (span.from.isSame(to, 'year')) {
+      return `${span.from.format('D MMM')} – ${to.format('D MMM YYYY')}`
+    }
+    return `${span.from.format('D MMM YYYY')} – ${to.format('D MMM YYYY')}`
+  }, [view, fromDay, span])
 
   const zone = useMemo(() => boardZone(data.timezone), [data.timezone])
 
@@ -502,66 +548,94 @@ export default function CalendarTab({ onOpenDeal }) {
           borderBottom: '1px solid var(--border-default)'
         }}
       >
-        <Button onClick={() => step(-1)} aria-label="Previous">←</Button>
-        <DatePicker
-          value={fromDay}
-          onChange={(d) => d && setFromDay(d.startOf('day'))}
-          allowClear={false}
-          format="ddd D MMM YYYY"
-        />
-        <Button onClick={() => step(1)} aria-label="Next">→</Button>
-        <Button onClick={() => setFromDay(dayjs().startOf('day'))}>Today</Button>
+        {/* ── THREE ZONES, NOT SEVEN CONTROLS IN A ROW ─────────────
+            Every control had the same weight, so the bar read as a pile of
+            pills and Book — the only thing here that writes anything — was
+            buried in the middle of it. Now: where you are on the left, how
+            you are looking at it on the right, and the one action last.
 
-        <Segmented
-          value={view}
-          onChange={setView}
-          options={[
-            { label: 'Day', value: 'day' },
-            { label: 'Week', value: 'week' },
-            { label: 'Month', value: 'month' },
-            { label: 'People', value: 'people' }
-          ]}
-        />
+            THE DATE PICKER IS GONE. It duplicated the sidebar's month,
+            which is a better picker in every way — you can see the month
+            while you choose from it. What the bar needed in its place was
+            not another control but a TITLE, which is also what stops it
+            looking assembled rather than designed. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <Button onClick={() => setFromDay(dayjs().startOf('day'))}>Today</Button>
+          <Button onClick={() => step(-1)} aria-label="Previous" style={{ paddingInline: 10 }}>‹</Button>
+          <Button onClick={() => step(1)} aria-label="Next" style={{ paddingInline: 10 }}>›</Button>
+        </div>
 
-        {/* Only the People board has a span to choose — the others are named
-            after theirs. */}
-        {view === 'people' && (
-          <Segmented
-            value={days}
-            onChange={setDays}
-            options={[{ label: '1 day', value: 1 }, { label: '3 days', value: 3 }]}
-          />
-        )}
-        <Segmented value={kind} onChange={setKind} options={KIND_OPTIONS} />
+        <div style={{ display: 'grid', gap: 0, minWidth: 0 }}>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 'var(--text-xl)',
+              fontWeight: 'var(--weight-semibold)',
+              color: 'var(--text-heading)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {rangeLabel}
+          </h2>
+          {/* The zone is stated, always, and now under the title where it
+              reads as a property of what you are looking at. A board
+              silently drawn in the wrong timezone looks exactly like one
+              drawn in the right timezone, so saying which is the only
+              defence a reader has. */}
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+            Times shown in {zone}
+            {data.timezone == null ? ' — this sub-account has no timezone set' : ''}
+          </span>
+        </div>
 
-        <Button
-          type="primary"
-          onClick={() => setBooking({ day: fromDay.format('YYYY-MM-DD') })}
-        >
-          Book
-        </Button>
-
-        <Segmented
-          value={hideEmpty ? 'busy' : 'all'}
-          onChange={(v) => setHideEmpty(v === 'busy')}
-          options={[
-            { label: 'Busy only', value: 'busy' },
-            { label: 'Everyone', value: 'all' }
-          ]}
-        />
-
-        <span
+        <div
           style={{
             marginLeft: 'auto',
-            fontSize: 'var(--text-xs)', color: 'var(--text-faint)'
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+            gap: 'var(--space-2)'
           }}
         >
-          {/* The zone is stated, always. A board silently drawn in the wrong
-              timezone looks exactly like one drawn in the right timezone, so
-              saying which is the only defence a reader has. */}
-          Times shown in {zone}
-          {data.timezone == null ? ' — this sub-account has no timezone set' : ''}
-        </span>
+          <Segmented
+            value={view}
+            onChange={setView}
+            options={[
+              { label: 'Day', value: 'day' },
+              { label: 'Week', value: 'week' },
+              { label: 'Month', value: 'month' },
+              { label: 'People', value: 'people' }
+            ]}
+          />
+
+          <Segmented value={kind} onChange={setKind} options={KIND_OPTIONS} />
+
+          {/* Only the People board has a span to choose, or empty columns
+              worth hiding — the other views are named after their span and
+              have no per-person columns at all. */}
+          {view === 'people' && (
+            <>
+              <Segmented
+                value={days}
+                onChange={setDays}
+                options={[{ label: '1 day', value: 1 }, { label: '3 days', value: 3 }]}
+              />
+              <Segmented
+                value={hideEmpty ? 'busy' : 'all'}
+                onChange={(v) => setHideEmpty(v === 'busy')}
+                options={[
+                  { label: 'Busy only', value: 'busy' },
+                  { label: 'Everyone', value: 'all' }
+                ]}
+              />
+            </>
+          )}
+
+          <Button
+            type="primary"
+            onClick={() => setBooking({ day: fromDay.format('YYYY-MM-DD') })}
+          >
+            Book
+          </Button>
+        </div>
       </div>
 
       <StateMessage
@@ -591,6 +665,7 @@ export default function CalendarTab({ onOpenDeal }) {
             span={span}
             zone={zone}
             onPickDay={setFromDay}
+            stickyTop={stickyTop}
           />
         )}
 

@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dayjs from 'dayjs'
 import AppointmentCard from './AppointmentCard'
 import DraftSlot from './DraftSlot'
 import { colourFor } from './CalendarSidebar'
 import {
-  DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
+  DAY_START_MIN, DAY_END_MIN, WORK_START_MIN, WORK_END_MIN,
+  boardHeightPx, hourMarks, clampToWindow,
   groupByDay, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
@@ -270,28 +272,44 @@ export default function TimeGrid({
         style={{
           display: 'flex', position: 'relative',
           maxHeight: maxH ? `${Math.round(maxH)}px` : '70vh',
-          overflowY: 'auto',
-          // So the FIRST hour label is not cut in half by the top edge. It
-          // is drawn 7px above its line, and at the top of the grid that
-          // put it outside the scroll box — which is why the day started
-          // at a sliced "07:00".
-          paddingTop: 8
+          overflowY: 'auto'
         }}
       >
         <div
           style={{
             width: GUTTER_W, flex: `0 0 ${GUTTER_W}px`,
-            position: 'relative', height,
-            background: 'var(--surface-page)',
-            borderRight: '1px solid var(--border-default)'
+            height,
+            background: 'var(--surface-card)',
+            borderRight: '1px solid var(--border-default)',
+            // Sticky, so the hours stay readable while the week is scrolled
+            // sideways on a narrow window. Without it the gutter slides
+            // away and you are reading an unlabelled grid.
+            position: 'sticky', left: 0, zIndex: 3
           }}
         >
-          {marks.map((m) => (
+          {/* ── THE LABEL SITS BELOW ITS LINE, NOT ABOVE IT ────────
+              It was `m.top - 7`, centred on the hour line — which looks
+              right everywhere except the first one, where it is 7px
+              outside the scroll box and gets sliced in half. Padding the
+              box only moved the problem; the geometry was the problem.
+
+              Below is also what Google does, and it is better for a
+              different reason: a label under the line belongs to the hour
+              it opens, so "09:00" sits at the top of the 9 o'clock slot
+              rather than straddling the boundary between 8 and 9. The last
+              mark is the only one that then has nothing under it, so it is
+              dropped — "24:00" labelled a zero-height slot. */}
+          {marks.slice(0, -1).map((m) => (
             <div
               key={m.minutes}
               style={{
-                position: 'absolute', top: m.top - 7, right: 6,
-                fontSize: 'var(--text-xs)', color: 'var(--text-faint)',
+                position: 'absolute', top: m.top + 3, right: 8,
+                fontSize: 'var(--text-xs)',
+                color: m.minutes >= WORK_START_MIN && m.minutes < WORK_END_MIN
+                  ? 'var(--text-muted)'
+                  // Off-hours labels recede with their band, so the column
+                  // and its gutter tell the same story.
+                  : 'var(--text-faint)',
                 fontVariantNumeric: 'tabular-nums'
               }}
             >
@@ -302,6 +320,7 @@ export default function TimeGrid({
 
         {dayKeys.map((day) => {
           const items = cells.get(day) || []
+          const isWeekend = [0, 6].includes(dayjs(day).day())
           const isToday = day === todayKey
           return (
             <div
@@ -368,6 +387,53 @@ export default function TimeGrid({
                 transition: 'background 90ms linear'
               }}
             >
+              {/* ── THE HOURS NOBODY WORKS ───────────────────────────
+                  Now that the grid runs 00:00–24:00, 03:00 looks exactly
+                  like 11:00 and the working day has stopped being visible
+                  at all — which is the one thing the old 07:00–20:00
+                  window did well. This puts it back WITHOUT hiding
+                  anything: the hours outside the working day are shaded,
+                  so the eye finds the part that matters and the rest is
+                  still there to scroll to and book into.
+
+                  Drawn as two bands rather than tinting the working hours,
+                  because the working hours are where the CARDS go — a
+                  background under them would shift every status colour, the
+                  mistake the today-column tint made. */}
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', left: 0, right: 0, top: 0,
+                  height: (WORK_START_MIN - DAY_START_MIN) * PIXELS_PER_MINUTE,
+                  background: 'var(--surface-sunken)',
+                  pointerEvents: 'none'
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', left: 0, right: 0,
+                  top: (WORK_END_MIN - DAY_START_MIN) * PIXELS_PER_MINUTE,
+                  bottom: 0,
+                  background: 'var(--surface-sunken)',
+                  pointerEvents: 'none'
+                }}
+              />
+              {/* A weekend reads as a weekend. Half the strength of the
+                  off-hours shading, so a Saturday afternoon is still
+                  plainly more available than a Tuesday at 4am. */}
+              {isWeekend && (
+                <div
+                  aria-hidden
+                  style={{
+                    position: 'absolute', inset: 0,
+                    background: 'var(--surface-sunken)',
+                    opacity: 0.5,
+                    pointerEvents: 'none'
+                  }}
+                />
+              )}
+
               {marks.map((m) => (
                 <React.Fragment key={m.minutes}>
                   <div
@@ -377,15 +443,22 @@ export default function TimeGrid({
                       pointerEvents: 'none'
                     }}
                   />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: m.top + 30 * PIXELS_PER_MINUTE,
-                      left: 0, right: 0,
-                      borderTop: '1px dotted var(--gray-200)',
-                      pointerEvents: 'none'
-                    }}
-                  />
+                  {/* The half-hour, inside working hours only. It is a
+                      drop target guide, and at 3am there is nothing to
+                      guide — 48 lines down an empty night was just noise.
+                      Dropped to a faint solid: a dotted rule at this
+                      spacing shimmers against the hour lines. */}
+                  {m.minutes >= WORK_START_MIN && m.minutes < WORK_END_MIN && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: m.top + 30 * PIXELS_PER_MINUTE,
+                        left: 0, right: 0,
+                        borderTop: '1px solid var(--gray-100)',
+                        pointerEvents: 'none'
+                      }}
+                    />
+                  )}
                 </React.Fragment>
               ))}
 

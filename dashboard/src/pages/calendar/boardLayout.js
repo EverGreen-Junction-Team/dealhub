@@ -37,6 +37,18 @@ import {
 // multi-day span — inside the grid instead of drawing off the end of it.
 export const DAY_START_MIN = 0          // 00:00
 export const DAY_END_MIN = 24 * 60      // 24:00
+
+// The working day. NOT a limit on what is drawn — everything outside it is
+// still on the grid, still bookable, still draggable. It is what the grid
+// SHADES, so that on a 24-hour column the hours people actually work are
+// the ones the eye lands on.
+//
+// This is the information the old 07:00–20:00 window carried, kept now that
+// the window itself is gone. The window enforced it by hiding the rest,
+// which is what made an early start unreadable; shading says the same thing
+// and costs nothing.
+export const WORK_START_MIN = 7 * 60    // 07:00
+export const WORK_END_MIN = 20 * 60     // 20:00
 // ~78px an hour. Raised from 1.1 when the calendar's text went up (see
 // CALENDAR_TYPE_SCALE in CalendarTab): a 30-minute card carries two lines —
 // the name and the time — and at the old height the second one was being

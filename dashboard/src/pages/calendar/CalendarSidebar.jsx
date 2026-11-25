@@ -79,7 +79,11 @@ export default function CalendarSidebar({
   // The month picker at the top. Optional so a caller that has no notion
   // of a current day — there is none today, but the sidebar should not
   // require one — still renders.
-  day, span, zone, onPickDay
+  day, span, zone, onPickDay,
+  // Where to stick, measured by the caller from the toolbar above. See the
+  // note there: this used to be a hand-added 118 that went stale every
+  // time the bar changed height.
+  stickyTop = 118
 }) {
   // null/undefined selection means EVERYONE, which is different from an empty
   // array meaning nobody. A fresh board shows all the work; a board where
@@ -127,11 +131,11 @@ export default function CalendarSidebar({
         // straight across the border and over the grid beside it.
         overflow: 'hidden',
         alignSelf: 'flex-start',
-        // Below the sticky toolbar, not under it: the app nav sits at 60px
-        // and the calendar toolbar directly beneath it, so anything sticking
-        // at a smaller offset slides behind both and the top rows of this
-        // list disappear while you scroll.
-        position: 'sticky', top: 118,
+        // Below the sticky toolbar, not under it: anything sticking at a
+        // smaller offset slides behind it and the top of this list
+        // disappears while you scroll. The offset is measured by the
+        // caller rather than guessed — see stickyTop.
+        position: 'sticky', top: stickyTop,
         border: '1px solid var(--border-default)',
         borderRadius: 'var(--radius-md)',
         background: 'var(--surface-card)',

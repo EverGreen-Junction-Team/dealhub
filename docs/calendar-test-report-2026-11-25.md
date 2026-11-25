@@ -137,6 +137,20 @@ npm run sync:appointments
 
 Then: the Mon 23 Nov 09:00–11:30 block should appear (grey, hatched) for James Stevens, and picking James.io in the booking card should show "Open on James.io" or the nearest open times.
 
+## After the server deploy — all server-side features verified live
+
+| Feature | Result | Seen on the live board |
+|---|---|---|
+| Person-level blocked time (`d17374a`) | ✅ Fixed and verified | After `npm run sync:appointments`: "09:00 Sales Call – BGD/VGS/OG · Blocked" Mon 23 (GHL's "Busy 09:00–11:30"), "Charlie & James meeting" Tue 24, three blocks Thu 26 and one Thu 3 Dec — grey, hatched; James Stevens' count 1 → 6 |
+| Availability hint (`7afcd26`) | ✅ Verified | Sat 28: "James.io has no open times on Sat 28 Nov…"; Fri 27 14:15: "Not an open time" + chips 12:30 / 13:00 / 13:30 / 14:00 / 14:30 / 15:30 (15:00 taken); clicking 14:00 → "Open on James.io". This also explains the original "empty slot refused": James.io books on the half hour, and 14:15 is not one |
+| Team-refusal wording (`c909b33`) | ✅ Verified | Drag of the cancelled test booking to james .co.uk: "That person isn't on this calendar's team in your CRM…"; card restored, nothing written |
+| Notes through the sweep (`42bae71`) | ✅ Verified | The test booking's note shows in its hover card |
+| Home → Calendar tile, first click | ✅ Not a bug | Clicks during the 10–14s GHL load were lost; one click after load navigates |
+
+**Two things for you to decide (not changed):**
+1. **Blocked-time titles.** GHL shows these Google-synced blocks as "Busy"; our board shows the real meeting titles ("Sales Call – BGD/VGS/OG") to everyone in the sub-account. If those titles should stay private, the board should show "Busy" for person-level blocks too.
+2. **A deleted GHL user still marked active.** The sweep logged `"The user is deleted."` for user `xoca8WRDQnf9SNwCnKiz` in `E0nGtwuWd1cmeoc6ilD1`. Handled safely (skipped, nothing deleted for them), but it will log every night until the user sync marks them inactive.
+
 ## Commits
 
-`0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` `b758983` `4b533e9` `7afcd26` `15eb64a` `d5989ed` `d17374a` — all on `main`, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).
+`0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` `b758983` `4b533e9` `7afcd26` `15eb64a` `d5989ed` `d17374a` — all on `main`, all deployed, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).

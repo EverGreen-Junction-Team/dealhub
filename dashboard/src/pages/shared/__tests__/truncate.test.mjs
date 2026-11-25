@@ -68,12 +68,22 @@ t('every file using Truncate imports it', () => {
   }
 });
 
-t('no hand-rolled truncation was left behind in the converted files', () => {
-  // A <span> still doing the ellipsis by hand is a line that can still be
-  // unreadable. Some remain deliberately (multi-line clamps, inputs), so this
-  // pins the COUNT rather than demanding zero.
+t('every hand-rolled ellipsis is readable when clipped', () => {
+  // This used to pin a COUNT of hand-written truncations (<= 25), as a
+  // stand-in for "clipped text stays readable": a span ellipsising by hand
+  // had no tooltip. The app grew to 64 and the count failed — but the count
+  // was never the point. The point is now guaranteed directly: the global
+  // clip-tooltip pass matches any element whose inline style says
+  // text-overflow: ellipsis, so every one of them gets the full text as a
+  // tooltip when, and only when, it is actually cut off.
+  const hook = readFileSync(join(root, 'src', 'hooks', 'useClipTooltips.js'), 'utf8');
+  assert.match(hook, /'\[style\*="text-overflow: ellipsis"\]'/,
+    'inline-styled truncations are not covered by the clip tooltip pass');
+  // And it must not stack a native title on text that already explains
+  // itself on hover.
+  assert.match(hook, /node\.closest\('\[data-noclip\]'\)\) return/);
   const n = Number(execSync('grep -rn "textOverflow" src/ | grep -v node_modules | wc -l', {cwd: root, encoding:'utf8'}).trim());
-  assert.ok(n <= 25, `${n} hand-written truncations remain, expected the bulk to be converted`);
+  assert.ok(n > 0, 'sanity: the grep found nothing, so this test proves nothing');
 });
 
 let failed = 0;

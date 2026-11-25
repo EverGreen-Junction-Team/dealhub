@@ -25,9 +25,18 @@ import { useEffect } from 'react'
 // * Remove the title again when the text stops being clipped, or a widened
 //   column keeps a tooltip that no longer tells you anything.
 const SELECTOR = [
-  '.pp-cc-value', '.pp-cf-filename', '.pp-cf-name',
+  '.pp-cc-value', '.pp-cf-filename', '.pp-cf-name', '.pp-cc-tag-text',
   '.pp-email-preview', '.pp-email-subject',
-  '.pp-mc-filename', '.pp-thread-name', '.pp-thread-prev'
+  '.pp-mc-filename', '.pp-thread-name', '.pp-thread-prev',
+  // Also ellipsised in CSS, found missing by the coverage test.
+  '.pp-mail-to', '.pp-thread-subject',
+  // EVERY HAND-ROLLED ELLIPSIS. React writes an inline style into the DOM
+  // as style="…text-overflow: ellipsis…", so one attribute selector covers
+  // all of them — 64 at the last count, across deal cards, the board, the
+  // calendar and more — without converting each call site to the Truncate
+  // component.
+  // The class list above only reached text styled through CSS.
+  '[style*="text-overflow: ellipsis"]', '[style*="text-overflow:ellipsis"]'
 ].join(',')
 
 // Marks a title this pass added, so a later pass can tell it from an
@@ -42,6 +51,10 @@ export function applyClipTooltips(root = document) {
     return
   }
   el.forEach((node) => {
+    // Opted out: something richer already explains this text on hover (a
+    // calendar card's detail popover, a rail row's own tooltip). A native
+    // title on top of it would show two tooltips at once.
+    if (typeof node.closest === 'function' && node.closest('[data-noclip]')) return
     const clipped = node.scrollWidth > node.clientWidth + 1
     const mine = node.hasAttribute(OWNED)
 

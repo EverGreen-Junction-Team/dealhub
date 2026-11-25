@@ -75,8 +75,12 @@ test('Recents rows are spaced apart, not run together', () => {
   // At 1px a title sat closer to the NEXT row's title than to its own
   // timestamp, so four chats read as one block of text — exactly what a list
   // of near-identical questions must not do.
-  assert.match(bar, /marginBottom: 6,/);
-  assert.match(bar, /display: 'block', marginTop: 3,/);
+  // The gap between rows is now the row's 2px margin PLUS the button's 5px
+  // vertical padding on each side — ~12px — against the 2px between a
+  // title and its own timestamp. Pinned as that relationship.
+  assert.match(bar, /marginBottom: 2,/);
+  assert.match(bar, /padding: '5px 8px',/);
+  assert.match(bar, /display: 'block', marginTop: 2,/);
 });
 
 test('the signed-in name comes from /me, not the rep picker', () => {
@@ -99,7 +103,7 @@ test('the signed-in name comes from /me, not the rep picker', () => {
 test('/me answers for ANY user type', () => {
   // A filter here would reintroduce the bug it exists to fix.
   const deals = readFileSync(
-    new URL('../../../../../pipelinePulse/server/src/routes/deals.js', import.meta.url), 'utf8'
+    new URL('../../../../../server/src/routes/deals.js', import.meta.url), 'utf8'
   );
   const route = deals.slice(deals.indexOf("dealsRouter.get('/me'"), deals.indexOf("dealsRouter.get('/users'"));
   assert.match(route, /WHERE location_id = \$1 AND user_id = \$2/);

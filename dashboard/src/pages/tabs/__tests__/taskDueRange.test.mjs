@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs'
 
 const tab = readFileSync(new URL('../TasksTab.jsx', import.meta.url), 'utf8')
 const route = readFileSync(
-  new URL('../../../../../pipelinePulse/server/src/routes/tasks.js', import.meta.url),
+  new URL('../../../../../server/src/routes/tasks.js', import.meta.url),
   'utf8'
 )
 

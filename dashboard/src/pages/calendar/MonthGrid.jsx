@@ -288,6 +288,7 @@ function MonthChip({ appointment: a, day, zone, busy, onOpenDeal, onDragStart, a
     >
       <div
         className={!isBlocked && !cancelled ? 'pp-appt-chip' : undefined}
+        data-noclip=""
         draggable={!isBlocked && !busy}
         onDragStart={(e) => {
           if (isBlocked || busy) return

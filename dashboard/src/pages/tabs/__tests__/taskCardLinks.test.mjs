@@ -22,7 +22,8 @@ test('all three records get a row', () => {
   for (const icon of ['person', 'sell', 'business']) {
     assert.match(linked, new RegExp(`icon="${icon}"`), `no row for ${icon}`);
   }
-  assert.match(linked, /business: \{ fill: 'var\(--accent-plum\)', label: 'BUSINESS' \}/);
+  // Plum and labelled BUSINESS; other keys (a glyph was added) may follow.
+  assert.match(linked, /business: \{ fill: 'var\(--accent-plum\)', label: 'BUSINESS'[,\s}]/);
 });
 
 test('only the records a task HAS get a row; a missing deal is called out', () => {

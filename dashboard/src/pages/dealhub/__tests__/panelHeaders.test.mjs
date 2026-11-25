@@ -155,7 +155,9 @@ test('the customer, deal name and stage facts all use the shared card', () => {
   // Three places wanted the same bordered box with a tinted strip. Three
   // hand-rolled copies would drift on border colour and cell padding.
   const deal = read('DealSection.jsx');
-  assert.match(deal, /import \{ FieldCard, FieldGrid, FieldCell, FieldRow, NotSet \} from '\.\/FieldCard'/);
+  // FieldGrid/FieldCell are gone from the deal panel — every fact is a
+  // full-width FieldRow now — so the import is the three that remain.
+  assert.match(deal, /import \{ FieldCard, FieldRow, NotSet \} from '\.\/FieldCard'/);
   assert.match(deal, /<FieldCard[\s\S]*?label="Deal name"/);
   assert.match(deal, /<FieldCard[\s\S]*?label="Customer"/);
 });
@@ -191,12 +193,16 @@ test('the owner sits IN the facts grid, with its picker intact', () => {
   // them. It still cannot BE a FieldCell — that renders a value and a pencil,
   // while this swaps the whole value for a searchable Select — so it renders
   // its own cell with the same shape.
+  // The facts are full-width rows now, not a grid of cells, so "in the
+  // grid" means: Owner is the first row of the facts block, rendered as a
+  // FieldRow whose value is swapped for the searchable picker.
   const deal = read('DealSection.jsx');
-  const grid = deal.slice(deal.indexOf('<FieldGrid style={{'), deal.indexOf('</FieldGrid>'));
-  assert.match(grid, /<OwnerRow/, 'Owner is not inside the facts grid');
+  const owner = deal.indexOf('<OwnerRow');
+  assert.notEqual(owner, -1, 'Owner is not rendered');
+  const nextRow = deal.indexOf('<FieldRow', owner);
+  assert.ok(nextRow > owner && nextRow - owner < 400, 'Owner is not inside the facts block');
+  assert.match(deal, /return <FieldRow icon="person" label="Owner" value=\{deal\.owner\} control=\{control\} \/>/);
   assert.match(deal, /showSearch/, 'the user picker was lost in the move');
-  // The cell shape FieldCell uses, so the five cells line up.
-  assert.match(deal, /const cell = \{ minWidth: 0, padding: '8px 12px', background: '#fff' \}/);
 });
 
 test('the stage select is a green outline, not a green block', () => {
@@ -343,8 +349,10 @@ test('a person\'s details are FULL-WIDTH rows, not a two-column grid', () => {
   const people = read('PeopleSection.jsx');
   assert.match(people, /import \{ FieldRow \} from '\.\/FieldCard'/);
   assert.doesNotMatch(people, /<FieldGrid/, 'the two-column grid is back');
-  for (const label of ['Email', 'Telephone', 'Business', 'Role']) {
-    assert.match(people, new RegExp(`'${label}'`), `${label} row is missing`);
+  // Labels are props now (label="Email"), and "Role" was renamed "Contact
+  // type" deliberately — see the comment above that row in PeopleSection.
+  for (const label of ['Email', 'Telephone', 'Business', 'Contact type']) {
+    assert.match(people, new RegExp(`label="${label}"`), `${label} row is missing`);
   }
 });
 
@@ -423,13 +431,15 @@ test('Open names its destination on the button', () => {
 });
 
 test('the customer card has edit pencils', () => {
-  // Nine labelled fields with no affordance at all — the design shows a
-  // pencil on each. They open the CONTACT'S record, since these are the
-  // customer's fields rather than the deal's.
+  // Nine labelled fields, each with a pencil. They used to open the
+  // CONTACT'S record a page away; since Oct 2026 they edit in place
+  // (client request) — each row is an EditableContactRow, which rests as a
+  // FieldRow with a pencil and saves only its own field.
   const deal = read('DealSection.jsx');
-  assert.match(deal, /onEdit=\{onOpenContact \? \(\) => onOpenContact\(person\.id\) : undefined\}/);
-  const tab = readFileSync(join(dealhub, '..', 'tabs', 'DealHubTab.jsx'), 'utf8');
-  assert.match(tab, /onOpenContact=\{onOpenContact\}/);
+  assert.match(deal, /<EditableContactRow/);
+  const edit = read('ContactFieldEdit.jsx');
+  assert.match(edit, /onEdit=\{contactId \? start : undefined\}/);
+  assert.match(edit, /contactsAPI\.update\(contactId, \{ \[field\]: next \}\)/);
 });
 
 test('a person chip is blue wherever it appears', () => {

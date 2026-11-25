@@ -46,7 +46,7 @@ function matchSkills(skills, query) {
 
 // The real registry, so the test fails when a rename breaks a search people use.
 const registry = JSON.parse(readFileSync(
-  new URL('../../../../../pipelinePulse/server/data/skills/registry.json', import.meta.url),
+  new URL('../../../../../server/data/skills/registry.json', import.meta.url),
   'utf8'
 ))
 const SKILLS = registry.skills.map((r) => ({ name: r.skill, description: r.answers || '' }))

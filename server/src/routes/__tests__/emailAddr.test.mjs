@@ -21,13 +21,21 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const src = readFileSync(join(here, '..', 'deals.js'), 'utf8');
+// emailAddr moved out of deals.js into utils/email.js (the AI tools need it
+// too). The function is lifted from its new home; deals.js is checked for
+// still USING it, which is the guarantee that matters to the timeline.
+const src = readFileSync(join(here, '..', '..', 'utils', 'email.js'), 'utf8');
+const deals = readFileSync(join(here, '..', 'deals.js'), 'utf8');
+assert.match(deals, /import \{ emailAddr \} from '\.\.\/utils\/email\.js'/,
+  'deals.js no longer imports emailAddr — the timeline From/To block reads null for every email');
+assert.match(deals, /emailFrom: channel === 'EMAIL' \? emailAddr\(m\.raw_message, 'from'\)/);
+assert.match(deals, /emailTo: channel === 'EMAIL' \? emailAddr\(m\.raw_message, 'to'\)/);
 
 // Lift the function out of the module. Locating it by name also asserts it
 // still EXISTS — a rename or deletion fails here rather than silently
 // dropping the addresses from every email in production.
 const start = src.indexOf('function emailAddr(raw, kind) {');
-assert.notEqual(start, -1, 'emailAddr is gone from deals.js — the timeline From/To block reads null for every email');
+assert.notEqual(start, -1, 'emailAddr is gone from utils/email.js — the timeline From/To block reads null for every email');
 
 // Brace-match to the end of the function. Counting rather than regexing
 // because a regex for a balanced body is how an 85-line orphan got left

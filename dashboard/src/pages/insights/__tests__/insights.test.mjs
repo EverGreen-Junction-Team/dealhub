@@ -13,7 +13,7 @@ import { CHARTS } from '../charts.js'
 
 const CARDS = JSON.parse(readFileSync(new URL('../cards.json', import.meta.url), 'utf8'))
 const ROUTE = readFileSync(
-  new URL('../../../../../pipelinePulse/server/src/routes/insights.js', import.meta.url), 'utf8'
+  new URL('../../../../../server/src/routes/insights.js', import.meta.url), 'utf8'
 )
 
 // ── The client/server contract ───────────────────────────────────────
@@ -40,7 +40,7 @@ test('and they agree on which views feed each chart', () => {
 
 test('every view is one migration 135 creates', () => {
   const sql = readFileSync(
-    new URL('../../../../../pipelinePulse/server/migrations/135_insight_views.sql', import.meta.url),
+    new URL('../../../../../server/migrations/135_insight_views.sql', import.meta.url),
     'utf8'
   )
   for (const v of new Set(Object.values(CHARTS).flatMap((s) => s.views))) {

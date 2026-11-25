@@ -67,7 +67,7 @@ async function stepDownload(call) {
       await updateCall(call.id, { recording_channels: info.channels, recording_duration_seconds: info.durationSeconds });
     } finally { await local.cleanup(); }
   } catch (err) {
-    logger.debug({ err: err.message, callId: call.id }, 'conversationPoint: probe skipped');
+    logger.debug({ err, callId: call.id }, 'conversationPoint: probe skipped');
   }
   logger.info({ callId: call.id, bytes: stored.bytes, storage: stored.storage }, 'conversationPoint: recording stored');
   return 'done';

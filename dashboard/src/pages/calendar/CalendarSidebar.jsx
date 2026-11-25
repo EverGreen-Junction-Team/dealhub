@@ -51,10 +51,20 @@ import MiniMonth from './MiniMonth'
 // calendar stays in step with the rest of Deal Hub. Ordered so neighbours
 // are easy to tell apart — adjacent people get visibly different hues, not
 // two blues.
+// Twelve, not nine. A live sub-account has twelve people, and with nine
+// hues the tenth wrapped round to teal — Brad Ricardo and Marketing Veritas
+// the same colour on the same board, which is the one thing a per-person
+// colour cannot do. The three added are hues the nine do not cover (indigo,
+// olive, magenta), each at least 4.3:1 on white so the bar reads as a bar.
+//
+// `sun` moves to the end: at 1.6:1 on white it is the weakest edge in the
+// set, so it is now only used from the twelfth person onward.
 export const PERSON_COLOURS = [
   'var(--accent-teal)', 'var(--accent-clay)', 'var(--accent-pine)',
   'var(--accent-plum)', 'var(--accent-gold)', 'var(--accent-sky)',
-  'var(--accent-rose)', 'var(--accent-brown)', 'var(--accent-sun)'
+  'var(--accent-rose)', 'var(--accent-brown)',
+  '#4859c9', '#687f1d', '#a8327f',
+  'var(--accent-sun)'
 ]
 
 /**
@@ -379,6 +389,8 @@ function Row({ colour, label, tag = null, fullName = null, count, checked, onTog
       <Tooltip title={clipped || tag ? (fullName || label) : null} mouseEnterDelay={0.3} placement="right">
         <span
           ref={textRef}
+          // Has its own tooltip (above) when clipped.
+          data-noclip=""
           style={{
             flex: 1, minWidth: 0,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',

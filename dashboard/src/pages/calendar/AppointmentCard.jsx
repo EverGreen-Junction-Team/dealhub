@@ -178,6 +178,8 @@ export default function AppointmentCard({
           e.dataTransfer.effectAllowed = 'move'
         }}
         className={!isBlocked && !cancelled ? 'pp-appt' : undefined}
+        // Its hover card shows the full text — no native title on top.
+        data-noclip=""
         onClick={() => { if (!isBlocked && a.dealId) onOpenDeal?.(a.dealId) }}
         role={!isBlocked && a.dealId ? 'button' : undefined}
         tabIndex={!isBlocked && a.dealId ? 0 : undefined}

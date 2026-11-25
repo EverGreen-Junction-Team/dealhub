@@ -15,7 +15,7 @@ import { test } from 'node:test'
 const card = readFileSync(new URL('../ActionCard.jsx', import.meta.url), 'utf8')
 const tab = readFileSync(new URL('../../tabs/CopilotTab.jsx', import.meta.url), 'utf8')
 const runLog = readFileSync(
-  new URL('../../../../../pipelinePulse/server/src/services/ai/runLog.js', import.meta.url), 'utf8'
+  new URL('../../../../../server/src/services/ai/runLog.js', import.meta.url), 'utf8'
 )
 
 // The precedence rule, as pure logic.

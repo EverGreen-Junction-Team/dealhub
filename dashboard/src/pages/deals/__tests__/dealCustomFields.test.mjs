@@ -17,8 +17,12 @@ import { dirname, join } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const panel = readFileSync(join(here, '..', 'DealEditPanel.jsx'), 'utf8');
 const route = readFileSync(
-  join(here, '..', '..', '..', '..', '..', 'pipelinePulse', 'server',
+  join(here, '..', '..', '..', '..', '..', 'server',
     'src', 'routes', 'deals.js'), 'utf8');
+// Where the non-object guard lives now (see the test below).
+const fieldsHelper = readFileSync(
+  join(here, '..', '..', '..', '..', '..', 'server',
+    'src', 'services', 'opportunityFields.js'), 'utf8');
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
@@ -109,7 +113,7 @@ t('the deal carries its custom field values', () => {
   // blob is only as fresh as the last event that landed. The guard against a
   // non-object blob moved into that helper.
   assert.match(route, /customFields: withPromotedFields\(d\.custom_fields, d\)/);
-  assert.match(route, /blob && typeof blob === 'object' \? blob : \{\}/);
+  assert.match(fieldsHelper, /blob && typeof blob === 'object' \? blob : \{\}/);
 });
 
 t('FILE_UPLOAD is flagged UPLOADABLE, not read-only', () => {
@@ -171,20 +175,26 @@ const dealsTab = readFileSync(
 const contactsTab = readFileSync(
   join(here, '..', '..', 'tabs', 'ContactsTab.jsx'), 'utf8');
 const contactsRoute = readFileSync(
-  join(here, '..', '..', '..', '..', '..', 'pipelinePulse', 'server',
+  join(here, '..', '..', '..', '..', '..', 'server',
     'src', 'routes', 'contacts.js'), 'utf8');
 
-t('nothing renders at zero', () => {
-  // "0 tasks" on every untouched record is noise, and a non-empty chip is
-  // only worth noticing if an empty one is absent.
-  assert.match(chips, /if \(!tasks && !notes\) return null/);
+// The design moved on from FollowUpChips (a shared chip that hid itself at
+// zero). The deal list now shows a task pill on every card, AT ZERO TOO, in
+// a warning tone — "No open tasks on this deal" is the most useful thing a
+// card can say about a deal nobody is chasing. These pin that design; the
+// old chip is unused.
+const dealList = readFileSync(join(here, '..', 'DealList.jsx'), 'utf8');
+const contactTable = readFileSync(join(here, '..', '..', 'contacts', 'ContactTable.jsx'), 'utf8');
+
+t('a deal with no open tasks says so, rather than showing nothing', () => {
+  assert.match(dealList, /const taskCount = deal\.openTaskCount \?\? 0/);
+  assert.match(dealList, /'No open tasks on this deal'/);
 });
 
-t('one component, used by BOTH cards', () => {
-  // Two copies would drift on wording and threshold.
-  assert.match(chips, /export function FollowUpChips/);
-  assert.match(dealsTab, /FollowUpChips/);
-  assert.match(contactsTab, /FollowUpChips/);
+t('both cards read the counts the routes send', () => {
+  assert.match(dealList, /deal\.noteCount/);
+  assert.match(contactTable, /c\.openTaskCount/);
+  assert.match(contactTable, /c\.noteCount/);
   assert.ok(!/from '\.\/DealsTab'/.test(contactsTab),
     'importing a component from a sibling tab is fragile — it belongs in shared');
 });

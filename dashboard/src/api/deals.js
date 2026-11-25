@@ -1,7 +1,7 @@
 import apiClient from './client'
 
 // Endpoints backing the Deal Hub view.
-// Contract mirrors the shapes returned by pipelinePulse/server/src/routes/deals.js.
+// Contract mirrors the shapes returned by server/src/routes/deals.js.
 export const dealsAPI = {
 
   // Upload files to a FILE_UPLOAD custom field.

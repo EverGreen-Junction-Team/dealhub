@@ -37,10 +37,16 @@ test('cells edit in place and keep the batched Save', () => {
   assert.match(details, /\$\{state === 'saving' \? 'Saving…' : `Save \$\{dirtyKeys\.length\}`\}|Save \$\{dirtyKeys\.length\}/);
 });
 
-test('contact type is still left out of the save', () => {
-  // The update endpoint drops it — see PENDING_FUNCTIONALITY.md.
-  assert.match(details, /const dirtyKeys = FIELDS\.map\(\(\[k\]\) => k\)\.filter\(isDirty\)/);
-  assert.doesNotMatch(src, /\['contactType',/);
+test('contact type is saved, and the server maps it to GHL\'s type', () => {
+  // This test used to assert the opposite — "left out of the save, the
+  // endpoint drops it". The endpoint was fixed: contactPatch now maps
+  // contactType to GHL's `type`, and PENDING_FUNCTIONALITY.md lists the
+  // dropdown as working. Both halves are pinned so neither can regress
+  // alone (a UI that sends it to a server that drops it is the bug the old
+  // test was guarding against).
+  assert.match(details, /const dirtyKeys = \[\.\.\.FIELDS\.map\(\(\[k\]\) => k\), 'contactType'\]\.filter\(isDirty\)/);
+  const patch = readFileSync(new URL('../../../../../server/src/services/contactPatch.js', import.meta.url), 'utf8');
+  assert.match(patch, /\['contactType', 'type'\]/);
 });
 
 test('the back link is a solid slate pill', () => {

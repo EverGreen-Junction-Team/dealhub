@@ -147,7 +147,7 @@ export async function probe(file) {
       durationSeconds: Number.isFinite(dur) ? dur : null
     };
   } catch (err) {
-    logger.debug({ err: err.message }, 'recordingStore: ffprobe unavailable or failed');
+    logger.debug({ err }, 'recordingStore: ffprobe unavailable or failed');
     return { channels: null, codec: null, durationSeconds: null };
   }
 }

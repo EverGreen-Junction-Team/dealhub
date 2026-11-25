@@ -18,6 +18,9 @@ import { useAuth } from '../../context/AuthContext'
 // names a --panel-head-* band (the same solid the tab's own header wears, so
 // a card and the page it opens read as one colour); `tint` draws the band
 // as the accent's pale wash instead, for the two the design sets back.
+// Same switch DealHubShell reads for the Calendar tab.
+const CALENDAR_ENABLED = import.meta.env.VITE_FEATURE_CALENDAR === 'true'
+
 const GROUPS = [
   {
     label: 'Records', blurb: 'People, companies and activity',
@@ -38,7 +41,14 @@ const GROUPS = [
       { tab: 'hub',   label: 'Deal hub', icon: 'space_dashboard', accent: 'pine',
         blurb: 'Everything on one deal: stage, people, tasks, notes and Co-Pilot.' },
       { tab: 'deals', label: 'Deals',    icon: 'sell',            accent: 'pine', count: 'deals',
-        blurb: 'Pipeline board and list, filters, bulk actions.' }
+        blurb: 'Pipeline board and list, filters, bulk actions.' },
+      // Every other tab had a card here and the calendar did not, so the
+      // one place that lists what the app does left it out. Same feature
+      // flag as the tab itself — a card for a hidden tab would lead nowhere.
+      ...(CALENDAR_ENABLED
+        ? [{ tab: 'calendar', label: 'Calendar', icon: 'calendar_month', accent: 'teal',
+            blurb: 'Who is booked when: day, week, month and a board per person.' }]
+        : [])
     ]
   },
   {

@@ -37,10 +37,11 @@ test('Show on cards offers Deals, Tasks and Notes', () => {
   assert.match(card, /if \(showOn\.notes !== false && notes > 0\)/);
 });
 
-test('Add contact is shown, and says where contacts are added', () => {
-  // No create-contact endpoint yet — see PENDING_FUNCTIONALITY.md.
+test('Add contact is shown, and opens the create form', () => {
+  // It used to explain "add them in your CRM" — there was no create
+  // endpoint. Creating contacts was built since; the button now opens it.
   assert.match(tab, /<span className="ms" style=\{\{ fontSize: 17 \}\}>add<\/span>Add contact/);
-  assert.match(tab, /add them in your CRM/);
+  assert.match(tab, /onClick=\{\(\) => setCreating\(true\)\}/);
 });
 
 test('cards carry a selection checkbox; a selection shows the bulk bar', () => {
@@ -58,9 +59,14 @@ test('the bulk bar has the design actions, with the working ones wired', () => {
   assert.doesNotMatch(bar, />Export</, 'Export is back in the bulk bar');
   // Add tag uses the ADDITIVE endpoint per contact — never the full update.
   assert.match(bar, /await contactsAPI\.addTags\(c\.id, \[t\]\)/);
-  assert.doesNotMatch(bar, /contactsAPI\.update/);
-  // The unwired three say so rather than acting.
-  assert.match(bar, /notYet\('Deleting contacts'\)/);
+  // The full update is used now — but only for owner assignment, as a
+  // partial patch. The rule this guards is that TAGS never go through it
+  // (a full update replaces the tag list); owner cannot touch tags.
+  const calls = [...bar.matchAll(/applyToAll\([^,]+, (\{[^}]*\})/g)].map((m) => m[1]);
+  assert.ok(calls.length > 0, 'no bulk patches found — the assertion below proves nothing');
+  for (const patch of calls) assert.doesNotMatch(patch, /tags/, `a bulk patch sends tags: ${patch}`);
+  // Delete is wired now (it said "not yet"), behind a confirmation.
+  assert.match(bar, /setConfirmDelete/);
 });
 
 
@@ -77,12 +83,15 @@ test('every field row is in the ruled table, Type and Tags included', () => {
   assert.match(css, /\.pp-cc-key \{[\s\S]*?border-right: 1px solid var\(--border-default\);/);
 });
 
-test('Type keeps its pencil but explains instead of editing', () => {
-  // A GHL custom field — the update endpoint rejects it.
+test('Type edits in place, and saves with the card', () => {
+  // It used to explain "change it there" — the endpoint dropped it. The
+  // server now maps contactType to GHL's type (contactPatch), so the row
+  // edits. It still never writes on its own: the change rides the card's
+  // Save, like every other field.
   const type = tab.slice(tab.indexOf('function TypeRow('), tab.indexOf('function TagsRow('));
-  assert.match(type, /pp-cc-pencil/);
+  assert.match(type, /<Select/);
+  assert.match(type, /onChange\(v \|\| null\)/);
   assert.doesNotMatch(type, /contactsAPI\.update/);
-  assert.match(type, /change it there/);
 });
 
 test('tags write through the additive endpoints, never the full update', () => {

@@ -225,7 +225,9 @@ test('both tabs expose a sort control, and remember the choice', () => {
   // MEMBERSHIP, not as the exact array: pinning the full list failed the day a
   // filter was added beside it, which is not what this test is about.
   assert.match(tasks, /deps: \[[^\]]*\bsort\b[^\]]*\]/)
-  assert.match(notes, /deps: \[filters, author, sort\]/)
+  // Membership, like the tasks line above — pinning the exact list failed
+  // the day search (q) was added beside sort.
+  assert.match(notes, /deps: \[[^\]]*\bsort\b[^\]]*\]/)
 })
 
 test('the sort control is shared, not copied per tab', () => {

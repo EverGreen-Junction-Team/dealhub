@@ -64,10 +64,19 @@ t('falls back to the url when there is no name', () => {
   assert.equal(kindOf({ url: 'https://msgsndr.example/f/a/report.pdf' }), 'pdf');
 });
 
-t('no extension means the card, not a blank frame', () => {
-  // Better a usable card for a previewable file than an empty box.
-  assert.equal(kindOf({ url: 'https://x/y/download' }), 'file');
-  assert.equal(kindOf({ name: 'attachment' }), 'file');
+t('no extension is tried as an image, and a failed decode lands on the card', () => {
+  // The rule changed deliberately: GHL's storage URLs end in "attachment"
+  // with no extension, and the tile that opened the viewer already showed
+  // them as pictures. So they are TRIED as images — and the original
+  // concern, never a blank frame, is kept by the fallback: any preview that
+  // fails to decode flips the viewer to the file card.
+  assert.equal(kindOf({ url: 'https://x/y/download' }), 'image');
+  assert.equal(kindOf({ name: 'attachment' }), 'image');
+  assert.match(src, /const kind = failed \? 'file' : kindOf\(att\)/, 'no fallback to the card on failure');
+  assert.ok((src.match(/onError=\{\(\) => setFailed\(true\)\}/g) || []).length >= 3,
+    'a preview element without an onError fallback would show a blank frame');
+  // A real non-previewable type still goes straight to the card.
+  assert.equal(kindOf({ name: 'quote.docx' }), 'file');
 });
 
 t('never throws on junk', () => {
@@ -135,7 +144,10 @@ t('a failed preview falls back rather than showing a blank frame', () => {
 console.log('\nan email with no body');
 
 t('the card is gated on the CHANNEL, not the body', () => {
-  assert.match(timeline, /\{m\.channel === 'EMAIL' \? \(/,
+  // Gated through a named flag now — `isEmail` — and the flag must be the
+  // channel alone, never the body.
+  assert.match(timeline, /const isEmail = m\.channel === 'EMAIL'\n/);
+  assert.match(timeline, /\{isEmail \? \(/,
     'the email card must render for every email — subject, addresses, '
     + 'attachments and the thread link are each worth showing without a body');
   assert.ok(!/m\.channel === 'EMAIL' && m\.body \? \(/.test(timeline),

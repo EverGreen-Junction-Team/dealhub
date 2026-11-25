@@ -26,7 +26,7 @@ const contact  = read('../../contacts/ContactDetail.jsx')
 const business = read('../../tabs/BusinessesTab.jsx')
 const section  = read('../../dealhub/DealSection.jsx')
 const cards    = read('../../tabs/ContactsTab.jsx')
-const route    = read('../../../../../pipelinePulse/server/src/routes/contacts.js')
+const route    = read('../../../../../server/src/routes/contacts.js')
 
 test('a contact CARD links a real business, not a typed name', () => {
   // The card offered an InlineEdit writing companyName: typing "Acme" left

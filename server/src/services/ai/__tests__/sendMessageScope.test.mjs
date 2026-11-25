@@ -385,8 +385,12 @@ t('the model is told to name senders, never ids',
   /Name senders, never ids/.test(detector));
 // The sentence is split across a string concatenation, so join the pieces
 // the way the model receives them before matching.
-t('an existing thread still wins over the location list',
-  /A thread that already has messages overrides all of this/
+// The rule changed deliberately: an existing thread used to OVERRIDE the
+// list (its sender was picked silently). Now its sender leads the numbered
+// options, marked, and the rep still chooses — a thread on the wrong number
+// should not lock every reply onto it.
+t('an existing thread\'s sender leads the options, and the rep still chooses',
+  /A thread that already has messages makes its sender the FIRST numbered option, marked "\(used in this thread\)" — it does not skip the question/
     .test(detector.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')));
 t('a failed provider lookup is non-fatal', /could not list providers/.test(detector));
 
@@ -451,7 +455,9 @@ t('task proposals carry it too',
 // Guarded with existsSync: production runs a server-only clone, and an
 // unguarded read fails the whole suite (see crossRepoReads.test.mjs). The
 // skip is announced, because a silent one looks identical to a pass.
-const dashCard = join(root, '..', '..', 'pipelinePulse-dashboard',
+// The dashboard lives beside the server in this repo now (it was a sibling
+// checkout called pipelinePulse-dashboard), which made this skip on every run.
+const dashCard = join(root, '..', 'dashboard',
   'src/pages/shared/ActionCard.jsx');
 if (!existsSync(dashCard)) {
   console.log('  (dashboard not checked out — skipping the ActionCard assertions)');

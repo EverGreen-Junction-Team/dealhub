@@ -91,7 +91,9 @@ test('the toolbar no longer repeats it in the time views', () => {
   // Stripped of comments first: an earlier test in this repo passed
   // vacuously by matching prose about the code instead of the code.
   const code = tab.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n')
-  assert.match(code, /view === 'month' \|\| data\.timezone == null/,
+  // Month, or a sub-account with genuinely no timezone — not merely one
+  // whose data has not loaded yet (that flashed a false warning).
+  assert.match(code, /view === 'month' \|\| \(!loading && data\.timezone == null\)/,
     'the toolbar zone line is unconditional again')
 })
 

@@ -23,7 +23,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(join(here, rel), 'utf8');
 
 const ui = read('../DealSection.jsx');
-const route = read('../../../../../pipelinePulse/server/src/routes/deals.js');
+const route = read('../../../../../server/src/routes/deals.js');
 
 const tests = [];
 const t = (name, fn) => tests.push([name, fn]);
@@ -65,7 +65,11 @@ t('the customer band lays each field out SIDE BY SIDE', () => {
   // beside its value rather than stacked above it — the same shape the deal's
   // own fields and the People rail use, so all three read as one application.
   const body = contactLines();
-  assert.ok(body.includes('<FieldRow'), 'the customer band must use FieldRow');
+  // Each field is an EditableContactRow now (edited in place, Oct 2026),
+  // which rests as a FieldRow — so side by side still holds, one level down.
+  assert.ok(body.includes('<EditableContactRow'), 'the customer band must use the editable row');
+  const edit = readFileSync(join(here, '..', 'ContactFieldEdit.jsx'), 'utf8');
+  assert.ok(edit.includes('<FieldRow'), 'the editable row must render as a FieldRow');
   assert.ok(!body.includes('<FieldCell'), 'FieldCell stacks the label above the value');
   // Three across when wide — nine fields, three rows, as the design shows.
   assert.ok(

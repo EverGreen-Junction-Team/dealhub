@@ -150,7 +150,10 @@ test('the fetch is skipped only when the event has the FULL roles object', () =>
   // locationIds, so that column stayed NULL for exactly the users whose
   // membership matters most.
   assert.match(writer, /Array\.isArray\(eventRoles\.locationIds\)/);
-  assert.match(writer, /if \(!eventHasFullRoles\) \{/);
+  // Every webhook now searches for the user first (the mailbox block only
+  // comes from /users/search); the roles fetch is the FALLBACK, and is
+  // still skipped only when the event carries the full roles object.
+  assert.match(writer, /if \(u === fromEvent && !eventHasFullRoles\) \{/);
   assert.doesNotMatch(writer, /if \(!event\.roles && !event\.role\) \{/);
 });
 

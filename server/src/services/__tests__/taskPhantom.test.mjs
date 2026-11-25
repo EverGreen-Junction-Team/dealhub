@@ -79,7 +79,11 @@ t('each failure gets its own message', () => {
   // The specific regression: no "check the values" on an error that has
   // nothing to do with the values.
   assert.ok(!/check the values/i.test(unknown));
-  assert.match(invalidInput, /check the values/i);
+  // A genuine validation error now shows GHL's OWN reason when it is short
+  // and safe (ghlRejection.safeDetail) — "title must be a string" — rather
+  // than a generic "check the values". The point of this test survives: it
+  // is told apart from the unknown-id case, which never says either.
+  assert.match(invalidInput, /title must be a string/i);
   assert.match(gone, /no longer exists/i);
 
   assert.notEqual(unknown, invalidInput);

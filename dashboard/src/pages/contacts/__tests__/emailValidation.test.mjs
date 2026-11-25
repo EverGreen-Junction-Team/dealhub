@@ -56,7 +56,7 @@ t('the client rule MATCHES the server character for character', () => {
   // A stricter client would refuse addresses the API accepts; a looser one
   // would let the round trip happen and change nothing.
   const server = readFileSync(
-    join(here, '..', '..', '..', '..', '..', 'pipelinePulse', 'server',
+    join(here, '..', '..', '..', '..', '..', 'server',
       'src', 'services', 'contactPatch.js'), 'utf8');
   const serverRe = /\/\^\[\^\\s@\]\+@\[\^\\s@\]\+\\\.\[\^\\s@\]\+\$\//;
   assert.match(server, serverRe, 'the server rule changed — update this one to match');

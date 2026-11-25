@@ -19,7 +19,7 @@ import apiClient from './client'
 // far more than they need to keep waiting.
 const ASK_TIMEOUT_MS = 180_000
 
-// Deal Hub AI. Contract mirrors pipelinePulse/server/src/routes/ai.js.
+// Deal Hub AI. Contract mirrors server/src/routes/ai.js.
 export const aiAPI = {
   // Skills a rep can @-mention in the Insights AI composer.
   //

@@ -31,6 +31,10 @@ import { Truncate } from '../shared/ListChrome'
 // default: better a card for a previewable file than a blank frame.
 function kindOf(att) {
   const name = String(att?.name || att?.url || '')
+  // Nothing to load at all — no name, no url. Trying it "as an image"
+  // (the no-extension rule below) would request an empty src and wait for
+  // it to fail; the card is the honest answer straight away.
+  if (!name) return 'file'
   const ext = (name.split('?')[0].split('.').pop() || '').toLowerCase()
   const ct = String(att?.contentType || '').toLowerCase()
   if (ct.startsWith('image/')) return 'image'

@@ -414,6 +414,7 @@ export default function ResourceBoard({
                         <button
                           type="button"
                           className={(a.status || '').toLowerCase() === 'cancelled' ? undefined : 'pp-appt'}
+                          data-noclip=""
                           onClick={() => { if (a.dealId) onOpenDeal?.(a.dealId) }}
                           style={{
                             '--pp-accent': statusAccent(a),

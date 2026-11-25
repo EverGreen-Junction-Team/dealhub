@@ -23,6 +23,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const route = readFileSync(new URL('../deals.js', import.meta.url), 'utf8');
+// The clear itself — empty-value rule, fixed column map, local write — moved
+// out of the route into services/opportunityFields.js. The tests below that
+// are about THAT logic read it there; the ordering test still reads the route.
+const fields = readFileSync(new URL('../../services/opportunityFields.js', import.meta.url), 'utf8');
 const writer = readFileSync(
   new URL('../../services/stageHistoryWriter.js', import.meta.url),
   'utf8'
@@ -39,22 +43,22 @@ test('the PATCH applies cleared fields locally, after the GHL write', () => {
 test('only an EMPTY value counts as a clear', () => {
   // A field being SET is already carried by the webhook, which reports the
   // values it has. Writing those here too would be a second source of truth.
-  assert.match(route, /Array\.isArray\(v\) \? v\.length === 0 : \(v === '' \|\| v === null\)/);
+  assert.match(fields, /Array\.isArray\(v\) \? v\.length === 0 : \(v === '' \|\| v === null\)/);
 });
 
 test('the column name comes from a fixed map, never from the request', () => {
   // It is interpolated into the SQL text, where a placeholder cannot be used.
-  assert.match(route, /const CLEARABLE_COLUMNS = \{/);
-  assert.match(route, /SET \$\{column\} = NULL/);
+  assert.match(fields, /const CLEARABLE_COLUMNS = \{/);
+  assert.match(fields, /SET \$\{column\} = NULL/);
   // Both spellings of the inconsistent GHL key reach the same column.
-  assert.match(route, /first_contact__method: 'first_contact_method'/);
-  assert.match(route, /first_contact_method: 'first_contact_method'/);
+  assert.match(fields, /first_contact__method: 'first_contact_method'/);
+  assert.match(fields, /first_contact_method: 'first_contact_method'/);
 });
 
 test('a failed local write does not report the save as failed', () => {
   // The GHL write already succeeded. Telling the rep it failed would be false,
   // and the next event carrying the field reconciles us anyway.
-  const fn = route.slice(route.indexOf('async function applyClearedCustomFields'));
+  const fn = fields.slice(fields.indexOf('async function applyClearedCustomFields'));
   assert.match(fn, /logger\.warn\(/);
   assert.doesNotMatch(fn.slice(0, fn.indexOf('\n}')), /throw /);
 });

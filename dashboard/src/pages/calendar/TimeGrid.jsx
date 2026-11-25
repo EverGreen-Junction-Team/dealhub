@@ -334,6 +334,7 @@ export default function TimeGrid({
                     <button
                       type="button"
                       className={cancelled ? undefined : 'pp-appt'}
+                      data-noclip=""
                       onClick={() => { if (a.dealId) onOpenDeal?.(a.dealId) }}
                       style={{
                         '--pp-accent': accent,

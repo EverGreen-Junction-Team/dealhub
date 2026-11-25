@@ -148,3 +148,36 @@ test('the detail card says how long in words, and which day it ends', () => {
   assert.match(src, /humanDuration\(mins\)/)
   assert.match(src, /const multiDay = end && !end\.isSame\(start, 'day'\)/)
 })
+
+// ── Multi-day bookings on every view ──────────────────────────────────
+
+test('the start marker is half an hour at the real start, and carries the whole', async () => {
+  const { longStartPiece } = await import('../boardLayout.js')
+  const live = { id: 'L', startsAt: '2026-11-24T10:30:00Z', endsAt: '2026-11-30T11:00:00Z' }
+  const p = longStartPiece(live)
+  assert.equal(p.startsAt, live.startsAt)
+  assert.equal(p.endsAt, '2026-11-24T11:00:00.000Z')
+  assert.equal(p.id, 'L', 'menu and deal must act on the real appointment')
+  assert.equal(p._whole, live)
+})
+
+test('a marker can never be dragged, and acts on the whole appointment', () => {
+  const card = readFileSync(new URL('../AppointmentCard.jsx', import.meta.url), 'utf8')
+  assert.match(card, /const draggable = !isBlocked && !busy && !isPiece/,
+    'a dropped marker would re-time the real booking to 30 minutes')
+  assert.ok(!/onSetStatus\(a, /.test(card), 'status menu acts on the piece, not the appointment')
+  assert.match(card, /AppointmentDetail appointment=\{whole\}/)
+})
+
+test('the people board shows a long booking on every day it covers', () => {
+  const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
+  assert.match(rb, /const longByCell = useMemo/)
+  assert.match(rb, /const booked = items\.filter\(\(i\) => !i\._whole\)\.length \+ longs\.length/,
+    'counted twice on its first day, or not at all after it')
+  assert.match(rb, /height: headH/)
+})
+
+test('the month lists a long booking on every day it covers', () => {
+  const mg = readFileSync(new URL('../MonthGrid.jsx', import.meta.url), 'utf8')
+  assert.match(mg, /for \(const a of appointments\.filter\(isLong\)\)/)
+})

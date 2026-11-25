@@ -5,7 +5,7 @@ import { colourFor } from './CalendarSidebar'
 import {
   DAY_START_MIN, DAY_END_MIN, WORK_START_MIN, WORK_END_MIN,
   boardHeightPx, hourMarks, clampToWindow,
-  groupByDay, isLong, longSpan, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
+  groupByDay, isLong, longSpan, longStartPiece, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
   isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev
@@ -62,7 +62,12 @@ export default function TimeGrid({
   // the time columns — see isLong in boardLayout for the live case.
   const timed = useMemo(() => appointments.filter((a) => !isLong(a)), [appointments])
   const long = useMemo(() => appointments.filter(isLong), [appointments])
-  const cells = useMemo(() => groupByDay(timed, zone), [timed, zone])
+  // The start marker goes in with the timed ones, so it lane-packs with
+  // whatever else is at 10:30 that day.
+  const cells = useMemo(
+    () => groupByDay([...timed, ...long.map(longStartPiece)], zone),
+    [timed, long, zone]
+  )
 
   const dayKeys = useMemo(() => {
     const out = []

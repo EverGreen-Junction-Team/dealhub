@@ -1,7 +1,7 @@
 import React from 'react'
 import { Popover, Dropdown } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
-import { clockTime } from '../../utils/calendarTime'
+import { clockTime, inZone } from '../../utils/calendarTime'
 import { offsetY } from './pointer'
 
 // One booking on the board.
@@ -45,6 +45,15 @@ const UNKNOWN_STYLE = { tint: 'var(--tint-sky)', bar: 'var(--accent-sky)', text:
 
 const BLOCKED_STYLE = { tint: 'var(--gray-100)', bar: 'var(--gray-450)', text: 'var(--text-muted)' }
 
+/** The bar colour this card would use on the resource board, where the
+ *  colour is the STATUS. Exported so a multi-day chip on that board matches
+ *  the start-marker card it belongs to. */
+export function statusAccent(appointment) {
+  if (appointment?.kind === 'blocked') return BLOCKED_STYLE.bar
+  const st = (appointment?.status || '').toLowerCase()
+  return (STATUS_STYLE[st] || UNKNOWN_STYLE).bar
+}
+
 export default function AppointmentCard({
   appointment, zone, top, height, lane, lanes,
   clippedBefore, clippedAfter,
@@ -64,6 +73,12 @@ export default function AppointmentCard({
   accent = null
 }) {
   const a = appointment
+  // A START MARKER for a days-long appointment (see longStartPiece): a
+  // half-hour card at its start time, standing in for the whole thing.
+  // Everything that acts or reports — the menu, the hover card, the deal —
+  // uses the WHOLE appointment; only the card's own geometry is the piece.
+  const whole = a._whole || a
+  const isPiece = whole !== a
   const isBlocked = a.kind === 'blocked'
   const status = (a.status || '').toLowerCase()
   const style = isBlocked
@@ -81,7 +96,7 @@ export default function AppointmentCard({
   // customer, no deal, and — crucially — it cannot be dragged. GHL's
   // appointment endpoints do not own blocked slots, so a drag would produce
   // a refusal from the server with nothing the rep could do about it.
-  const draggable = !isBlocked && !busy
+  const draggable = !isBlocked && !busy && !isPiece
 
   const label = isBlocked
     ? (a.title || 'Blocked')
@@ -105,23 +120,23 @@ export default function AppointmentCard({
       statusActions.push({
         key: 'confirmed',
         label: 'Reinstate',
-        onClick: () => onSetStatus(a, 'confirmed')
+        onClick: () => onSetStatus(whole, 'confirmed')
       })
     } else {
       statusActions.push({
         key: 'cancelled',
         label: 'Cancel this appointment',
         danger: true,
-        onClick: () => onSetStatus(a, 'cancelled')
+        onClick: () => onSetStatus(whole, 'cancelled')
       })
       // Outcomes, which are what make the board worth reading back. A
       // no-show recorded on the day is a fact; reconstructed a week later
       // it is a guess.
       statusActions.push({
-        key: 'showed', label: 'Mark as attended', onClick: () => onSetStatus(a, 'showed')
+        key: 'showed', label: 'Mark as attended', onClick: () => onSetStatus(whole, 'showed')
       })
       statusActions.push({
-        key: 'noshow', label: 'Mark as a no-show', onClick: () => onSetStatus(a, 'noshow')
+        key: 'noshow', label: 'Mark as a no-show', onClick: () => onSetStatus(whole, 'noshow')
       })
     }
   }
@@ -131,7 +146,7 @@ export default function AppointmentCard({
       // A light card, not a dark tooltip — see AppointmentDetail for why.
       // rootClassName because it portals to <body>, outside [data-dealhub],
       // where none of the type or colour tokens exist without it.
-      content={<AppointmentDetail appointment={a} zone={zone} accent={accent} clippedBefore={clippedBefore} clippedAfter={clippedAfter} />}
+      content={<AppointmentDetail appointment={whole} zone={zone} accent={accent} clippedBefore={clippedBefore} clippedAfter={clippedAfter} />}
       trigger="hover"
       mouseEnterDelay={0.35}
       placement="right"
@@ -297,7 +312,9 @@ export default function AppointmentCard({
           >
             {isBlocked
               ? 'Blocked'
-              : (showOwner
+              : isPiece
+                ? `until ${inZone(whole.endsAt, zone).format('ddd D MMM, HH:mm')}`
+                : (showOwner
                 ? (a.assignedUserName || 'Unassigned')
                 : (a.dealName || (status === 'noshow' ? 'No-show' : 'No deal')))}
             {clippedAfter ? ' ↓' : ''}

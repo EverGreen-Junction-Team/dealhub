@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import AppointmentCard from './AppointmentCard'
+import AppointmentCard, { statusAccent } from './AppointmentCard'
 import DraftSlot from './DraftSlot'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
-  groupIntoCells, cellKey, minutesForDrop, isRealMove, movePatch,
+  groupIntoCells, cellKey, isLong, longSpan, longStartPiece, minutesForDrop, isRealMove, movePatch,
   UNASSIGNED, PIXELS_PER_MINUTE, WORK_START_MIN, WORK_END_MIN
 } from './boardLayout'
 import {
-  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES, zoneAbbrev
+  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES, zoneAbbrev, inZone
 } from '../../utils/calendarTime'
 import { offsetY } from './pointer'
+import { Popover } from 'antd'
+import AppointmentDetail from './AppointmentDetail'
 
 // The board: a column per person, read down the day.
 //
@@ -70,8 +72,37 @@ export default function ResourceBoard({
   // highlight, and the rep needs to see where the card will land.
   const [hover, setHover] = useState(null)
 
-  const cells = useMemo(() => groupIntoCells(appointments, zone), [appointments, zone])
   const dayKeys = useMemo(() => dayList(fromDay, days), [fromDay, days])
+
+  // ── DAYS-LONG BOOKINGS ON A PEOPLE BOARD ─────────────────────────────
+  // Grouping is by START day, so a six-day booking appeared on its first
+  // day only and the person read "Free" for the other five — the wrong
+  // answer to the only question this board asks. So: a start marker in
+  // the timeline (as on the week grid), and on EVERY day it covers, a
+  // slim row under the person's name. Kept out of the time column so
+  // double-clicking a slot there still books.
+  const long = useMemo(() => appointments.filter(isLong), [appointments])
+  const cells = useMemo(
+    () => groupIntoCells([...appointments.filter((a) => !isLong(a)), ...long.map(longStartPiece)], zone),
+    [appointments, long, zone]
+  )
+  const longByCell = useMemo(() => {
+    const m = new Map()
+    for (const a of long) {
+      const span = longSpan(a, dayKeys, zone)
+      if (!span) continue
+      for (let i = span.from; i <= span.to; i++) {
+        const key = cellKey(dayKeys[i], a.assignedUserId || null)
+        if (!m.has(key)) m.set(key, [])
+        m.get(key).push(a)
+      }
+    }
+    return m
+  }, [long, dayKeys, zone])
+  const longRows = Math.max(0, ...[...longByCell.values()].map((v) => v.length))
+  // The heads grow by one 22px row per stacked booking, ALL of them, so
+  // the columns stay aligned with each other and with the gutter.
+  const headH = HEADER_H + (longRows ? longRows * 22 + 4 : 0)
 
   // Columns: everyone assignable, then anyone holding work who is not.
   //
@@ -228,7 +259,7 @@ export default function ResourceBoard({
               // leaves a hole where the names' row begins.
               position: 'sticky', top: 0, zIndex: 5,
               background: 'var(--surface-card)',
-              height: HEADER_H,
+              height: headH,
               borderBottom: '1px solid var(--border-default)',
               boxSizing: 'border-box',
               display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
@@ -306,6 +337,10 @@ export default function ResourceBoard({
             {columns.map((col) => {
               const key = cellKey(day, col.id === UNASSIGNED ? null : col.id)
               const items = cells.get(key) || []
+              const longs = longByCell.get(key) || []
+              // Each booking once: the start marker IS the long booking on
+              // its first day, so it is not counted again.
+              const booked = items.filter((i) => !i._whole).length + longs.length
               const isHover = hover === key
               return (
                 <div
@@ -319,7 +354,7 @@ export default function ResourceBoard({
                       shown. Sticky downwards so it survives page scroll. */}
                   <div
                     style={{
-                      height: HEADER_H, boxSizing: 'border-box',
+                      height: headH, boxSizing: 'border-box',
                       position: 'sticky', top: 0, zIndex: 2,
                       // Unassigned keeps its tint: it is not a person, it
                       // is a pile of work with nobody's name on it, and
@@ -330,7 +365,8 @@ export default function ResourceBoard({
                         : 'var(--surface-card)',
                       borderBottom: '1px solid var(--border-default)',
                       padding: '4px 8px',
-                      display: 'flex', flexDirection: 'column', justifyContent: 'center'
+                      display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
+                      paddingTop: 6
                     }}
                   >
                     <div
@@ -349,10 +385,41 @@ export default function ResourceBoard({
                           multi-day board, which put the same date under all
                           twelve of that day's columns and told you nothing
                           you could not see from the day heading. */}
-                      {items.length === 0
-                        ? 'Free'
-                        : `${items.length} booked`}
+                      {booked === 0 ? 'Free' : `${booked} booked`}
                     </div>
+                    {longs.map((a) => (
+                      <Popover
+                        key={a.id}
+                        content={<AppointmentDetail appointment={a} zone={zone} accent={statusAccent(a)} />}
+                        trigger="hover"
+                        mouseEnterDelay={0.35}
+                        rootClassName="pp-portal"
+                        styles={{ body: { padding: 'var(--space-4)' } }}
+                      >
+                        <button
+                          type="button"
+                          className={(a.status || '').toLowerCase() === 'cancelled' ? undefined : 'pp-appt'}
+                          onClick={() => { if (a.dealId) onOpenDeal?.(a.dealId) }}
+                          style={{
+                            '--pp-accent': statusAccent(a),
+                            marginTop: 4, height: 18, width: '100%',
+                            display: 'block', padding: '0 6px',
+                            border: '1px solid var(--border-strong)',
+                            borderLeft: `3px solid ${statusAccent(a)}`,
+                            borderRadius: 4,
+                            fontSize: 'var(--text-xs)', lineHeight: '16px',
+                            color: 'var(--text-heading)', textAlign: 'left',
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            cursor: a.dealId ? 'pointer' : 'default'
+                          }}
+                        >
+                          {a.contactName || a.title || 'Appointment'}
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            {` · until ${inZone(a.endsAt, zone).format('ddd D')}`}
+                          </span>
+                        </button>
+                      </Popover>
+                    ))}
                   </div>
 
                   <div

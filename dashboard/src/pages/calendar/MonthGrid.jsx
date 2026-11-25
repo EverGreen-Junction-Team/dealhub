@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Popover } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
-import { monthWeeks, groupByDay, movePatch } from './boardLayout'
+import { monthWeeks, groupByDay, movePatch, isLong, longSpan } from './boardLayout'
 import { colourFor } from './CalendarSidebar'
 import {
-  isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone
+  isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, dayKey
 } from '../../utils/calendarTime'
 
 // The month view.
@@ -55,7 +55,24 @@ export default function MonthGrid({
   const [hover, setHover] = useState(null)
 
   const weeks = useMemo(() => monthWeeks(fromDay), [fromDay])
-  const cells = useMemo(() => groupByDay(appointments, zone), [appointments, zone])
+  // A days-long booking is listed on EVERY day it covers, not only its
+  // first — a month answers "which days is she out", and a six-day job
+  // that showed on one square answered it wrong.
+  const cells = useMemo(() => {
+    const m = groupByDay(appointments, zone)
+    const keys = weeks.flat()
+    for (const a of appointments.filter(isLong)) {
+      const span = longSpan(a, keys, zone)
+      if (!span) continue
+      const startKey = dayKey(a.startsAt, zone)
+      for (let i = span.from; i <= span.to; i++) {
+        if (keys[i] === startKey) continue
+        if (!m.has(keys[i])) m.set(keys[i], [])
+        m.get(keys[i]).unshift(a)
+      }
+    }
+    return m
+  }, [appointments, zone, weeks])
   const todayKey = dayKeyNow(zone)
   const thisMonth = fromDay.format('YYYY-MM')
 

@@ -311,6 +311,23 @@ export function longSpan(appointment, dayKeys, zone) {
   }
 }
 
+/**
+ * A half-hour card at a long appointment's START, for the time columns.
+ *
+ * The strip shows the span; this shows the moment it begins, in the
+ * timeline where the eye looks for 10:30. Same id as the real appointment
+ * so the menu and the deal act on it, carrying the whole thing as _whole.
+ * Never draggable — a drop would re-time the real booking to 30 minutes.
+ */
+export function longStartPiece(appointment) {
+  const start = new Date(appointment.startsAt).getTime()
+  return {
+    ...appointment,
+    endsAt: new Date(start + 30 * 60000).toISOString(),
+    _whole: appointment
+  }
+}
+
 export function groupByDay(appointments, zone) {
   const cells = new Map()
   for (const a of appointments) {

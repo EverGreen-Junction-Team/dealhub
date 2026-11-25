@@ -139,14 +139,17 @@ async function fetchCalendars(install, locationId) {
  * to tell "this calendar is empty" from "we could not look", because the
  * first permits delete reconciliation and the second must forbid it.
  */
-async function fetchCalendarEvents(install, locationId, calendarId, path, { startMs, endMs }) {
+async function fetchCalendarEvents(install, locationId, scope, path, { startMs, endMs }) {
+  // `scope` is { calendarId } or { userId } — see PERSON-LEVEL BLOCKED TIME.
+  // A bare string is still accepted as a calendar id.
+  const by = typeof scope === 'string' ? { calendarId: scope } : scope;
   try {
     const { data } = await ghlRequest(install, {
       method: 'GET',
       url: path,
       params: {
         locationId,
-        calendarId,
+        ...by,
         startTime: String(startMs),
         endTime: String(endMs)
       },
@@ -157,7 +160,7 @@ async function fetchCalendarEvents(install, locationId, calendarId, path, { star
   } catch (err) {
     const status = err.response?.status;
     logger.warn(
-      { locationId, calendarId, path, status, err },
+      { locationId, ...by, path, status, err },
       'appointmentsSync: calendar event fetch failed — this calendar will '
       + 'not be reconciled on this run'
     );
@@ -308,7 +311,7 @@ async function upsertEvent(install, locationId, e, eventKind, { calendarId }) {
  * Note it does NOT filter on event_kind. A blocked slot removed in GHL has
  * to disappear here too, and it came back from the same window.
  */
-async function reconcileDeletes(locationId, seenIds, { truncated, calendarIds, window }) {
+async function reconcileDeletes(locationId, seenIds, { truncated, calendarIds, userIds = [], window }) {
   const verdict = shouldReconcileDeletes({ seenCount: seenIds.length, truncated });
   if (!verdict.reconcile) {
     logger.warn(
@@ -317,7 +320,28 @@ async function reconcileDeletes(locationId, seenIds, { truncated, calendarIds, w
     );
     return 0;
   }
-  if (!calendarIds.length) return 0;
+  // Person-level blocked time (see PERSON-LEVEL BLOCKED TIME): a block
+  // removed in GHL must leave here too. Only blocked rows, only for people
+  // whose fetch SUCCEEDED, and never a row tied to a calendar that was not
+  // itself read — the same three guards as the calendar pass.
+  let userDeleted = 0;
+  if (userIds.length) {
+    const r = await rawQuery(
+      `UPDATE appointments
+          SET deleted_at = now(), updated_at = now()
+        WHERE location_id = $1
+          AND deleted_at IS NULL
+          AND event_kind = 'blocked'
+          AND assigned_user_id = ANY($3::text[])
+          AND (calendar_id IS NULL OR calendar_id = ANY($6::text[]))
+          AND starts_at >= $4
+          AND starts_at <= $5
+          AND NOT (appointment_id = ANY($2::text[]))`,
+      [locationId, seenIds, userIds, window.from, window.to, calendarIds]
+    );
+    userDeleted = r.rowCount || 0;
+  }
+  if (!calendarIds.length) return userDeleted;
 
   const { rowCount } = await rawQuery(
     `UPDATE appointments
@@ -330,7 +354,7 @@ async function reconcileDeletes(locationId, seenIds, { truncated, calendarIds, w
         AND NOT (appointment_id = ANY($2::text[]))`,
     [locationId, seenIds, calendarIds, window.from, window.to]
   );
-  return rowCount || 0;
+  return (rowCount || 0) + userDeleted;
 }
 
 /**
@@ -428,14 +452,63 @@ export async function syncAppointmentsForLocation(locationId) {
     await sleep(THROTTLE_MS);
   }
 
+  // ── PERSON-LEVEL BLOCKED TIME ───────────────────────────────────────
+  //
+  // GHL's docs (v3, Get Blocked Slots): "calendarId finds blocks set on an
+  // event calendar only. Blocks set on a host (assignedUserId) are found by
+  // userId." Everything above asked by calendar, so every block set on a
+  // PERSON — including busy time synced in from their Google calendar —
+  // was never fetched. Found on the live board: GHL showed "Busy 09:00–
+  // 11:30" for James Stevens and our board showed nothing, and every sweep
+  // so far had logged blocked: 0.
+  //
+  // So each active person in the location is asked too. A block already
+  // seen through a calendar is skipped. A person whose fetch fails is left
+  // out of `coveredUsers`, so their blocks are not deleted for it — but it
+  // does not stop the calendar pass reconciling.
+  const seenSet = new Set(seenIds);
+  const coveredUsers = [];
+  const { rows: people } = await rawQuery(
+    `SELECT user_id FROM users
+      WHERE location_id = $1
+        AND active = true
+        AND deleted_at IS NULL
+        AND (location_ids IS NULL OR $1 = ANY(location_ids))`,
+    [locationId]
+  );
+  for (const { user_id: userId } of people) {
+    const slots = await fetchCalendarEvents(
+      install, locationId, { userId }, '/calendars/blocked-slots', window
+    );
+    if (slots === null) continue;
+    coveredUsers.push(userId);
+    for (const e of slots) {
+      const id = e.id || e._id;
+      if (!id || seenSet.has(id)) continue;
+      seenSet.add(id);
+      seenIds.push(id);
+      blocked++;
+      try {
+        if (await upsertEvent(install, locationId, e, 'blocked', { calendarId: e.calendarId || null })) changed++;
+      } catch (err) {
+        logger.warn(
+          { locationId, userId, appointmentId: id, err, pgCode: err.code || null, detail: err.detail || null },
+          'appointmentsSync: person-level block upsert failed'
+        );
+      }
+    }
+    await sleep(THROTTLE_MS);
+  }
+
   const truncated = truncatedByCap || failedFetches > 0;
   const deleted = await reconcileDeletes(locationId, seenIds, {
-    truncated, calendarIds: coveredCalendars, window
+    truncated, calendarIds: coveredCalendars, userIds: coveredUsers, window
   });
 
   const stats = {
     calendars: toSweep.length,
     covered: coveredCalendars.length,
+    coveredUsers: coveredUsers.length,
     seen: seenIds.length,
     blocked,
     changed,

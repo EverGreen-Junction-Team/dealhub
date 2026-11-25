@@ -8,7 +8,7 @@ import {
   UNASSIGNED, PIXELS_PER_MINUTE, WORK_START_MIN, WORK_END_MIN
 } from './boardLayout'
 import {
-  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES, zoneAbbrev, inZone
+  isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES, zoneAbbrev, inZone, dayKey
 } from '../../utils/calendarTime'
 import { offsetY } from './pointer'
 import { Popover } from 'antd'
@@ -109,6 +109,17 @@ export default function ResourceBoard({
   // The unassigned column is appended only when something is actually in it.
   // An empty column permanently taking up width would be noise on a board
   // that is usually fully assigned.
+  // Only what is ON SCREEN. The board is fed the whole fetched range, and
+  // "Busy only" was asking "busy at any point this fortnight", so on a
+  // one-day board it kept reps with nothing that day and labelled them
+  // Free under a filter called Busy only.
+  const onScreen = useMemo(() => {
+    const shown = new Set(dayKeys)
+    return appointments.filter((a) => (isLong(a)
+      ? longSpan(a, dayKeys, zone) != null
+      : shown.has(dayKey(a.startsAt, zone))))
+  }, [appointments, dayKeys, zone])
+
   const columns = useMemo(() => {
     // Who actually has something in this window.
     //
@@ -120,7 +131,7 @@ export default function ResourceBoard({
     // appointment. At three days that is thirty-six columns of nothing, and
     // the two bookings you came to look at are somewhere off-screen.
     const busy = new Set(
-      appointments.map((a) => a.assignedUserId).filter(Boolean)
+      onScreen.map((a) => a.assignedUserId).filter(Boolean)
     )
 
     let cols = resources.map((r) => ({ ...r, hasWork: busy.has(r.id) }))
@@ -134,7 +145,7 @@ export default function ResourceBoard({
       cols = kept.length > 0 ? kept : cols
     }
 
-    const hasUnassigned = appointments.some((a) => !a.assignedUserId)
+    const hasUnassigned = onScreen.some((a) => !a.assignedUserId)
     if (hasUnassigned) {
       cols.push({
         id: UNASSIGNED,
@@ -145,13 +156,13 @@ export default function ResourceBoard({
       })
     }
     return cols
-  }, [resources, appointments, hideEmpty])
+  }, [resources, onScreen, hideEmpty])
 
   // "Busy only" with nobody busy falls back to everyone — see above — and
   // it has to SAY so. Otherwise the control reads "Busy only" over a board
   // of twelve people all marked Free, which looks like the filter is broken.
   const fellBack = hideEmpty && resources.length > 0
-    && !appointments.some((a) => a.assignedUserId)
+    && !onScreen.some((a) => a.assignedUserId)
 
   // The red line across today. A day board without one makes you read the
   // gutter to answer "what is next", which is the question you opened it for.

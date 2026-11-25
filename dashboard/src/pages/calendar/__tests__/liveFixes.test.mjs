@@ -184,3 +184,10 @@ test('the month lists a long booking on every day it covers', () => {
   const mg = readFileSync(new URL('../MonthGrid.jsx', import.meta.url), 'utf8')
   assert.match(mg, /for \(const a of appointments\.filter\(isLong\)\)/)
 })
+
+test('"Busy only" means busy on the days shown, not anywhere in the fetch', () => {
+  const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
+  assert.match(rb, /const onScreen = useMemo/)
+  assert.match(rb, /onScreen\.map\(\(a\) => a\.assignedUserId\)/)
+  assert.ok(!/appointments\.map\(\(a\) => a\.assignedUserId\)/.test(rb), 'busy is computed from the whole range again')
+})

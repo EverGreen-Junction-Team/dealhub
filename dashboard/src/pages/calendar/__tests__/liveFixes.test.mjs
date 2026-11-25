@@ -203,3 +203,31 @@ test('a long booking does not restart each morning in the month', async () => {
   const allday = { startsAt: '2026-10-26T00:00:00Z', endsAt: '2026-10-31T23:59:00Z' }
   for (const d of ['2026-10-26', '2026-10-28', '2026-10-31']) assert.equal(b.longDayLabel(allday, d, Z, clock), 'All day')
 })
+
+// ── The ‹ › arrows never moved the calendar ──────────────────────────
+
+test('setFromDay accepts the updater form that step() uses', async () => {
+  // Reproduce the setter exactly as written in CalendarTab, against a
+  // fake useTabState setter, and drive it the way step(1) does.
+  const dayjs = (await import('dayjs')).default
+  const body = tab.slice(tab.indexOf('(d) => setFromDayKey('), tab.indexOf('[setFromDayKey]'))
+  assert.match(body, /typeof d === 'function' \? d\(dayjs\(prevKey\)\.startOf\('day'\)\) : d/,
+    'the updater form is not handled — the arrows throw again')
+  let stored = '2026-11-20'
+  const setFromDayKey = (fn) => { stored = typeof fn === 'function' ? fn(stored) : fn }
+  const setFromDay = (d) => setFromDayKey((prevKey) => {
+    const next = typeof d === 'function' ? d(dayjs(prevKey).startOf('day')) : d
+    return dayjs(next).startOf('day').format('YYYY-MM-DD')
+  })
+  setFromDay((d) => d.add(1, 'day'));   assert.equal(stored, '2026-11-21')
+  setFromDay((d) => d.add(7, 'day'));   assert.equal(stored, '2026-11-28')
+  setFromDay((d) => d.add(1, 'month')); assert.equal(stored, '2026-12-28')
+  setFromDay(dayjs('2026-11-25'));      assert.equal(stored, '2026-11-25', 'a plain date still works')
+})
+
+test('an empty board explains which filter emptied it', () => {
+  for (const why of ['Nobody is ticked under People.', 'No calendars are ticked.', 'No blocked time in this period.']) {
+    assert.ok(tab.includes(why), `missing: ${why}`)
+  }
+  assert.match(tab, /if \(loading \|\| error \|\| !hasBoard \|\| visible\.length > 0\) return null/)
+})

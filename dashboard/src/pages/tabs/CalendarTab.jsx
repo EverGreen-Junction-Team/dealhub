@@ -127,8 +127,17 @@ export default function CalendarTab({ onOpenDeal }) {
     'calendar', 'day', dayjs().startOf('day').format('YYYY-MM-DD')
   )
   const fromDay = useMemo(() => dayjs(fromDayKey).startOf('day'), [fromDayKey])
+  // ACCEPTS AN UPDATER, like any React setter. It did not, and `step`
+  // calls it as setFromDay((d) => d.add(1, 'day')) — so the function was
+  // treated as a date, `d.startOf` was undefined, and the click threw
+  // inside the handler. The ‹ › arrows never moved the calendar; found
+  // by clicking them on the live board. Today and the mini-month worked,
+  // because they pass a date.
   const setFromDay = useCallback(
-    (d) => setFromDayKey(d.startOf('day').format('YYYY-MM-DD')),
+    (d) => setFromDayKey((prevKey) => {
+      const next = typeof d === 'function' ? d(dayjs(prevKey).startOf('day')) : d
+      return dayjs(next).startOf('day').format('YYYY-MM-DD')
+    }),
     [setFromDayKey]
   )
 
@@ -759,6 +768,57 @@ export default function CalendarTab({ onOpenDeal }) {
               <span className="pp-cal-refresh" />
             </div>
           )}
+
+          {/* ── AN EMPTY BOARD SAYS WHY ────────────────────────────────
+              Found live: "Blocked time" on a sub-account with none, and
+              People → None, both gave a blank month with no word of
+              explanation — indistinguishable from a broken page. Only
+              when a FILTER is the reason: an empty week with no filters
+              on is just a quiet week, and the grid is the right thing to
+              show for booking into. Floated over the board rather than
+              placed above it, so the bounded grids keep their size. */}
+          {(() => {
+            if (loading || error || !hasBoard || visible.length > 0) return null
+            let why = null
+            let fix = null
+            if (Array.isArray(people) && people.length === 0) {
+              why = 'Nobody is ticked under People.'
+              fix = () => setPeople(null)
+            } else if (Array.isArray(selectedCalendars) && selectedCalendars.length === 0) {
+              why = 'No calendars are ticked.'
+              fix = () => setSelectedCalendars(null)
+            } else if (people != null || selectedCalendars != null) {
+              why = 'Nothing for the people and calendars ticked, in this period.'
+              fix = () => { setPeople(null); setSelectedCalendars(null) }
+            } else if (kind === 'blocked') {
+              why = 'No blocked time in this period.'
+              fix = () => setKind('all')
+            } else if (kind === 'appointments') {
+              why = 'No appointments in this period.'
+              fix = () => setKind('all')
+            }
+            if (!why) return null
+            return (
+              <div
+                role="status"
+                style={{
+                  position: 'absolute', top: 56, left: '50%', transform: 'translateX(-50%)',
+                  zIndex: 6,
+                  display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                  padding: '8px 8px 8px 14px',
+                  background: 'var(--surface-card)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--radius-pill)',
+                  boxShadow: '0 4px 16px rgba(23, 33, 46, 0.10)',
+                  fontSize: 'var(--text-sm)', color: 'var(--text-body)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {why}
+                <Button size="small" shape="round" onClick={fix}>Show everything</Button>
+              </div>
+            )
+          })()}
 
       {hasBoard && view === 'month' && (
         <MonthGrid

@@ -311,7 +311,13 @@ function SectionHead({ label, action, onAction }) {
         type="button"
         onClick={onAction}
         style={{
-          border: 'none', background: 'none', padding: 0,
+          // A real target. "All" is three letters at 13px — about 14px
+          // wide — and a click 7px to its left missed it on the live
+          // board. Padding grows the target; the negative margin keeps it
+          // where it was drawn.
+          border: 'none', background: 'none',
+          padding: '4px 8px', margin: '-4px -8px',
+          borderRadius: 'var(--radius-sm)',
           fontSize: 'var(--text-xs)', color: 'var(--text-link)',
           cursor: 'pointer'
         }}

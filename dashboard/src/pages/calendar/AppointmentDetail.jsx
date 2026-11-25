@@ -60,6 +60,10 @@ const same = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLow
 // down to minutes only where they are the whole story.
 export function humanDuration(mins) {
   if (!Number.isFinite(mins) || mins <= 0) return null
+  // GHL ends a whole-day booking at 23:59, so 00:00 Monday to 23:59
+  // Saturday is 8,639 minutes — "5 days 23 hr" for what is six days.
+  // One minute short of a whole day counts as the whole day.
+  if (mins >= 1439 && (mins + 1) % 1440 === 0) mins += 1
   const d = Math.floor(mins / 1440)
   const h = Math.floor((mins % 1440) / 60)
   const m = mins % 60

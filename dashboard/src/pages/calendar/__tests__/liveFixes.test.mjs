@@ -191,3 +191,15 @@ test('"Busy only" means busy on the days shown, not anywhere in the fetch', () =
   assert.match(rb, /onScreen\.map\(\(a\) => a\.assignedUserId\)/)
   assert.ok(!/appointments\.map\(\(a\) => a\.assignedUserId\)/.test(rb), 'busy is computed from the whole range again')
 })
+
+test('a long booking does not restart each morning in the month', async () => {
+  const b = await import('../boardLayout.js')
+  const t = await import('../../../utils/calendarTime.js')
+  const Z = 'Europe/London', clock = (iso) => t.clockTime(iso, Z)
+  const tue = { startsAt: '2026-11-24T10:30:00Z', endsAt: '2026-11-30T11:00:00Z' }
+  assert.equal(b.longDayLabel(tue, '2026-11-24', Z, clock), '10:30')
+  assert.equal(b.longDayLabel(tue, '2026-11-26', Z, clock), 'All day')
+  assert.equal(b.longDayLabel(tue, '2026-11-30', Z, clock), 'until 11:00')
+  const allday = { startsAt: '2026-10-26T00:00:00Z', endsAt: '2026-10-31T23:59:00Z' }
+  for (const d of ['2026-10-26', '2026-10-28', '2026-10-31']) assert.equal(b.longDayLabel(allday, d, Z, clock), 'All day')
+})

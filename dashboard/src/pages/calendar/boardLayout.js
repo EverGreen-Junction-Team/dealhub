@@ -328,6 +328,33 @@ export function longStartPiece(appointment) {
   }
 }
 
+/**
+ * What a days-long booking should SAY on one particular day of it.
+ *
+ * Found live: a booking from 00:00 Monday to 23:59 Saturday was listed on
+ * each of its six days as "00:00 james stevens", and one from 10:30
+ * Tuesday as "10:30" on every day to the next Monday — as if it began
+ * again each morning. A day in the middle of a booking has no start time.
+ *
+ *   first day, starting at midnight  → "All day"
+ *   first day, otherwise             → its start, "10:30"
+ *   last day, ending by midnight     → "All day"
+ *   last day, otherwise              → "until 11:00"
+ *   any day between                  → "All day"
+ */
+export function longDayLabel(appointment, day, zone, clock) {
+  const startKey = dayKey(appointment.startsAt, zone)
+  const lastInstant = new Date(new Date(appointment.endsAt).getTime() - 60000).toISOString()
+  const endKey = dayKey(lastInstant, zone)
+  const startMin = minutesFromMidnight(appointment.startsAt, zone)
+  const endMin = minutesFromMidnight(appointment.endsAt, zone)
+  // 23:59 is how GHL writes "to the end of the day".
+  const endsAtMidnight = endMin === 0 || endMin >= 23 * 60 + 59
+  if (day === startKey) return startMin === 0 ? 'All day' : clock(appointment.startsAt)
+  if (day === endKey) return endsAtMidnight ? 'All day' : `until ${clock(appointment.endsAt)}`
+  return 'All day'
+}
+
 export function groupByDay(appointments, zone) {
   const cells = new Map()
   for (const a of appointments) {

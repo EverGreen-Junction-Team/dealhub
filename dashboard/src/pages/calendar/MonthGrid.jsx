@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Popover } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
-import { monthWeeks, groupByDay, movePatch, isLong, longSpan } from './boardLayout'
+import { monthWeeks, groupByDay, movePatch, isLong, longSpan, longDayLabel } from './boardLayout'
 import { colourFor } from './CalendarSidebar'
 import {
   isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, dayKey
@@ -229,6 +229,7 @@ export default function MonthGrid({
                   <MonthChip
                     key={a.id}
                     appointment={a}
+                    day={day}
                     zone={zone}
                     busy={busyIds?.has(a.id)}
                     accent={colourFor(resources, a.assignedUserId)}
@@ -267,7 +268,8 @@ export default function MonthGrid({
 // The time leads: in a month view the time is the only thing distinguishing
 // two visits to the same customer, and it is what you are scanning for once
 // you have found the day.
-function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent }) {
+function MonthChip({ appointment: a, day, zone, busy, onOpenDeal, onDragStart, accent }) {
+  const timeLabel = isLong(a) ? longDayLabel(a, day, zone, (iso) => clockTime(iso, zone)) : clockTime(a.startsAt, zone)
   const isBlocked = a.kind === 'blocked'
   const status = (a.status || '').toLowerCase()
   const cancelled = status === 'cancelled'
@@ -333,7 +335,7 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent
           />
         )}
         <span style={{ fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
-          {clockTime(a.startsAt, zone)}
+          {timeLabel}
         </span>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
       </div>

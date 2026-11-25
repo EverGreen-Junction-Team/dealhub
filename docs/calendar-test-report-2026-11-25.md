@@ -12,8 +12,8 @@
 | | Count |
 |---|---|
 | Test cases run | 45 |
-| Passed first time | 18 |
-| Failed, then **fixed and re-verified live** | 25 |
+| Passed first time | 16 |
+| Failed, then **fixed and re-verified live** | 27 |
 | Could not be fully tested (no data / blocked by CRM settings) | 2 |
 | Open items (not fixed — see the end) | 8 |
 
@@ -42,7 +42,7 @@
 | L7 | Mini-month: pick a day, page months | ✅ Pass | |
 | L8 | Mini-month band in Month view | ✅ Fixed | Whole picker turned green. `0061dc3` |
 | L9 | Mini-month white ring around today | ✅ Fixed (earlier) | `51a26ba` |
-| L10 | Timezone label in the hour gutter | ✅ Pass | "GMT" shown; no false "no timezone set" warning while loading (fixed `222dc9b`) |
+| L10 | Timezone label in the hour gutter | ✅ Fixed | "GMT" shown; no false "no timezone set" warning while loading (fixed `222dc9b`) |
 
 ### Views
 
@@ -66,7 +66,7 @@
 | F1 | Everything / Appointments | ✅ Pass | |
 | F2 | Blocked time | ⚠️ Partly tested | No blocked time exists in either sub-account, so only the empty state was tested |
 | F3 | Empty board explains why | ✅ Fixed | Blocked time and People → None gave a blank month. Now a notice + "Show everything". `c5e637e` |
-| F4 | People / Calendars All–None | ✅ Pass, target fixed | "All" was a ~14px target and was missed. `c5e637e` |
+| F4 | People / Calendars All–None | ✅ Fixed | "All" was a ~14px target and was missed. `c5e637e` |
 | F5 | Rail calendar names | ✅ Fixed | Ten "X's Personal Calendar" rows truncated identically; owner first + "Personal" tag. `0061dc3` |
 
 ### Cards and hover
@@ -86,13 +86,13 @@
 | B1 | Click slot → card at the clicked time | ✅ Fixed | See defect 1 |
 | B2 | Draft updates as you type | ✅ Pass | |
 | B3 | Book button default date | ✅ Fixed | Defaulted to a past day from last week's view. `280c801` |
-| B4 | Customer search | ✅ Pass, fixed | Avatars invisible (portal token scope) and two identical "spyfu.com" rows; now coloured, with "No email, phone or business on file". `280c801` |
+| B4 | Customer search | ✅ Fixed | Avatars invisible (portal token scope) and two identical "spyfu.com" rows; now coloured, with "No email, phone or business on file". `280c801` |
 | B5 | Who's going / Calendar lists | ✅ Pass | Calendar list took ~8s once, fast afterwards |
 | B6 | Create booking | ✅ Pass | `zz calendar QA 1`, SPYFU.COM, James io, James.io, Tue 1 Dec 14:15 |
 | B7 | GHL refusal → "Book it anyway" | ✅ Pass | GHL refused an empty slot ("no longer available" — the James.io calendar's own availability rule); the override button appeared and booked it |
 | B8 | Booking card stays inside the window | ✅ Fixed | Ran off the bottom when the refusal appeared. `42bae71` |
 | B9 | Internal note saved and shown | ✅ Fixed | See defect 5 |
-| B10 | Drag to move | ✅ Pass (after fix) | Landed on the exact drop time; showed late before `047f61e` |
+| B10 | Drag to move | ✅ Fixed | Landed on the exact drop time; showed late before `047f61e` |
 | B11 | Mark attended | ✅ Pass | First click did not register (stale card replaced mid-click — see O3) |
 | B12 | Mark no-show | ✅ Pass | First click did not register — cause not confirmed (O3) |
 | B13 | Cancel | ✅ Pass | Toast: "the customer was not emailed" |

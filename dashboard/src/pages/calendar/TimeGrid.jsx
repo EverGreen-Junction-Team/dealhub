@@ -353,8 +353,19 @@ export default function TimeGrid({
                       }}
                     >
                       {span.clippedStart && <span aria-hidden>←</span>}
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
-                      <span style={{ fontWeight: 'var(--weight-regular)', color: 'var(--text-muted)' }}>
+                      {/* The NAME keeps its room; the dates give theirs up.
+                          On a week where the booking covers one day the bar
+                          is one column wide, and the dates — which do not
+                          shrink by default — squeezed the name to nothing:
+                          a bar of times with no one's name on it. */}
+                      <span style={{ flex: '0 1 auto', minWidth: 40, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+                      <span
+                        style={{
+                          flex: '0 100 auto', minWidth: 0,
+                          overflow: 'hidden', textOverflow: 'ellipsis',
+                          fontWeight: 'var(--weight-regular)', color: 'var(--text-muted)'
+                        }}
+                      >
                         {inZone(a.startsAt, zone).format('ddd D MMM HH:mm')}
                         {' → '}
                         {inZone(a.endsAt, zone).format('ddd D MMM HH:mm')}

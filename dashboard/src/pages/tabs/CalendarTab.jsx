@@ -711,7 +711,16 @@ export default function CalendarTab({ onOpenDeal }) {
 
           <Button
             type="primary"
-            onClick={() => setBooking({ day: fromDay.format('YYYY-MM-DD') })}
+            // Never a day in the past by default. It was the first day on
+            // screen, so Book from last week's view opened a card for
+            // last Wednesday. Today if it is showing or already gone by;
+            // the first shown day only when the whole view is ahead.
+            onClick={() => {
+              const today = dayjs().startOf('day')
+              const first = span.from.startOf('day')
+              const day = first.isAfter(today) ? first : today
+              setBooking({ day: day.format('YYYY-MM-DD') })
+            }}
           >
             Book
           </Button>

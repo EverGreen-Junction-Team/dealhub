@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Popover, Dropdown } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
 import { clockTime, inZone } from '../../utils/calendarTime'
@@ -114,6 +114,11 @@ export default function AppointmentCard({
   //
   // Reinstating is offered because cancelling is one click and people
   // misclick. Without it the only way back is the CRM.
+  // The hover card stands aside while the menu is open. Found live: both
+  // opened from the same pointer position and drew on top of each other,
+  // the menu's "Cancel this appointment" over the card's own status line.
+  const [menuOpen, setMenuOpen] = useState(false)
+
   const statusActions = []
   if (!isBlocked && onSetStatus) {
     if (cancelled) {
@@ -143,6 +148,7 @@ export default function AppointmentCard({
 
   return (
     <Popover
+      open={menuOpen ? false : undefined}
       // A light card, not a dark tooltip — see AppointmentDetail for why.
       // rootClassName because it portals to <body>, outside [data-dealhub],
       // where none of the type or colour tokens exist without it.
@@ -257,6 +263,7 @@ export default function AppointmentCard({
         {statusActions.length > 0 && !busy && (
           <Dropdown
             trigger={['click']}
+            onOpenChange={setMenuOpen}
             menu={{ items: statusActions.map(({ onClick, ...rest }) => rest),
                     onClick: ({ key }) => statusActions.find((x) => x.key === key)?.onClick() }}
           >

@@ -231,3 +231,25 @@ test('an empty board explains which filter emptied it', () => {
   }
   assert.match(tab, /if \(loading \|\| error \|\| !hasBoard \|\| visible\.length > 0\) return null/)
 })
+
+test('Book never defaults to a day in the past', () => {
+  assert.match(tab, /const day = first\.isAfter\(today\) \? first : today/)
+})
+
+test('the customer picker list carries the token scope, and flags empty records', () => {
+  const cp = readFileSync(new URL('../../shared/ContactPicker.jsx', import.meta.url), 'utf8')
+  assert.match(cp, /popupClassName="pp-menu pp-portal"/, 'picker list renders outside the token scope again')
+  assert.match(cp, /No email, phone or business on file/)
+})
+
+test('the strip bar keeps the name when it is one column wide', () => {
+  const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
+  assert.match(grid, /flex: '0 1 auto', minWidth: 40/)
+  assert.match(grid, /flex: '0 100 auto', minWidth: 0/)
+})
+
+test('the hover card stands aside while the card menu is open', () => {
+  const card = readFileSync(new URL('../AppointmentCard.jsx', import.meta.url), 'utf8')
+  assert.match(card, /open=\{menuOpen \? false : undefined\}/)
+  assert.match(card, /onOpenChange=\{setMenuOpen\}/)
+})

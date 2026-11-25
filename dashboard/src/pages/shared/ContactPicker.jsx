@@ -147,7 +147,11 @@ export default function ContactPicker({
       autoFocus={autoFocus}
       placeholder="Search by name, email, phone or business"
       style={{ width: '100%' }}
-      popupClassName="pp-menu"
+      // pp-portal: the list renders on <body>, outside [data-dealhub], where
+      // none of the colour or type tokens exist without it. Found live —
+      // every avatar disc was transparent and the rows fell back to antd's
+      // default type, in every picker that uses this component.
+      popupClassName="pp-menu pp-portal"
       listHeight={300}
       notFoundContent={
         loading ? (
@@ -222,12 +226,15 @@ function ContactRow({ contact: c }) {
             fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--text-heading)' }}>
           {nameOf(c)}
         </Truncate>
-        {detail && (
-          <Truncate style={{ display: 'block', marginTop: 1,
-              fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            {detail}
-          </Truncate>
-        )}
+        {/* Always a second line. With no email, phone or business there
+            is nothing to tell two records apart — found live: "SPYFU.COM"
+            and "spyfu.com" as identical rows. Saying so is the honest
+            answer, and it tells the rep to check before booking. */}
+        <Truncate style={{ display: 'block', marginTop: 1,
+            fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+            fontStyle: detail ? 'normal' : 'italic' }}>
+          {detail || 'No email, phone or business on file'}
+        </Truncate>
       </span>
     </span>
   )

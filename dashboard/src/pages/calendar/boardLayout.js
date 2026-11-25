@@ -266,6 +266,51 @@ export function movePatch(appointment, target, zone, isoForSlot) {
 // A week column carries every rep's bookings at once, so overlaps are the
 // normal case rather than the exception — four people out at 10am is four
 // cards abreast, not a stack with three hidden.
+// ── APPOINTMENTS THAT LAST DAYS ───────────────────────────────────────
+//
+// Found on the live board: an appointment from 10:30 on a Tuesday to 11:00
+// the following Monday — 8,670 minutes, edited that way in the CRM. Drawn
+// as a timed card it was clipped to the end of its first day, which made
+// it a full-height slab down the whole of Tuesday afternoon: the column
+// read as booked solid, and every click meant for an empty slot on it hit
+// the card and opened the deal instead of booking.
+//
+// A time grid cannot show something longer than the grid. Google's answer
+// is a strip under the day headings, with the event as a bar across the
+// days it covers; these are routed there. A full day or more qualifies —
+// an overnight 23:00 to 01:00 job is still a timed card.
+export const LONG_MINUTES = 24 * 60
+
+export function isLong(appointment) {
+  if (!appointment?.startsAt || !appointment?.endsAt) return false
+  return durationMinutes(appointment.startsAt, appointment.endsAt) >= LONG_MINUTES
+}
+
+/**
+ * Which of the visible days a long appointment covers, as indices into
+ * `dayKeys`, clipped to what is on screen. Null if it covers none of them.
+ * `clippedStart`/`clippedEnd` say it carries on off-screen, so the bar can
+ * show that it does.
+ */
+export function longSpan(appointment, dayKeys, zone) {
+  if (!dayKeys.length) return null
+  const first = dayKey(appointment.startsAt, zone)
+  // The end instant itself is exclusive: something ending at 00:00 on the
+  // 30th does not occupy the 30th.
+  const lastInstant = new Date(new Date(appointment.endsAt).getTime() - 60000).toISOString()
+  const last = dayKey(lastInstant, zone)
+  if (last < dayKeys[0] || first > dayKeys[dayKeys.length - 1]) return null
+  const from = Math.max(0, dayKeys.indexOf(first) === -1 ? 0 : dayKeys.indexOf(first))
+  const toIdx = dayKeys.indexOf(last)
+  const to = toIdx === -1 ? dayKeys.length - 1 : toIdx
+  return {
+    from: first < dayKeys[0] ? 0 : from,
+    to,
+    clippedStart: first < dayKeys[0],
+    clippedEnd: last > dayKeys[dayKeys.length - 1]
+  }
+}
+
 export function groupByDay(appointments, zone) {
   const cells = new Map()
   for (const a of appointments) {

@@ -56,6 +56,20 @@ const STATUS_DOT = {
 // "SpyFu.com " are the same thing to a reader and must be to this check.
 const same = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase()
 
+// "8670 min" is a number to divide, not a length to read. Days and hours,
+// down to minutes only where they are the whole story.
+export function humanDuration(mins) {
+  if (!Number.isFinite(mins) || mins <= 0) return null
+  const d = Math.floor(mins / 1440)
+  const h = Math.floor((mins % 1440) / 60)
+  const m = mins % 60
+  const parts = []
+  if (d) parts.push(`${d} day${d === 1 ? '' : 's'}`)
+  if (h) parts.push(`${h} hr`)
+  if (m && !d) parts.push(`${m} min`)
+  return parts.join(' ') || `${mins} min`
+}
+
 export default function AppointmentDetail({
   appointment: a, zone, accent,
   // The board clips at its edges; say so here, since the card's arrow is
@@ -68,6 +82,10 @@ export default function AppointmentDetail({
     ? (a.title || 'Blocked time')
     : (a.contactName || a.title || 'Appointment')
   const start = inZone(a.startsAt, zone)
+  const end = a.endsAt ? inZone(a.endsAt, zone) : null
+  // A booking that ends on another day must say WHICH day, or
+  // "10:30–11:00" reads as half an hour.
+  const multiDay = end && !end.isSame(start, 'day')
   const mins = a.endsAt ? durationMinutes(a.startsAt, a.endsAt) : null
   const otherZone = zoneNote(a.timezone, zone)
 
@@ -98,11 +116,23 @@ export default function AppointmentDetail({
             {label}
           </div>
           <div style={{ marginTop: 2, fontSize: 'var(--text-sm)', color: 'var(--text-body)' }}>
-            {start.format('dddd D MMMM')}
-            {' · '}
-            {clockTime(a.startsAt, zone)}
-            {a.endsAt ? `–${clockTime(a.endsAt, zone)}` : ''}
-            {mins ? <span style={{ color: 'var(--text-muted)' }}>{` (${mins} min)`}</span> : null}
+            {multiDay
+              ? (
+                <>
+                  {start.format('ddd D MMM, HH:mm')}
+                  {' → '}
+                  {end.format('ddd D MMM, HH:mm')}
+                </>
+                )
+              : (
+                <>
+                  {start.format('dddd D MMMM')}
+                  {' · '}
+                  {clockTime(a.startsAt, zone)}
+                  {a.endsAt ? `–${clockTime(a.endsAt, zone)}` : ''}
+                </>
+                )}
+            {mins ? <span style={{ color: 'var(--text-muted)' }}>{` (${humanDuration(mins)})`}</span> : null}
           </div>
         </div>
       </div>

@@ -5,12 +5,14 @@ import { colourFor } from './CalendarSidebar'
 import {
   DAY_START_MIN, DAY_END_MIN, WORK_START_MIN, WORK_END_MIN,
   boardHeightPx, hourMarks, clampToWindow,
-  groupByDay, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
+  groupByDay, isLong, longSpan, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
   isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev
 } from '../../utils/calendarTime'
 import { offsetY } from './pointer'
+import { Popover } from 'antd'
+import AppointmentDetail from './AppointmentDetail'
 
 // The day and week views — the shape everybody already knows from Google
 // Calendar: days across the top, hours down the side, appointments in the
@@ -56,7 +58,11 @@ export default function TimeGrid({
   // so do we, which only works if the two are told apart.
   const pressedAt = useRef(null)
 
-  const cells = useMemo(() => groupByDay(appointments, zone), [appointments, zone])
+  // Days-long appointments go to the strip under the headings, not into
+  // the time columns — see isLong in boardLayout for the live case.
+  const timed = useMemo(() => appointments.filter((a) => !isLong(a)), [appointments])
+  const long = useMemo(() => appointments.filter(isLong), [appointments])
+  const cells = useMemo(() => groupByDay(timed, zone), [timed, zone])
 
   const dayKeys = useMemo(() => {
     const out = []
@@ -275,6 +281,88 @@ export default function TimeGrid({
           )
         })}
       </div>
+
+      {/* ── THE MULTI-DAY STRIP ──────────────────────────────────────
+          One bar per appointment that lasts a day or more, across the
+          days it covers, the way Google draws them. Outside the scroller,
+          so it stays in view while the hours scroll — and it is measured
+          automatically, since the grid sizes itself from its own top. */}
+      {(() => {
+        const bars = long
+          .map((a) => ({ a, span: longSpan(a, dayKeys, zone) }))
+          .filter((b) => b.span)
+        if (bars.length === 0) return null
+        return (
+          <div
+            style={{
+              position: 'relative',
+              padding: '4px 0',
+              borderBottom: '1px solid var(--border-default)',
+              background: 'var(--surface-card)',
+              display: 'grid', gap: 3
+            }}
+          >
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute', left: 0, top: 0, bottom: 0, width: GUTTER_W,
+                borderRight: '1px solid var(--border-default)'
+              }}
+            />
+            {bars.map(({ a, span }) => {
+              const accent = colourFor(resources, a.assignedUserId)
+              const cancelled = (a.status || '').toLowerCase() === 'cancelled'
+              const name = a.contactName || a.title || 'Appointment'
+              return (
+                <div key={a.id} style={{ position: 'relative', height: 24 }}>
+                  <Popover
+                    content={<AppointmentDetail appointment={a} zone={zone} accent={accent} />}
+                    trigger="hover"
+                    mouseEnterDelay={0.35}
+                    rootClassName="pp-portal"
+                    styles={{ body: { padding: 'var(--space-4)' } }}
+                  >
+                    <button
+                      type="button"
+                      className={cancelled ? undefined : 'pp-appt'}
+                      onClick={() => { if (a.dealId) onOpenDeal?.(a.dealId) }}
+                      style={{
+                        '--pp-accent': accent,
+                        position: 'absolute', top: 0, bottom: 0,
+                        left: `calc(${GUTTER_W}px + (100% - ${GUTTER_W}px) * ${span.from} / ${days} + 2px)`,
+                        width: `calc((100% - ${GUTTER_W}px) * ${span.to - span.from + 1} / ${days} - 4px)`,
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '0 8px',
+                        border: '1px solid var(--border-strong)',
+                        borderLeft: `4px solid ${accent}`,
+                        // A bar that carries on past the visible days says
+                        // so with a square edge on that side.
+                        borderRadius: `${span.clippedStart ? 0 : 6}px ${span.clippedEnd ? 0 : 6}px ${span.clippedEnd ? 0 : 6}px ${span.clippedStart ? 0 : 6}px`,
+                        background: cancelled ? 'var(--surface-card)' : undefined,
+                        fontSize: 'var(--text-xs)', color: 'var(--text-heading)',
+                        fontWeight: 'var(--weight-semibold)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        textDecoration: cancelled ? 'line-through' : 'none',
+                        cursor: a.dealId ? 'pointer' : 'default',
+                        textAlign: 'left'
+                      }}
+                    >
+                      {span.clippedStart && <span aria-hidden>←</span>}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+                      <span style={{ fontWeight: 'var(--weight-regular)', color: 'var(--text-muted)' }}>
+                        {inZone(a.startsAt, zone).format('ddd D MMM HH:mm')}
+                        {' → '}
+                        {inZone(a.endsAt, zone).format('ddd D MMM HH:mm')}
+                      </span>
+                      {span.clippedEnd && <span aria-hidden style={{ marginLeft: 'auto' }}>→</span>}
+                    </button>
+                  </Popover>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* THE GRID SCROLLS INSIDE ITSELF, and the day headings above do not.
           

@@ -128,3 +128,23 @@ test('the month fills the window', () => {
   const mg = readFileSync(new URL('../MonthGrid.jsx', import.meta.url), 'utf8')
   assert.match(mg, /flex: height \? '1 0 auto' : undefined/)
 })
+
+// ── The six-day slab ──────────────────────────────────────────────────
+
+test('a days-long appointment is a bar across its days, not a slab', async () => {
+  const { isLong, longSpan } = await import('../boardLayout.js')
+  const week = ['2026-11-23', '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27', '2026-11-28', '2026-11-29']
+  const live = { startsAt: '2026-11-24T10:30:00Z', endsAt: '2026-11-30T11:00:00Z' }
+  assert.equal(isLong(live), true)
+  assert.deepEqual(longSpan(live, week, 'Europe/London'), { from: 1, to: 6, clippedStart: false, clippedEnd: true })
+  assert.equal(isLong({ startsAt: '2026-11-24T23:00:00Z', endsAt: '2026-11-25T01:00:00Z' }), false, 'overnight is still timed')
+  assert.equal(longSpan({ startsAt: '2026-12-02T09:00:00Z', endsAt: '2026-12-04T09:00:00Z' }, week, 'UTC'), null)
+  const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
+  assert.match(grid, /const cells = useMemo\(\(\) => groupByDay\(timed, zone\)/, 'long appointments drawn as timed cards again')
+})
+
+test('the detail card says how long in words, and which day it ends', () => {
+  const src = readFileSync(new URL('../AppointmentDetail.jsx', import.meta.url), 'utf8')
+  assert.match(src, /humanDuration\(mins\)/)
+  assert.match(src, /const multiDay = end && !end\.isSame\(start, 'day'\)/)
+})

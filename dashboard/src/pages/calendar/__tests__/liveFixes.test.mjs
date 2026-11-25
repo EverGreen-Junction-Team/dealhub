@@ -1,0 +1,100 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+// Fixes from walking the live board on 25 Nov 2026.
+
+// ── A click at 14:20 booked 12:15 ────────────────────────────────────
+// clientY - rect.top is in ZOOMED pixels; the grid's minutes are in layout
+// pixels. Off by exactly the app zoom (735/860 = 0.85), and the drop path
+// had the same maths — so drags rescheduled appointments in the CRM.
+
+function withZoom(zoom, fn) {
+  const saved = { document: globalThis.document, gcs: globalThis.getComputedStyle }
+  globalThis.document = { documentElement: {} }
+  globalThis.getComputedStyle = () => ({ getPropertyValue: () => String(zoom) })
+  try { return fn() } finally {
+    globalThis.document = saved.document
+    globalThis.getComputedStyle = saved.gcs
+  }
+}
+
+const { offsetY, appZoom } = await import('../pointer.js')
+const { minutesForDrop, PIXELS_PER_MINUTE } = await import('../boardLayout.js')
+
+test('offsetY undoes the zoom', () => {
+  withZoom(0.85, () => {
+    // An element whose top is at 100 (visual px); a pointer 85 visual px
+    // below it is 100 LAYOUT px below it.
+    const el = { getBoundingClientRect: () => ({ top: 100 }) }
+    assert.equal(offsetY({ clientY: 185 }, el), 100)
+  })
+})
+
+test('the live repro: a click at 14:20 lands at 14:15–14:30, not 12:15', () => {
+  withZoom(0.85, () => {
+    const meant = 14 * 60 + 20
+    const visualOffset = meant * PIXELS_PER_MINUTE * 0.85
+    const el = { getBoundingClientRect: () => ({ top: 0 }) }
+    const got = minutesForDrop(offsetY({ clientY: visualOffset }, el))
+    assert.ok(Math.abs(got - meant) <= 15, `got ${got} min, meant ${meant}`)
+    // And the bug, for the record: without the division it was 2h early.
+    const buggy = minutesForDrop(visualOffset)
+    assert.ok(meant - buggy > 100, 'the test no longer reproduces the original fault')
+  })
+})
+
+test('zoom 1, unset and garbage all mean no correction', () => {
+  for (const z of [1, '', 'nonsense', 0, -2]) {
+    withZoom(z, () => assert.equal(appZoom(), z === 1 ? 1 : 1))
+  }
+})
+
+test('nothing on the board computes an offset from clientY by hand', () => {
+  for (const f of ['TimeGrid.jsx', 'ResourceBoard.jsx', 'AppointmentCard.jsx']) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
+    assert.ok(!/clientY - rect\.top/.test(src), `${f} converts a pointer without the zoom`)
+  }
+})
+
+// ── Rail names ────────────────────────────────────────────────────────
+
+test('personal calendars are labelled by their owner', async () => {
+  const src = readFileSync(new URL('../CalendarSidebar.jsx', import.meta.url), 'utf8')
+  const fn = src.slice(src.indexOf('const PERSONAL'), src.indexOf('function Row'))
+  // Evaluate just the pure helper.
+  const mod = await import('data:text/javascript,' + encodeURIComponent(fn.replace('export function', 'export function')))
+  assert.deepEqual(mod.calendarLabel("Charlie Stoyle's Personal Calendar"), { label: 'Charlie Stoyle', tag: 'Personal' })
+  assert.deepEqual(mod.calendarLabel('jaladanki srinivas’s Personal Calendar'), { label: 'jaladanki srinivas', tag: 'Personal' })
+  assert.deepEqual(mod.calendarLabel('Schedule an Appointment'), { label: 'Schedule an Appointment', tag: null })
+  assert.equal(mod.calendarLabel(null).label, 'Untitled calendar')
+})
+
+// ── Layout: nothing grows the page ───────────────────────────────────
+
+const tab = readFileSync(new URL('../../tabs/CalendarTab.jsx', import.meta.url), 'utf8')
+
+test('the rail and the people board are bounded to the window', () => {
+  assert.match(tab, /maxHeight=\{`calc\(100vh \/ var\(--app-zoom\) - \$\{Math\.round\(stickyTop\) \+ 12\}px\)`\}/)
+  assert.match(tab, /maxHeight=\{`calc\(100vh \/ var\(--app-zoom\) - \$\{Math\.round\(stickyTop\) \+ 20\}px\)`\}/)
+})
+
+test('the toolbar right group can wrap, so Book is never pushed off', () => {
+  assert.match(tab, /flex: '1 1 auto', minWidth: 0,/)
+})
+
+test('a one-day span is titled as a date, not a range to itself', () => {
+  assert.match(tab, /if \(view === 'day' \|\| span\.days === 1\) return span\.from\.format\('ddd D MMMM YYYY'\)/)
+})
+
+test('the mini-month does not band a whole month', () => {
+  const mm = readFileSync(new URL('../MiniMonth.jsx', import.meta.url), 'utf8')
+  assert.match(mm, /if \(!span \|\| span\.days > 7\) return out/)
+})
+
+test('the people board opens near now, and its labels sit below their lines', () => {
+  const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
+  assert.match(rb, /Math\.max\(nowMin - 60, DAY_START_MIN\)/)
+  assert.match(rb, /top: m\.top \+ 3/)
+  assert.ok(!/top: m\.top - 7/.test(rb), 'labels straddle their lines again')
+})

@@ -10,6 +10,7 @@ import {
 import {
   isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev
 } from '../../utils/calendarTime'
+import { offsetY } from './pointer'
 
 // The day and week views — the shape everybody already knows from Google
 // Calendar: days across the top, hours down the side, appointments in the
@@ -174,8 +175,7 @@ export default function TimeGrid({
     if (!drag) return
     dragging.current = null
 
-    const rect = e.currentTarget.getBoundingClientRect()
-    const minutes = minutesForDrop(e.clientY - rect.top, drag.grabOffset)
+    const minutes = minutesForDrop(offsetY(e, e.currentTarget), drag.grabOffset)
     // THE OWNER IS CARRIED, NOT TAKEN FROM THE COLUMN. See the note above:
     // a column here is a day, not a person, so there is nobody to reassign
     // to. Passing the appointment's own owner means movePatch sees no change
@@ -370,10 +370,9 @@ export default function TimeGrid({
                 if (e.target !== e.currentTarget) return
                 const moved = Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y)
                 if (moved > 4) return
-                const rect = e.currentTarget.getBoundingClientRect()
                 onBookAt({
                   day,
-                  minutes: minutesForDrop(e.clientY - rect.top),
+                  minutes: minutesForDrop(offsetY(e, e.currentTarget)),
                   userId: null,
                   // Where to spring the card from, so it reads as belonging
                   // to the slot that was clicked rather than to the page.

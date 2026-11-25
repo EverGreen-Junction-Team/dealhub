@@ -83,7 +83,13 @@ export default function CalendarSidebar({
   // Where to stick, measured by the caller from the toolbar above. See the
   // note there: this used to be a hand-added 118 that went stale every
   // time the bar changed height.
-  stickyTop = 118
+  stickyTop = 118,
+  // How tall the rail may be. With ten calendars and twelve people it is
+  // taller than the window, and a sticky element taller than the window
+  // pushes the PAGE into scrolling — which slid the month's own title and
+  // the grid's day headings up under the toolbar. Bounded, it scrolls
+  // inside itself and the page never moves.
+  maxHeight = null
 }) {
   // null/undefined selection means EVERYONE, which is different from an empty
   // array meaning nobody. A fresh board shows all the work; a board where
@@ -133,7 +139,11 @@ export default function CalendarSidebar({
         // CLIPS. A calendar called "Vault Suite Vaultsuite's Personal
         // Calendar" is wider than this box, and without this it was drawn
         // straight across the border and over the grid beside it.
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: maxHeight ? 'auto' : 'hidden',
+        ...(maxHeight ? { maxHeight } : {}),
+        // Room for the scrollbar so it does not sit on the counts.
+        scrollbarGutter: 'stable',
         alignSelf: 'flex-start',
         // Below the sticky toolbar, not under it: anything sticking at a
         // smaller offset slides behind it and the top of this list
@@ -181,18 +191,23 @@ export default function CalendarSidebar({
             onAction={() => onChangeCalendars(calsAreAll ? [] : null)}
           />
           <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
-            {calendars.map((c) => (
-              <Row
-                key={c.id}
-                // Calendars get no colour swatch. The card colours are the
-                // PERSON's, and a second colour system on the same cards
-                // would be two keys for one picture.
-                label={c.name}
-                count={calendarCounts?.get(c.id) || 0}
-                checked={calsChecked.includes(c.id)}
-                onToggle={() => toggleCalendar(c.id)}
-              />
-            ))}
+            {calendars.map((c) => {
+              const { label, tag } = calendarLabel(c.name)
+              return (
+                <Row
+                  key={c.id}
+                  // Calendars get no colour swatch. The card colours are the
+                  // PERSON's, and a second colour system on the same cards
+                  // would be two keys for one picture.
+                  label={label}
+                  tag={tag}
+                  fullName={c.name}
+                  count={calendarCounts?.get(c.id) || 0}
+                  checked={calsChecked.includes(c.id)}
+                  onToggle={() => toggleCalendar(c.id)}
+                />
+              )
+            })}
           </div>
         </div>
       )}
@@ -304,7 +319,24 @@ function SectionHead({ label, action, onAction }) {
   )
 }
 
-function Row({ colour, label, count, checked, onToggle }) {
+// ── "Charlie Stoyle's Personal Calendar" ───────────────────────────────
+//
+// GHL names every user's own calendar this way, so a sub-account with ten
+// users has ten rows that all END in the same two words — and at the rail's
+// width the ellipsis lands on exactly those words, so every row read
+// "Somebody's Personal Cal…". The part that tells them apart survived and
+// the part that is identical took the room.
+//
+// So the owner is the label and "Personal" is a quiet tag after it. The
+// full name is still the hover title, and still what is searched and
+// filtered on — this only changes how the row is drawn.
+const PERSONAL = /^(.+?)['’]s personal calendar$/i
+export function calendarLabel(name) {
+  const m = PERSONAL.exec((name || '').trim())
+  return m ? { label: m[1].trim(), tag: 'Personal' } : { label: name || 'Untitled calendar', tag: null }
+}
+
+function Row({ colour, label, tag = null, fullName = null, count, checked, onToggle }) {
   const [textRef, clipped] = useClipped(label)
   return (
     <label
@@ -335,7 +367,7 @@ function Row({ colour, label, count, checked, onToggle }) {
       )}
       {/* `title` is null when the text fits, and antd renders no tooltip at
           all for a null title — so the measurement is the whole switch. */}
-      <Tooltip title={clipped ? label : null} mouseEnterDelay={0.3} placement="right">
+      <Tooltip title={clipped || tag ? (fullName || label) : null} mouseEnterDelay={0.3} placement="right">
         <span
           ref={textRef}
           style={{
@@ -347,6 +379,19 @@ function Row({ colour, label, count, checked, onToggle }) {
           {label}
         </span>
       </Tooltip>
+      {tag && (
+        <span
+          style={{
+            flex: 'none',
+            padding: '0 6px', borderRadius: 'var(--radius-pill)',
+            background: 'var(--gray-100)',
+            fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
+            lineHeight: '18px'
+          }}
+        >
+          {tag}
+        </span>
+      )}
       {/* The count is what makes the list worth reading rather than just
           operating: it says who is busy before you have ticked anything. */}
       {count > 0 && (

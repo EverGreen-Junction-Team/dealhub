@@ -2,6 +2,7 @@ import React from 'react'
 import { Popover, Dropdown } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
 import { clockTime } from '../../utils/calendarTime'
+import { offsetY } from './pointer'
 
 // One booking on the board.
 //
@@ -144,8 +145,7 @@ export default function AppointmentCard({
           // Where in the card the pointer took hold. Without this the card
           // jumps so its top edge lands under the cursor, which silently
           // moves a booking grabbed by its middle half an hour earlier.
-          const rect = e.currentTarget.getBoundingClientRect()
-          onDragStart?.(a, e.clientY - rect.top)
+          onDragStart?.(a, offsetY(e, e.currentTarget))
           // Required for Firefox to start a drag at all.
           e.dataTransfer.setData('text/plain', a.id)
           e.dataTransfer.effectAllowed = 'move'

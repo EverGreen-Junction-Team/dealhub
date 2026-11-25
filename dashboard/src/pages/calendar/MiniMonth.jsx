@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import dayjs from 'dayjs'
+import { LeftOutlined, RightOutlined } from '@ant-design/icons'
 import { monthWeeks } from './boardLayout'
 import { dayKeyNow } from '../../utils/calendarTime'
 
@@ -54,7 +55,12 @@ export default function MiniMonth({ value, span, zone, onPick }) {
   // on screen.
   const shown = useMemo(() => {
     const out = new Set()
-    if (!span) return out
+    // NO BAND FOR A MONTH. In Month view the span is six whole weeks —
+    // every cell in this picker — so the band turned the entire control
+    // green and said nothing. A band is worth drawing only when it picks
+    // out part of what is shown; the picker's own title already says
+    // which month.
+    if (!span || span.days > 7) return out
     for (let i = 0; i < span.days; i++) {
       out.add(span.from.add(i, 'day').format('YYYY-MM-DD'))
     }
@@ -89,8 +95,8 @@ export default function MiniMonth({ value, span, zone, onPick }) {
           {cursor.format('MMMM YYYY')}
         </div>
         <div style={{ display: 'flex', gap: 2 }}>
-          <Step label="Previous month" onClick={() => setCursor((c) => c.subtract(1, 'month'))}>‹</Step>
-          <Step label="Next month" onClick={() => setCursor((c) => c.add(1, 'month'))}>›</Step>
+          <Step label="Previous month" onClick={() => setCursor((c) => c.subtract(1, 'month'))}><LeftOutlined /></Step>
+          <Step label="Next month" onClick={() => setCursor((c) => c.add(1, 'month'))}><RightOutlined /></Step>
         </div>
       </div>
 
@@ -195,12 +201,14 @@ function Step({ children, label, onClick }) {
       aria-label={label}
       onClick={onClick}
       style={{
-        width: 20, height: 20, padding: 0,
+        // 28px: a 20px target holding a guillemet was the smallest
+        // control on the page and the one used most.
+        width: 28, height: 28, padding: 0,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         border: 'none', background: 'none',
         borderRadius: 'var(--radius-sm)',
         color: 'var(--text-muted)',
-        fontSize: 'var(--text-md)', lineHeight: 1,
+        fontSize: 12, lineHeight: 1,
         cursor: 'pointer'
       }}
     >

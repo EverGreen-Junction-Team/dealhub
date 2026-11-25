@@ -5,11 +5,12 @@ import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
   groupIntoCells, cellKey, minutesForDrop, isRealMove, movePatch,
-  UNASSIGNED, PIXELS_PER_MINUTE
+  UNASSIGNED, PIXELS_PER_MINUTE, WORK_START_MIN, WORK_END_MIN
 } from './boardLayout'
 import {
   isoForSlot, dayLabel, minutesNow, dayKeyNow, SNAP_MINUTES, zoneAbbrev
 } from '../../utils/calendarTime'
+import { offsetY } from './pointer'
 
 // The board: a column per person, read down the day.
 //
@@ -46,6 +47,11 @@ export default function ResourceBoard({
   appointments, resources, zone, fromDay, days = 1,
   onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
   hideEmpty = false,
+  // How tall the board may be, as a CSS length. The board scrolls INSIDE
+  // this rather than growing the page: 24 hours is ~1,900px, and when the
+  // page scrolled instead, the people's names slid under the toolbar and
+  // there were two scrollbars to fight. Same bound as the week grid.
+  maxHeight = null,
   // The slot the open booking card is aiming at. Here it also has to land
   // in the right PERSON's column — booking from this board picks the
   // person by which column you clicked, so a draft in the wrong one would
@@ -115,6 +121,26 @@ export default function ResourceBoard({
   // Minute precision is pointless here and would re-render every second; a
   // minute is finer than the 15-minute grid anyone books on.
   const [nowMin, setNowMin] = useState(() => minutesNow(zone))
+
+  // ── OPEN ON THE PART OF THE DAY THAT MATTERS ─────────────────────────
+  // The week grid opens an hour before now; this board opened at
+  // midnight, so the first screen of a 24-hour board was six empty hours
+  // of night. Same anchor as the week grid, so switching views does not
+  // move where you are looking. Only when the scroll memory restored
+  // nothing — a rep who scrolled to the evening and came back should
+  // find the evening.
+  const firstDay = dayKeys[0]
+  useEffect(() => {
+    const el = boardScroll.current
+    if (!el) return
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (el.scrollTop > 0) return
+      const showsToday = dayKeys.includes(dayKeyNow(zone))
+      const anchor = showsToday ? Math.max(nowMin - 60, DAY_START_MIN) : WORK_START_MIN - 30
+      el.scrollTop = (anchor - DAY_START_MIN) * PIXELS_PER_MINUTE
+    }))
+    return () => cancelAnimationFrame(id)
+  }, [firstDay]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const id = window.setInterval(() => setNowMin(minutesNow(zone)), 60000)
     return () => window.clearInterval(id)
@@ -131,8 +157,7 @@ export default function ResourceBoard({
     if (!drag) return
     dragging.current = null
 
-    const rect = e.currentTarget.getBoundingClientRect()
-    const minutes = minutesForDrop(e.clientY - rect.top, drag.grabOffset)
+    const minutes = minutesForDrop(offsetY(e, e.currentTarget), drag.grabOffset)
     const target = {
       day,
       minutes,
@@ -151,7 +176,16 @@ export default function ResourceBoard({
   }, [zone, onMove])
 
   return (
-    <div ref={boardScroll} style={{ overflowX: 'auto', overflowY: 'visible' }}>
+    <div
+      ref={boardScroll}
+      style={{
+        overflow: 'auto',
+        ...(maxHeight ? { maxHeight } : {}),
+        border: '1px solid var(--border-default)',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--surface-card)'
+      }}
+    >
       <div style={{ display: 'flex', minWidth: 'fit-content' }}>
         {/* The hour gutter. Sticky, so the times stay readable when a board
             with eight reps is scrolled sideways. */}
@@ -169,6 +203,12 @@ export default function ResourceBoard({
           <div
             title={`Times shown in ${zone}`}
             style={{
+              // Sticky DOWNWARDS too, now that the board scrolls inside
+              // itself: the names stick at the top, and the corner above
+              // the hours has to stick with them or it scrolls away and
+              // leaves a hole where the names' row begins.
+              position: 'sticky', top: 0, zIndex: 5,
+              background: 'var(--surface-card)',
               height: HEADER_H,
               borderBottom: '1px solid var(--border-default)',
               boxSizing: 'border-box',
@@ -182,12 +222,19 @@ export default function ResourceBoard({
             {zoneAbbrev(zone, dayKeys[0] ? `${dayKeys[0]}T12:00:00Z` : undefined)}
           </div>
           <div style={{ position: 'relative', height }}>
-            {marks.map((m) => (
+            {/* Below the line, not straddling it — the fix the week grid
+                got and this board never did. Straddling put half of
+                "00:00" under the names' row and centred every label on a
+                boundary rather than on the hour it opens. */}
+            {marks.slice(0, -1).map((m) => (
               <div
                 key={m.minutes}
                 style={{
-                  position: 'absolute', top: m.top - 7, right: 6,
-                  fontSize: 'var(--text-xs)', color: 'var(--text-faint)',
+                  position: 'absolute', top: m.top + 3, right: 8,
+                  fontSize: 'var(--text-xs)',
+                  color: m.minutes >= WORK_START_MIN && m.minutes < WORK_END_MIN
+                    ? 'var(--text-muted)'
+                    : 'var(--text-faint)',
                   fontVariantNumeric: 'tabular-nums'
                 }}
               >
@@ -317,10 +364,9 @@ export default function ResourceBoard({
                       // double-click on the deal it opens, not a request to
                       // book something on top of it.
                       if (e.target !== e.currentTarget) return
-                      const rect = e.currentTarget.getBoundingClientRect()
                       onBookAt({
                         day,
-                        minutes: minutesForDrop(e.clientY - rect.top),
+                        minutes: minutesForDrop(offsetY(e, e.currentTarget)),
                         userId: col.id === UNASSIGNED ? null : col.id,
                         anchor: { x: e.clientX, y: e.clientY }
                       })

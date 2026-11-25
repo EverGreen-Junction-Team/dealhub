@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Segmented, Button } from 'antd'
 import dayjs from 'dayjs'
+import { LeftOutlined, RightOutlined } from '@ant-design/icons'
 import ResourceBoard from '../calendar/ResourceBoard'
 import TimeGrid from '../calendar/TimeGrid'
 import MonthGrid from '../calendar/MonthGrid'
@@ -273,7 +274,10 @@ export default function CalendarTab({ onOpenDeal }) {
   // the day that was clicked.
   const rangeLabel = useMemo(() => {
     if (view === 'month') return fromDay.format('MMMM YYYY')
-    if (view === 'day') return fromDay.format('ddd D MMMM YYYY')
+    // One day is a DATE, whichever view it came from. The People board on
+    // "1 day" was titled "25 – 25 November 2026" — a range from a day to
+    // itself.
+    if (view === 'day' || span.days === 1) return span.from.format('ddd D MMMM YYYY')
     const to = span.from.add(span.days - 1, 'day')
     // "24 – 30 November 2026" rather than repeating the month and the year
     // on both ends, except across a boundary where both are needed.
@@ -584,11 +588,16 @@ export default function CalendarTab({ onOpenDeal }) {
             looking assembled rather than designed. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <Button onClick={() => setFromDay(dayjs().startOf('day'))}>Today</Button>
-          <Button onClick={() => step(-1)} aria-label="Previous" style={{ paddingInline: 10 }}>‹</Button>
-          <Button onClick={() => step(1)} aria-label="Next" style={{ paddingInline: 10 }}>›</Button>
+          {/* Icons, not the ‹ › characters: at this size a guillemet is a
+              four-pixel mark in a 32px button and reads as a speck. */}
+          <Button onClick={() => step(-1)} aria-label="Previous" icon={<LeftOutlined />} />
+          <Button onClick={() => step(1)} aria-label="Next" icon={<RightOutlined />} />
         </div>
 
-        <div style={{ display: 'grid', gap: 0, minWidth: 0 }}>
+        {/* ONE LINE in every view. The zone note used to sit on a second
+            line in Month only, so switching Week → Month made the whole
+            page jump down ten pixels. It now sits beside the title. */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', minWidth: 0 }}>
           <h2
             style={{
               margin: 0,
@@ -613,7 +622,13 @@ export default function CalendarTab({ onOpenDeal }) {
               sub-account timezone is a WARNING rather than a label, so
               both of those still say it here. */}
           {(view === 'month' || data.timezone == null) && (
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+            <span
+              title={`Times shown in ${zone}`}
+              style={{
+                fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0
+              }}
+            >
               Times shown in {zone}
               {data.timezone == null ? ' — this sub-account has no timezone set' : ''}
             </span>
@@ -624,6 +639,12 @@ export default function CalendarTab({ onOpenDeal }) {
           style={{
             marginLeft: 'auto',
             display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+            justifyContent: 'flex-end',
+            // Allowed to shrink, so it WRAPS. As a flex item with the
+            // default min-width it could not, and on the People board —
+            // two extra controls — it overflowed the frame instead and
+            // took Book off the right edge, where it could not be reached.
+            flex: '1 1 auto', minWidth: 0,
             gap: 'var(--space-2)'
           }}
         >
@@ -698,6 +719,7 @@ export default function CalendarTab({ onOpenDeal }) {
             zone={zone}
             onPickDay={setFromDay}
             stickyTop={stickyTop}
+            maxHeight={`calc(100vh / var(--app-zoom) - ${Math.round(stickyTop) + 12}px)`}
           />
         )}
 
@@ -767,6 +789,7 @@ export default function CalendarTab({ onOpenDeal }) {
           days={days}
           busyIds={busyIds}
           hideEmpty={hideEmpty}
+          maxHeight={`calc(100vh / var(--app-zoom) - ${Math.round(stickyTop) + 20}px)`}
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
           onSetStatus={handleSetStatus}

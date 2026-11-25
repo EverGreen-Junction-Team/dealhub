@@ -460,7 +460,6 @@ export default function BookAppointment({
         <Row icon={<ClockCircleOutlined />} label="When">
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <DatePicker
-              variant="borderless"
               value={day}
               onChange={(d) => d && setDay(d)}
               allowClear={false}
@@ -473,7 +472,6 @@ export default function BookAppointment({
               style={{ width: 150 }}
             />
             <TimePicker
-              variant="borderless"
               value={time}
               onChange={(t) => t && setTime(t)}
               allowClear={false}
@@ -484,7 +482,6 @@ export default function BookAppointment({
             />
             <span className="pp-quick-dim">for</span>
             <InputNumber
-              variant="borderless"
               min={5}
               max={600}
               step={15}
@@ -513,7 +510,6 @@ export default function BookAppointment({
 
         <Row icon={<TeamOutlined />} label="Who is going">
           <Select
-            variant="borderless"
             style={{ width: '100%' }}
             allowClear
             placeholder="Unassigned"
@@ -525,7 +521,6 @@ export default function BookAppointment({
 
         <Row icon={<CalendarOutlined />} label="Calendar">
           <Select
-            variant="borderless"
             style={{ width: '100%' }}
             loading={loadingCalendars}
             value={calendarId}
@@ -544,7 +539,6 @@ export default function BookAppointment({
           <>
             <Row icon={<EnvironmentOutlined />} label="Where">
               <Input
-                variant="borderless"
                 placeholder="Add an address or a meeting link"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}

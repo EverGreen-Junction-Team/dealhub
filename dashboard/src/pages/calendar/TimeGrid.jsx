@@ -44,7 +44,7 @@ const GUTTER_W = 56
 
 export default function TimeGrid({
   appointments, resources = [], zone, fromDay, days = 7,
-  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
+  onOpenDeal, onMove, onSetStatus, onOpenLinks, onBookAt, busyIds,
   // The slot currently being booked, if the card is open: see DraftSlot.
   draft,
   // The sticky toolbar above. The grid's height is the room below it, and
@@ -670,6 +670,7 @@ export default function TimeGrid({
                     busy={busyIds?.has(item.id)}
                     onOpenDeal={onOpenDeal}
                     onSetStatus={onSetStatus}
+                    onOpenLinks={onOpenLinks}
                     showOwner
                     accent={colourFor(resources, item.assignedUserId)}
                     onDragStart={(appointment, grabOffset) => {

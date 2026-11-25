@@ -12,6 +12,10 @@ import { ghlRequest } from '../services/ghlClient.js';
 import { userMessage } from '../utils/userMessage.js';
 import { logger } from '../utils/logger.js';
 import { pickSlots, slotWindow } from '../services/freeSlots.js';
+import {
+  linkableObjects, recordsForContact, searchRecords, linkRecord, unlinkRecord
+} from '../services/ghlCustomObjects.js';
+import { AssociationError } from '../services/associationConstants.js';
 
 export const appointmentsRouter = express.Router();
 appointmentsRouter.use(requireSession);
@@ -158,7 +162,7 @@ appointmentsRouter.get('/', async (req, res, next) => {
         `SELECT a.appointment_id, a.calendar_id, a.calendar_timezone,
                 a.contact_id, a.opportunity_id,
                 a.assigned_user_id, a.assigned_user_name, a.user_ids,
-                a.event_kind, a.title, a.address, a.notes,
+                a.event_kind, a.title, a.address, a.notes, a.opportunity_pinned,
                 a.appointment_status, a.source,
                 a.starts_at, a.ends_at,
                 c.first_name, c.last_name, c.company_name, c.email, c.phone,
@@ -260,6 +264,8 @@ appointmentsRouter.get('/', async (req, res, next) => {
         source: r.source,
         address: r.address,
         notes: r.notes,
+        // A person linked this deal (or chose none) — migration 145.
+        dealPinned: r.opportunity_pinned === true,
         calendarId: r.calendar_id,
         // Per row, because two calendars in one sub-account can sit in
         // different zones. The board falls back to `timezone` below.
@@ -453,6 +459,227 @@ appointmentsRouter.post('/', async (req, res, next) => {
 // `appointments` here: AppointmentUpdate fires and appointmentWriter owns
 // that table. The echo is returned so the board can settle the card into the
 // time GHL actually stored rather than the one the browser guessed.
+// ── PUT /api/appointments/:id/deal ────────────────────────────────────
+//
+// Link an appointment to one of its customer's deals — or to none — by
+// hand. Stored in Deal Hub only: GHL has no appointment-to-deal link (see
+// migration 145), and the sweep and webhook writer leave a pinned choice
+// alone.
+//
+//   { dealId: '...' }   link this deal (must be on the appointment's customer)
+//   { dealId: null }    deliberately no deal
+//   { mode: 'auto' }    hand it back to the automatic link
+appointmentsRouter.put('/:id/deal', async (req, res, next) => {
+  const locationId = req.locationId;
+  const appointmentId = req.params.id;
+  const auto = req.body?.mode === 'auto';
+  const dealId = auto ? null : (req.body?.dealId || null);
+  try {
+    const result = await withTenant(locationId, async (client) => {
+      const { rows: [appt] } = await client.query(
+        `SELECT appointment_id, contact_id, event_kind
+           FROM appointments
+          WHERE location_id = $1 AND appointment_id = $2 AND deleted_at IS NULL`,
+        [locationId, appointmentId]
+      );
+      if (!appt) return { status: 404, error: 'That appointment no longer exists' };
+      if (appt.event_kind === 'blocked') return { status: 400, error: 'Blocked time is not linked to deals' };
+
+      if (auto) {
+        await client.query(
+          `UPDATE appointments SET opportunity_pinned = false, updated_at = now()
+            WHERE location_id = $1 AND appointment_id = $2`,
+          [locationId, appointmentId]
+        );
+        return { ok: true, pinned: false };
+      }
+
+      let deal = null;
+      if (dealId) {
+        if (!appt.contact_id) {
+          return { status: 400, error: 'This appointment has no customer, so it cannot be linked to a deal', field: 'dealId' };
+        }
+        // Only a deal the customer is on — the picker offers nothing else,
+        // and the server must not trust that it did.
+        const { rows } = await client.query(
+          `SELECT o.opportunity_id, o.name, o.monetary_value, o.currency
+             FROM opportunities o
+            WHERE o.location_id = $1 AND o.opportunity_id = $2
+              AND o.is_deleted = false AND o.deleted_at IS NULL
+              AND (o.contact_id = $3 OR EXISTS (
+                    SELECT 1 FROM opportunity_contacts oc
+                     WHERE oc.location_id = o.location_id
+                       AND oc.opportunity_id = o.opportunity_id
+                       AND oc.contact_id = $3))`,
+          [locationId, dealId, appt.contact_id]
+        );
+        deal = rows[0] || null;
+        if (!deal) return { status: 422, error: 'That deal is not on this customer', field: 'dealId' };
+      }
+
+      await client.query(
+        `UPDATE appointments
+            SET opportunity_id = $3, opportunity_pinned = true, updated_at = now()
+          WHERE location_id = $1 AND appointment_id = $2`,
+        [locationId, appointmentId, dealId]
+      );
+      return {
+        ok: true,
+        pinned: true,
+        deal: deal && {
+          id: deal.opportunity_id,
+          name: deal.name,
+          value: deal.monetary_value == null ? null : Number(deal.monetary_value),
+          currency: deal.currency || null
+        }
+      };
+    });
+    if (!result.ok) return res.status(result.status).json({ error: result.error, field: result.field || null });
+    res.json(result);
+  } catch (err) {
+    logger.error({ err, locationId, appointmentId }, 'PUT /api/appointments/:id/deal failed');
+    next(err);
+  }
+});
+
+// ── Custom object records, through the customer ───────────────────────
+//
+// An appointment is not an object GHL's associations can point at, so the
+// records "on a booking" are the records linked to its CUSTOMER — the same
+// ones GHL's own contact page lists. See services/ghlCustomObjects.js.
+
+const RECORD_SCOPES_MESSAGE = 'This app cannot read or link custom object records yet — '
+  + 'it needs the objects and associations permissions (objects/schema.readonly, '
+  + 'objects/record.readonly, associations.readonly, associations/relation.readonly, '
+  + 'associations/relation.write). They have to be added while the app is in draft, '
+  + 'then reauthorised.';
+
+function sendRecordError(res, next, err, what, ctx) {
+  if (err?.code === 'GHL_SCOPE_MISSING') {
+    return res.status(403).json({ error: RECORD_SCOPES_MESSAGE, reason: 'scope_missing' });
+  }
+  if (err instanceof AssociationError) {
+    return res.status(err.status || 422).json({
+      error: err.message, field: err.field || null, reason: err.reason || null
+    });
+  }
+  logger.error({ err, ...ctx }, `${what} failed`);
+  return next(err);
+}
+
+// The appointment's customer, or a reason there is none.
+async function appointmentCustomer(locationId, appointmentId) {
+  return withTenant(locationId, async (client) => {
+    const { rows: [a] } = await client.query(
+      `SELECT contact_id, event_kind FROM appointments
+        WHERE location_id = $1 AND appointment_id = $2 AND deleted_at IS NULL`,
+      [locationId, appointmentId]
+    );
+    if (!a) return { status: 404, error: 'That appointment no longer exists' };
+    if (a.event_kind === 'blocked') return { status: 400, error: 'Blocked time has no customer' };
+    if (!a.contact_id) return { status: 400, error: 'This appointment has no customer' };
+    return { contactId: a.contact_id };
+  });
+}
+
+async function installOr409(locationId, res) {
+  const install = await getActiveInstall(locationId);
+  if (install) return install;
+  const why = await explainInactiveInstall(locationId);
+  res.status(409).json({ error: userMessage(why) });
+  return null;
+}
+
+// GET /api/appointments/records/search?objectKey=&q=
+// Declared before /:id/records — Express matches in order, and this path is
+// two segments, so it never collides, but keeping it first says so.
+appointmentsRouter.get('/records/search', async (req, res, next) => {
+  const locationId = req.locationId;
+  const objectKey = (req.query.objectKey || '').toString();
+  const q = (req.query.q || '').toString().slice(0, 100);
+  if (!objectKey.startsWith('custom_objects.')) {
+    return res.status(400).json({ error: 'Choose a record type', field: 'objectKey' });
+  }
+  try {
+    const install = await installOr409(locationId, res);
+    if (!install) return;
+    const { schemas } = await linkableObjects(install);
+    const schema = schemas.find((s) => s.key === objectKey);
+    if (!schema) return res.status(400).json({ error: 'That record type cannot be linked to a customer', field: 'objectKey' });
+    res.json({ records: await searchRecords(install, objectKey, q, schema) });
+  } catch (err) {
+    sendRecordError(res, next, err, 'GET /api/appointments/records/search', { locationId, objectKey });
+  }
+});
+
+// GET /api/appointments/:id/records
+//   → { objects: [{ key, singular, plural }], records: [{ relationId, objectKey, objectLabel, id, label }] }
+appointmentsRouter.get('/:id/records', async (req, res, next) => {
+  const locationId = req.locationId;
+  const appointmentId = req.params.id;
+  try {
+    const who = await appointmentCustomer(locationId, appointmentId);
+    if (!who.contactId) return res.status(who.status).json({ error: who.error });
+    const install = await installOr409(locationId, res);
+    if (!install) return;
+    const linkable = await linkableObjects(install);
+    const records = await recordsForContact(install, who.contactId, linkable);
+    res.json({
+      objects: linkable.schemas.map(({ key, singular, plural }) => ({ key, singular, plural })),
+      records
+    });
+  } catch (err) {
+    sendRecordError(res, next, err, 'GET /api/appointments/:id/records', { locationId, appointmentId });
+  }
+});
+
+// POST /api/appointments/:id/records  { objectKey, recordId }
+appointmentsRouter.post('/:id/records', async (req, res, next) => {
+  const locationId = req.locationId;
+  const appointmentId = req.params.id;
+  const objectKey = (req.body?.objectKey || '').toString();
+  const recordId = (req.body?.recordId || '').toString();
+  if (!objectKey) return res.status(400).json({ error: 'Choose a record type', field: 'objectKey' });
+  if (!recordId) return res.status(400).json({ error: 'Choose a record', field: 'recordId' });
+  try {
+    const who = await appointmentCustomer(locationId, appointmentId);
+    if (!who.contactId) return res.status(who.status).json({ error: who.error });
+    const install = await installOr409(locationId, res);
+    if (!install) return;
+    const { associations } = await linkableObjects(install);
+    const assoc = associations.find((a) => a.objectKey === objectKey);
+    if (!assoc) return res.status(400).json({ error: 'That record type cannot be linked to a customer', field: 'objectKey' });
+    await linkRecord(install, assoc, who.contactId, recordId);
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    sendRecordError(res, next, err, 'POST /api/appointments/:id/records', { locationId, appointmentId, objectKey });
+  }
+});
+
+// DELETE /api/appointments/:id/records/:relationId
+appointmentsRouter.delete('/:id/records/:relationId', async (req, res, next) => {
+  const locationId = req.locationId;
+  const appointmentId = req.params.id;
+  const relationId = req.params.relationId;
+  try {
+    const who = await appointmentCustomer(locationId, appointmentId);
+    if (!who.contactId) return res.status(who.status).json({ error: who.error });
+    const install = await installOr409(locationId, res);
+    if (!install) return;
+    // Only a relation that is actually on THIS customer — re-read rather than
+    // trusting the id, so one booking's dialog cannot unlink another's.
+    const linkable = await linkableObjects(install);
+    const records = await recordsForContact(install, who.contactId, linkable);
+    if (!records.some((r) => r.relationId === relationId)) {
+      return res.status(404).json({ error: 'That link is not on this customer' });
+    }
+    await unlinkRecord(install, relationId);
+    res.json({ ok: true });
+  } catch (err) {
+    sendRecordError(res, next, err, 'DELETE /api/appointments/:id/records', { locationId, appointmentId });
+  }
+});
+
 appointmentsRouter.patch('/:id', async (req, res, next) => {
   const locationId = req.locationId;
   const appointmentId = req.params.id;

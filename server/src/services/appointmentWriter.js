@@ -181,7 +181,11 @@ async function upsertAppointment(locationId, a, { calendarTimezone, assignedUser
        contact_id         = COALESCE(EXCLUDED.contact_id, appointments.contact_id),
        -- Derived: a newly successful derivation wins, a failed one keeps the
        -- existing answer. Never blanked by a pass that merely declined.
-       opportunity_id     = COALESCE(EXCLUDED.opportunity_id, appointments.opportunity_id),
+       -- A deal a PERSON linked (migration 145) is never replaced by a
+       -- derived guess, and a deliberate "no deal" stays none.
+       opportunity_id     = CASE WHEN appointments.opportunity_pinned
+                                 THEN appointments.opportunity_id
+                                 ELSE COALESCE(EXCLUDED.opportunity_id, appointments.opportunity_id) END,
        -- Reassignment is a real edit and the main thing a dispatcher does,
        -- so this is assigned outright. The NAME is COALESCEd behind it only
        -- so an unknown user does not blank a name we already resolved.

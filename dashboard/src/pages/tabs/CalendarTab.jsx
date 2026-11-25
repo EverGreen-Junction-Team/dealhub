@@ -9,6 +9,7 @@ import { monthWeeks, UNASSIGNED } from '../calendar/boardLayout'
 import CalendarSidebar from '../calendar/CalendarSidebar'
 import { overlayPending } from '../calendar/pendingWrites'
 import BookAppointment from '../calendar/BookAppointment'
+import AppointmentLinks from '../calendar/AppointmentLinks'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
 import { Shell, StateMessage } from '../shared/ListChrome'
@@ -221,6 +222,8 @@ export default function CalendarTab({ onOpenDeal }) {
   // to book (a double-clicked slot, or the toolbar button with nothing
   // prefilled but the day on screen).
   const [booking, setBooking] = useState(null)
+  // The appointment whose deal-and-records dialog is open.
+  const [linksFor, setLinksFor] = useState(null)
   // The slot the open booking card is currently aiming at, so the grid can
   // draw it. Separate from `booking`, which is where the rep CLICKED and
   // never changes — this one follows the card's own date, time and
@@ -465,6 +468,30 @@ export default function CalendarTab({ onOpenDeal }) {
         return next
       })
     }
+  }, [load, say])
+
+  // A deal link is written to OUR database directly (GHL has no field for
+  // it), so unlike a move there is no webhook to wait for: show it at once,
+  // then reload so every piece of a multi-day booking agrees.
+  const handleDealSaved = useCallback(async (appointment, res, message) => {
+    setLinksFor(null)
+    if (res?.pinned) {
+      setData((d) => ({
+        ...d,
+        appointments: d.appointments.map((x) => (x.id === appointment.id
+          ? {
+              ...x,
+              dealPinned: true,
+              dealId: res.deal?.id || null,
+              dealName: res.deal?.name || null,
+              dealValue: res.deal?.value ?? null,
+              dealCurrency: res.deal?.currency || null
+            }
+          : x))
+      }))
+    }
+    say(message, 'done')
+    await load()
   }, [load, say])
 
   // A new appointment is NOT in our database when the POST resolves — GHL
@@ -892,6 +919,7 @@ export default function CalendarTab({ onOpenDeal }) {
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
           onSetStatus={handleSetStatus}
+          onOpenLinks={setLinksFor}
           onBookAt={setBooking}
           draft={draft}
           topRef={toolbarRef}
@@ -911,6 +939,7 @@ export default function CalendarTab({ onOpenDeal }) {
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
           onSetStatus={handleSetStatus}
+          onOpenLinks={setLinksFor}
           onBookAt={setBooking}
           draft={draft}
         />
@@ -927,6 +956,15 @@ export default function CalendarTab({ onOpenDeal }) {
           resources={data.resources}
           onClose={() => setBooking(null)}
           onBooked={handleBooked}
+        />
+      )}
+
+      {linksFor && (
+        <AppointmentLinks
+          appointment={linksFor}
+          zone={zone}
+          onClose={() => setLinksFor(null)}
+          onDealSaved={handleDealSaved}
         />
       )}
 

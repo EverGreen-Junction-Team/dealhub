@@ -58,6 +58,8 @@ export default function AppointmentCard({
   appointment, zone, top, height, lane, lanes,
   clippedBefore, clippedAfter,
   onOpenDeal, onDragStart, onSetStatus, busy,
+  // Opens the deal-and-records dialog (AppointmentLinks) for this booking.
+  onOpenLinks,
   // Week and day views mix every rep together, so the card has to say
   // WHOSE it is. On the resource board the column already says that, and
   // repeating it on every card would be noise.
@@ -151,6 +153,20 @@ export default function AppointmentCard({
       }
     }
   }
+
+  // The links come FIRST in the menu: they are the everyday action, and the
+  // status changes below them include the one destructive item, which is
+  // safer at the bottom than under the pointer when the menu opens.
+  const menuActions = []
+  if (!isBlocked && onOpenLinks) {
+    menuActions.push({
+      key: 'links',
+      label: whole.dealId ? 'Change deal or records…' : 'Link a deal or record…',
+      onClick: () => onOpenLinks(whole)
+    })
+  }
+  if (menuActions.length && statusActions.length) menuActions.push({ type: 'divider', key: 'div' })
+  menuActions.push(...statusActions)
 
   return (
     <Popover
@@ -268,12 +284,12 @@ export default function AppointmentCard({
           color: 'var(--text-body)'
         }}
       >
-        {statusActions.length > 0 && !busy && (
+        {menuActions.some((x) => x.onClick) && !busy && (
           <Dropdown
             trigger={['click']}
             onOpenChange={setMenuOpen}
-            menu={{ items: statusActions.map(({ onClick, ...rest }) => rest),
-                    onClick: ({ key }) => statusActions.find((x) => x.key === key)?.onClick() }}
+            menu={{ items: menuActions.map(({ onClick, ...rest }) => rest),
+                    onClick: ({ key }) => menuActions.find((x) => x.key === key)?.onClick?.() }}
           >
             <button
               type="button"

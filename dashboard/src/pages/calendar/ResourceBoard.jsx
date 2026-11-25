@@ -47,7 +47,7 @@ function dayList(from, days) {
 
 export default function ResourceBoard({
   appointments, resources, zone, fromDay, days = 1,
-  onOpenDeal, onMove, onSetStatus, onBookAt, busyIds,
+  onOpenDeal, onMove, onSetStatus, onOpenLinks, onBookAt, busyIds,
   hideEmpty = false,
   // How tall the board may be, as a CSS length. The board scrolls INSIDE
   // this rather than growing the page: 24 hours is ~1,900px, and when the
@@ -575,6 +575,7 @@ export default function ResourceBoard({
                           busy={busyIds?.has(item.id)}
                           onOpenDeal={onOpenDeal}
                           onSetStatus={onSetStatus}
+                          onOpenLinks={onOpenLinks}
                           onDragStart={(appointment, grabOffset) => {
                             dragging.current = { appointment, grabOffset }
                           }}

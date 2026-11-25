@@ -45,6 +45,7 @@ attempt, but 144 cannot be.
 |---|---|---|
 | 143 | `appointments` | HighLevel appointments and blocked time, mirrored. Empty until the scopes in §4 are granted and the first sync runs. |
 | 144 | `ui_preferences` | Zoom and text size, per sub-account (`user_id NULL`) and per user. Empty until somebody saves one; the app's defaults apply meanwhile. |
+| 145 | `appointments.opportunity_pinned` | One column. True when someone linked a deal to a booking (or chose none) from the calendar; the webhook writer and the sweep then leave `opportunity_id` alone. Default false, so every existing row behaves exactly as before. |
 
 Both are `location_id`-scoped with the usual `tenant_iso` RLS policy.
 
@@ -112,6 +113,31 @@ a fifth scope later.
 Until they are granted, 143's table exists and stays empty, the webhooks log
 their payloads as unhandled, and the nightly reconcile reads nothing. Nothing
 breaks; nothing arrives either.
+
+### Custom object records on a booking — five more scopes
+
+The calendar card's **⋯ → Link a deal or record…** dialog also lists and
+links custom object records. GHL's associations cannot point at an
+appointment, so these are linked to the booking's **customer** (and show on
+that contact in GHL too). That needs:
+
+```
+objects/schema.readonly
+objects/record.readonly
+associations.readonly
+associations/relation.readonly
+associations/relation.write
+```
+
+Add them in the same draft pass as the four above. Until they are granted the
+dialog's records section says which permissions are missing; the **deal**
+link in the same dialog needs no new scope (it is stored in Deal Hub). All
+these calls are scope-optional, so a missing one never flags the install for
+reauth.
+
+If GHL answers "Relations cannot be modified via OAuth channel" for a custom
+object (it does for tasks), the dialog says so plainly — that is a GHL
+platform restriction, not a scope.
 
 ### Then verify
 

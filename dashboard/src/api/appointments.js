@@ -59,5 +59,24 @@ export const appointmentsAPI = {
   // is the record that somebody was going to visit and then did not. This is
   // for the genuine mistake, where the booking should never have existed.
   remove: (id, { notifyCustomer } = {}) =>
-    apiClient.delete(`/api/appointments/${enc(id)}`, { data: { notifyCustomer } })
+    apiClient.delete(`/api/appointments/${enc(id)}`, { data: { notifyCustomer } }),
+
+  // Link the appointment to one of its customer's deals, by hand. Stored in
+  // Deal Hub — GHL has no appointment-to-deal field — and the sync leaves a
+  // hand-made choice alone (migration 145).
+  //   { dealId }        link this deal
+  //   { dealId: null }  deliberately none
+  //   { mode: 'auto' }  give it back to the automatic link
+  setDeal: (id, body) => apiClient.put(`/api/appointments/${enc(id)}/deal`, body),
+
+  // Custom object records on the appointment's CUSTOMER — GHL's associations
+  // cannot point at an appointment, so the customer is the link.
+  //   → { objects: [{ key, singular, plural }], records: [...] }
+  records: (id) => apiClient.get(`/api/appointments/${enc(id)}/records`),
+  searchRecords: (objectKey, q) =>
+    apiClient.get('/api/appointments/records/search', { params: { objectKey, ...(q ? { q } : {}) } }),
+  linkRecord: (id, objectKey, recordId) =>
+    apiClient.post(`/api/appointments/${enc(id)}/records`, { objectKey, recordId }),
+  unlinkRecord: (id, relationId) =>
+    apiClient.delete(`/api/appointments/${enc(id)}/records/${enc(relationId)}`)
 }

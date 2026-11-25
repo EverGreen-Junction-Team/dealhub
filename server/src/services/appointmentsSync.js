@@ -237,7 +237,11 @@ async function upsertEvent(install, locationId, e, eventKind, { calendarId }) {
        calendar_timezone  = COALESCE(EXCLUDED.calendar_timezone, appointments.calendar_timezone),
        group_id           = COALESCE(EXCLUDED.group_id, appointments.group_id),
        contact_id         = COALESCE(EXCLUDED.contact_id, appointments.contact_id),
-       opportunity_id     = COALESCE(EXCLUDED.opportunity_id, appointments.opportunity_id),
+       -- A deal a PERSON linked (migration 145) is never replaced by a
+       -- derived guess, and a deliberate "no deal" stays none.
+       opportunity_id     = CASE WHEN appointments.opportunity_pinned
+                                 THEN appointments.opportunity_id
+                                 ELSE COALESCE(EXCLUDED.opportunity_id, appointments.opportunity_id) END,
        assigned_user_id   = EXCLUDED.assigned_user_id,
        assigned_user_name = COALESCE(EXCLUDED.assigned_user_name, appointments.assigned_user_name),
        user_ids           = COALESCE(EXCLUDED.user_ids, appointments.user_ids),

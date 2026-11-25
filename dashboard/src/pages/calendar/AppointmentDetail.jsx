@@ -177,7 +177,7 @@ export default function AppointmentDetail({
                 )
               // Shown, not hidden — see migration 143. NULL is the common,
               // correct state when the customer has several open deals.
-              : <Muted>No deal linked</Muted>}
+              : <Muted>No deal linked — use ⋯ on the card to link one</Muted>}
           </Fact>
         )}
 

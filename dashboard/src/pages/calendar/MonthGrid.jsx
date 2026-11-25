@@ -44,7 +44,12 @@ export default function MonthGrid({
   // vertical position to place it at, so it is a chip at the top of the
   // day rather than a block — which is also where it would sit once
   // saved, since the cell lists by time.
-  draft
+  draft,
+  // How tall the month may be. The six weeks SHARE it, so the grid fills
+  // the window the way Google's does instead of stopping two-thirds of the
+  // way down and leaving a band of nothing. Each week keeps its 116px
+  // floor; on a window too short for that, the month scrolls inside.
+  height = null
 }) {
   const dragging = useRef(null)
   const [hover, setHover] = useState(null)
@@ -75,8 +80,10 @@ export default function MonthGrid({
       style={{
         border: '1px solid var(--border-default)',
         borderRadius: 'var(--radius-md)',
-        overflow: 'hidden',
-        background: 'var(--surface-card)'
+        background: 'var(--surface-card)',
+        ...(height
+          ? { height, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }
+          : { overflow: 'hidden' })
       }}
     >
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)' }}>
@@ -99,7 +106,11 @@ export default function MonthGrid({
       {weeks.map((week) => (
         <div
           key={week[0]}
-          style={{ display: 'flex', borderBottom: '1px solid var(--border-default)' }}
+          style={{
+            display: 'flex', borderBottom: '1px solid var(--border-default)',
+            // Shares the height equally with the other weeks.
+            flex: height ? '1 0 auto' : undefined
+          }}
         >
           {week.map((day) => {
             const items = cells.get(day) || []

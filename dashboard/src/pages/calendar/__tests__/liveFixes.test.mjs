@@ -116,3 +116,15 @@ test('no "no timezone set" warning while the first load is in flight', () => {
   assert.match(tab, /\(view === 'month' \|\| \(!loading && data\.timezone == null\)\)/)
   assert.match(tab, /\{!loading && data\.timezone == null \? ' — this sub-account has no timezone set' : ''\}/)
 })
+
+test('"Busy only" says so when it falls back to everyone', () => {
+  const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
+  assert.match(rb, /const fellBack = hideEmpty && resources\.length > 0/)
+  assert.match(rb, /showing everyone\./)
+})
+
+test('the month fills the window', () => {
+  assert.match(tab, /height=\{`calc\(100vh \/ var\(--app-zoom\) - \$\{Math\.round\(stickyTop\) \+ 20\}px\)`\}/)
+  const mg = readFileSync(new URL('../MonthGrid.jsx', import.meta.url), 'utf8')
+  assert.match(mg, /flex: height \? '1 0 auto' : undefined/)
+})

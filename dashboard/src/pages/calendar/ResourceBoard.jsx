@@ -116,6 +116,12 @@ export default function ResourceBoard({
     return cols
   }, [resources, appointments, hideEmpty])
 
+  // "Busy only" with nobody busy falls back to everyone — see above — and
+  // it has to SAY so. Otherwise the control reads "Busy only" over a board
+  // of twelve people all marked Free, which looks like the filter is broken.
+  const fellBack = hideEmpty && resources.length > 0
+    && !appointments.some((a) => a.assignedUserId)
+
   // The red line across today. A day board without one makes you read the
   // gutter to answer "what is next", which is the question you opened it for.
   // Minute precision is pointless here and would re-render every second; a
@@ -176,11 +182,24 @@ export default function ResourceBoard({
   }, [zone, onMove])
 
   return (
+    <>
+    {fellBack && (
+      <div
+        role="status"
+        style={{
+          marginBottom: 'var(--space-2)',
+          fontSize: 'var(--text-sm)', color: 'var(--text-muted)'
+        }}
+      >
+        Nobody has anything booked {days > 1 ? 'in these days' : 'on this day'} — showing everyone.
+      </div>
+    )}
     <div
       ref={boardScroll}
       style={{
         overflow: 'auto',
-        ...(maxHeight ? { maxHeight } : {}),
+        // The fall-back note above takes ~28px of the same window.
+        ...(maxHeight ? { maxHeight: fellBack ? `calc(${maxHeight} - 28px)` : maxHeight } : {}),
         border: '1px solid var(--border-default)',
         borderRadius: 'var(--radius-md)',
         background: 'var(--surface-card)'
@@ -490,6 +509,7 @@ export default function ResourceBoard({
         emailed when you move an appointment.
       </p>
     </div>
+    </>
   )
 }
 

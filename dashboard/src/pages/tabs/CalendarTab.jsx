@@ -765,6 +765,7 @@ export default function CalendarTab({ onOpenDeal }) {
           appointments={visible}
           zone={zone}
           fromDay={fromDay}
+          height={`calc(100vh / var(--app-zoom) - ${Math.round(stickyTop) + 20}px)`}
           // Same list the week view colours its bars from, so a rep is the
           // same colour in both — the dot and the bar must agree or the
           // colour coding is worse than none.

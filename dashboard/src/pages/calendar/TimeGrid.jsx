@@ -8,7 +8,7 @@ import {
   groupByDay, isLong, longSpan, longStartPiece, longEndPiece, dailyWindow, dailyPieces, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
-  isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev
+  isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev, dayKey, clockTime
 } from '../../utils/calendarTime'
 import { offsetY } from './pointer'
 import { Popover } from 'antd'
@@ -78,17 +78,57 @@ export default function TimeGrid({
     () => appointments.filter((a) => isLong(a) && !dailyWindow(a, zone)),
     [appointments, zone]
   )
-  // Everything that lives in the timeline, lane-packed together so a
-  // daily 10:30 sits beside anything else at 10:30 that day.
-  const cells = useMemo(
-    () => groupByDay([
-      ...timed,
-      ...daily.flatMap((a) => dailyPieces(a, dayKeys, zone)),
+  // ── ONE BAR, NOT A CARD PER DAY ────────────────────────────────────
+  // A daily-window booking (10:30–11:00 from Tuesday to Monday) was six
+  // identical cards side by side. GHL draws the same booking as ONE bar,
+  // and that is clearer: one thing, one shape. So when it can be, it is a
+  // single bar across the days it covers, sitting in its 10:30–11:00 row.
+  //
+  // "When it can be": nothing else on any of those days may overlap that
+  // window — a bar spanning the columns cannot lane-pack, and would sit on
+  // top of whatever else is at 10:30. A booking that would collide falls
+  // back to one card per day, which CAN share the slot with its
+  // neighbours. A one-day view has nothing to combine.
+  const minutesFromMidnightOf = (iso) => { const t = inZone(iso, zone); return t.hour() * 60 + t.minute() }
+
+  const { cells, combined } = useMemo(() => {
+    const markers = [
       ...long.map(longStartPiece),
       ...long.map((a) => longEndPiece(a, zone)).filter(Boolean)
-    ], zone),
-    [timed, daily, long, dayKeys, zone]
-  )
+    ]
+    const piecesOf = new Map(daily.map((a) => [a.id, dailyPieces(a, dayKeys, zone)]))
+    const overlaps = (x, y) => Date.parse(x.startsAt) < Date.parse(y.endsAt)
+      && Date.parse(x.endsAt) > Date.parse(y.startsAt)
+    const others = (id) => [
+      ...timed, ...markers,
+      ...daily.filter((d) => d.id !== id).flatMap((d) => piecesOf.get(d.id))
+    ]
+    const bars = []
+    const loose = []
+    for (const a of daily) {
+      const pieces = piecesOf.get(a.id)
+      const rest = others(a.id)
+      const clash = pieces.some((p) => rest.some((o) => overlaps(p, o)))
+      if (pieces.length >= 2 && !clash) {
+        const first = dayKey(pieces[0].startsAt, zone)
+        const last = dayKey(pieces[pieces.length - 1].startsAt, zone)
+        bars.push({
+          a,
+          from: dayKeys.indexOf(first),
+          to: dayKeys.indexOf(last),
+          piece: pieces[0],
+          clippedStart: dayKey(a.startsAt, zone) < dayKeys[0],
+          clippedEnd: dayKey(a.endsAt, zone) > dayKeys[dayKeys.length - 1]
+        })
+      } else {
+        loose.push(...pieces)
+      }
+    }
+    return {
+      cells: groupByDay([...timed, ...loose, ...markers], zone),
+      combined: bars
+    }
+  }, [timed, daily, long, dayKeys, zone])
 
   const [nowMin, setNowMin] = useState(() => minutesNow(zone))
   useEffect(() => {
@@ -639,6 +679,60 @@ export default function TimeGrid({
                 )
               })}
             </div>
+          )
+        })}
+
+        {/* Daily-window bookings that combine into one bar — see the note
+            on `combined` above. In the scroller, so they scroll with the
+            hours; positioned on the same minute scale as the cards. */}
+        {combined.map(({ a, from, to, piece, clippedStart, clippedEnd }) => {
+          const accent = colourFor(resources, a.assignedUserId)
+          const startMin = minutesFromMidnightOf(piece.startsAt)
+          const endMin = startMin + Math.round((Date.parse(piece.endsAt) - Date.parse(piece.startsAt)) / 60000)
+          const cancelled = (a.status || '').toLowerCase() === 'cancelled'
+          return (
+            <Popover
+              key={`bar-${a.id}`}
+              content={<AppointmentDetail appointment={a} zone={zone} accent={accent} />}
+              trigger="hover"
+              mouseEnterDelay={0.35}
+              rootClassName="pp-portal"
+              styles={{ body: { padding: 'var(--space-4)' } }}
+            >
+              <button
+                type="button"
+                className={cancelled ? undefined : 'pp-appt'}
+                data-noclip=""
+                onClick={() => { if (a.dealId) onOpenDeal?.(a.dealId) }}
+                style={{
+                  '--pp-accent': accent,
+                  position: 'absolute', zIndex: 2,
+                  top: (startMin - DAY_START_MIN) * PIXELS_PER_MINUTE,
+                  height: Math.max(22, (endMin - startMin) * PIXELS_PER_MINUTE),
+                  left: `calc(${GUTTER_W}px + (100% - ${GUTTER_W}px) * ${from} / ${days} + 2px)`,
+                  width: `calc((100% - ${GUTTER_W}px) * ${to - from + 1} / ${days} - 4px)`,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '0 10px',
+                  border: '1px solid var(--border-strong)',
+                  borderLeft: `4px solid ${accent}`,
+                  borderRadius: `${clippedStart ? 0 : 6}px ${clippedEnd ? 0 : 6}px ${clippedEnd ? 0 : 6}px ${clippedStart ? 0 : 6}px`,
+                  background: cancelled ? 'var(--surface-card)' : undefined,
+                  textDecoration: cancelled ? 'line-through' : 'none',
+                  fontSize: 'var(--text-xs)', color: 'var(--text-heading)',
+                  textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden',
+                  cursor: a.dealId ? 'pointer' : 'default'
+                }}
+              >
+                {clippedStart && <span aria-hidden>←</span>}
+                <span style={{ fontWeight: 'var(--weight-semibold)', flex: '0 1 auto', minWidth: 40, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {clockTime(piece.startsAt, zone)}–{clockTime(piece.endsAt, zone)} {a.contactName || a.title || 'Appointment'}
+                </span>
+                <span style={{ color: 'var(--text-muted)', flex: '0 100 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Daily, {inZone(a.startsAt, zone).format('ddd D MMM')} → {inZone(a.endsAt, zone).format('ddd D MMM')}
+                </span>
+                {clippedEnd && <span aria-hidden style={{ marginLeft: 'auto' }}>→</span>}
+              </button>
+            </Popover>
           )
         })}
       </div>

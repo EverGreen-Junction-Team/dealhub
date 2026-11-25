@@ -142,11 +142,11 @@ test('a days-long appointment is a bar across its days, not a slab', async () =>
   const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
   // The time columns get timed bookings plus each long one's half-hour
   // START MARKER — never the long appointment itself, which is the slab.
-  const call = grid.slice(grid.indexOf('groupByDay(['), grid.indexOf('], zone)', grid.indexOf('groupByDay([')))
-  assert.match(call, /\.\.\.timed,/)
-  assert.match(call, /\.\.\.long\.map\(longStartPiece\)/)
-  assert.match(call, /longEndPiece\(a, zone\)/)
-  assert.ok(!/\.\.\.long[,\s\]]/.test(call), 'long appointments drawn as timed cards again')
+  // Time columns get timed bookings, loose daily pieces and the markers of
+  // spanning bookings — never a spanning booking itself (that is the slab).
+  assert.match(grid, /cells: groupByDay\(\[\.\.\.timed, \.\.\.loose, \.\.\.markers\], zone\)/)
+  assert.match(grid, /\.\.\.long\.map\(longStartPiece\)/)
+  assert.match(grid, /long\.map\(\(a\) => longEndPiece\(a, zone\)\)/)
 })
 
 test('the detail card says how long in words, and which day it ends', () => {
@@ -317,7 +317,10 @@ test('a daily-window booking is a card at its window on every day it covers', as
   assert.equal(b.dailyWindow({ startsAt: '2026-10-26T00:00:00Z', endsAt: '2026-10-31T23:59:00Z' }, Z), null)
   assert.equal(b.dailyWindow({ startsAt: '2026-11-24T22:00:00Z', endsAt: '2026-11-27T02:00:00Z' }, Z), null)
   const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
-  assert.match(grid, /daily\.flatMap\(\(a\) => dailyPieces\(a, dayKeys, zone\)\)/)
+  // One bar across the days when nothing overlaps; per-day cards when it would.
+  assert.match(grid, /dailyPieces\(a, dayKeys, zone\)/)
+  assert.match(grid, /if \(pieces\.length >= 2 && !clash\) \{/)
+  assert.match(grid, /loose\.push\(\.\.\.pieces\)/)
   const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
   assert.match(rb, /i\._edge === 'daily'/, 'a daily card does not count as booked')
 })

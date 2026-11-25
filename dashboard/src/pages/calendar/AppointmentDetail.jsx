@@ -1,7 +1,7 @@
 import React from 'react'
 import {
   ClockCircleOutlined, UserOutlined, EnvironmentOutlined,
-  DollarOutlined, FileTextOutlined, GlobalOutlined
+  DollarOutlined, FileTextOutlined, GlobalOutlined, MessageOutlined
 } from '@ant-design/icons'
 import { clockTime, durationMinutes, inZone, zoneNote } from '../../utils/calendarTime'
 import { formatMoney } from '../../utils/money'
@@ -186,6 +186,14 @@ export default function AppointmentDetail({
         {/* The title only when it says something the name did not. */}
         {a.title && !same(a.title, label) && (
           <Fact icon={<FileTextOutlined />}>{a.title}</Fact>
+        )}
+
+        {/* The internal note. A dispatcher writes "side gate, dog" for
+            the person going; it has to be where that person looks. */}
+        {a.notes && a.notes.trim() && (
+          <Fact icon={<MessageOutlined />}>
+            <span style={{ whiteSpace: 'pre-wrap' }}>{a.notes.trim()}</span>
+          </Fact>
         )}
 
         {otherZone && (

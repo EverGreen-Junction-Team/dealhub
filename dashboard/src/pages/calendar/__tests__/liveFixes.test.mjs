@@ -253,3 +253,18 @@ test('the hover card stands aside while the card menu is open', () => {
   assert.match(card, /open=\{menuOpen \? false : undefined\}/)
   assert.match(card, /onOpenChange=\{setMenuOpen\}/)
 })
+
+test('a note typed here can be read back here', () => {
+  const w = readFileSync(new URL('../../../../../server/src/services/appointmentWriter.js', import.meta.url), 'utf8')
+  const sy = readFileSync(new URL('../../../../../server/src/services/appointmentsSync.js', import.meta.url), 'utf8')
+  assert.match(w, /notes: a\.notes \|\| a\.description \|\| null/, 'webhook drops the description we write')
+  assert.match(sy, /e\.notes \|\| e\.description \|\| null/, 'sync drops the description we write')
+  const d = readFileSync(new URL('../AppointmentDetail.jsx', import.meta.url), 'utf8')
+  assert.match(d, /\{a\.notes && a\.notes\.trim\(\) && \(/, 'the hover card does not show the note')
+})
+
+test('the booking card re-fits when it grows', () => {
+  const b = readFileSync(new URL('../BookAppointment.jsx', import.meta.url), 'utf8')
+  assert.match(b, /new ResizeObserver\(fit\)/)
+  assert.ok(!/settled\.current === key/.test(b), 'measured once on open again')
+})

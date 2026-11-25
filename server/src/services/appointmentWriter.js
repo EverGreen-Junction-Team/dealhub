@@ -75,7 +75,13 @@ export function pickAppointmentFields(event) {
       : null,
     title: a.title || null,
     address: a.address || null,
-    notes: a.notes || null,
+    // GHL has two free-text fields: `notes` (read-only on the API) and
+    // `description`, which is the only one Create/Update can write — and
+    // what our booking card's "Internal notes" box sends. Storing only
+    // `notes` meant a note typed into this app was saved in the CRM and
+    // never seen in this app again. Found by booking one on the live
+    // board. One column, whichever field carries text.
+    notes: a.notes || a.description || null,
     // Verbatim — see migration 143. No normalising, no lowercasing: an
     // unrecognised status must reach the UI as itself.
     appointmentStatus: a.appointmentStatus || null,

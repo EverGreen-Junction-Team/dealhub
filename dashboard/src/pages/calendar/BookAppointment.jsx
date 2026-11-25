@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Select, Input, TimePicker, DatePicker, InputNumber, Checkbox, Button } from 'antd'
 import {
   CloseOutlined, ClockCircleOutlined, UserOutlined, TeamOutlined,
@@ -637,9 +637,6 @@ export default function BookAppointment({
  */
 function useAnchoredCard(anchor, ref) {
   const [nudge, setNudge] = useState({ x: 0, y: 0 })
-  // Measured once per anchor. Re-running on every render would fight itself:
-  // each correction moves the card, which changes the measurement.
-  const settled = useRef(null)
 
   const base = useMemo(() => {
     if (!anchor || typeof anchor.x !== 'number') return null
@@ -649,26 +646,41 @@ function useAnchoredCard(anchor, ref) {
     }
   }, [anchor])
 
+  // ── RE-FITTED WHENEVER IT GROWS, NOT ONLY WHEN IT OPENS ──────────────
+  // It was measured once, on open. Then the card grows — an error banner
+  // and "Book it anyway" appear, the notes box expands, More options
+  // opens — and nothing moved it, so on the live board the override
+  // button's own explanation ran off the bottom of the window. A
+  // ResizeObserver re-fits it on every size change. Nudges accumulate
+  // from where it is NOW, so a card that already fits computes zero and
+  // stops; position changes do not fire the observer, so it cannot loop.
   useLayoutEffect(() => {
     if (!base || !ref.current) return
-    const key = `${base.left},${base.top}`
-    if (settled.current === key) return
-    settled.current = key
-
-    const rect = ref.current.getBoundingClientRect()
-    let dx = 0
-    let dy = 0
-    const overRight = rect.right - (window.innerWidth - EDGE_GUTTER)
-    if (overRight > 0) dx -= (overRight / window.innerWidth) * 100
-    if (rect.left + dx < EDGE_GUTTER) {
-      dx += ((EDGE_GUTTER - rect.left) / window.innerWidth) * 100
+    const el = ref.current
+    const fit = () => {
+      const rect = el.getBoundingClientRect()
+      let dx = 0
+      let dy = 0
+      const overRight = rect.right - (window.innerWidth - EDGE_GUTTER)
+      if (overRight > 0) dx -= (overRight / window.innerWidth) * 100
+      if (rect.left + (dx / 100) * window.innerWidth < EDGE_GUTTER) {
+        dx += ((EDGE_GUTTER - rect.left) / window.innerWidth) * 100
+      }
+      const overBottom = rect.bottom - (window.innerHeight - EDGE_GUTTER)
+      if (overBottom > 0) dy -= (overBottom / window.innerHeight) * 100
+      // Never above the top edge — a card taller than the window keeps
+      // its header visible and scrolls inside (it has a max-height).
+      if (rect.top + (dy / 100) * window.innerHeight < EDGE_GUTTER) {
+        dy += ((EDGE_GUTTER - (rect.top + (dy / 100) * window.innerHeight)) / window.innerHeight) * 100
+      }
+      if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+        setNudge((n) => ({ x: n.x + dx, y: n.y + dy }))
+      }
     }
-    const overBottom = rect.bottom - (window.innerHeight - EDGE_GUTTER)
-    if (overBottom > 0) dy -= (overBottom / window.innerHeight) * 100
-    if (rect.top + dy < EDGE_GUTTER) {
-      dy += ((EDGE_GUTTER - rect.top) / window.innerHeight) * 100
-    }
-    if (dx || dy) setNudge({ x: dx, y: dy })
+    fit()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null
+    ro?.observe(el)
+    return () => ro?.disconnect()
   }, [base, ref])
 
   if (!base) {

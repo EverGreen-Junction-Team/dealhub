@@ -281,7 +281,8 @@ async function upsertEvent(install, locationId, e, eventKind, { calendarId }) {
       assignedUserId, assignedUserName,
       Array.isArray(e.users) ? e.users.filter((u) => typeof u === 'string' && u) : null,
       eventKind,
-      e.title || null, e.address || null, e.notes || null,
+      // notes OR description — see appointmentWriter for why both.
+      e.title || null, e.address || null, e.notes || e.description || null,
       e.appointmentStatus || null, e.source || null,
       startsAt, endsAt,
       e,

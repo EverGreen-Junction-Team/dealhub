@@ -193,3 +193,50 @@ export function rejectionMessage(noun, detail, { action = 'change' } = {}) {
 export function logRejection(where, { status, id, detail, body }) {
   logger.warn({ status, id, detail, body }, `${where}: rejected by the CRM`);
 }
+
+/**
+ * Is this refusal one that `ignoreFreeSlotValidation` would get past?
+ *
+ * ── WHY THIS IS STRING MATCHING, AND WHY THAT IS NOT A SHORTCUT ──────
+ *
+ * GHL returns no error code for this. A 400 carrying "The slot you have
+ * selected is no longer available" and a 400 carrying "contactId must be a
+ * string" are the same status with the same shape, and only the prose tells
+ * them apart. So the choice is not between matching prose and something
+ * better — it is between matching prose HERE, once, in a pure function with
+ * tests, or matching it in the dashboard where nobody would ever see it
+ * again.
+ *
+ * ── WHY IT MATTERS THAT THIS IS CONSERVATIVE ─────────────────────────
+ *
+ * The answer decides whether a rep is offered a "Book it anyway" button.
+ * Offering it on a refusal the override cannot fix means the second attempt
+ * fails identically, which teaches people the button is decorative. Not
+ * offering it on a slot clash just leaves them where they are today. So an
+ * unrecognised refusal answers false, and a phrase is added here only once
+ * it has actually been seen.
+ *
+ * Verified against the v3 docs (25 Nov 2026): ignoreFreeSlotValidation is
+ * documented as "If true the time slot validation would be avoided for any
+ * appointment creation (even the ignoreDateRange)" — so it covers both a
+ * taken slot and a time outside the calendar's own hours and notice period.
+ * It does NOT cover a malformed field, a missing contact or a bad calendar,
+ * and none of those are matched below.
+ */
+const OVERRIDABLE = [
+  // Seen in production, 25 Nov 2026, booking onto a taken slot.
+  'no longer available',
+  'slot is not available',
+  'slot not available',
+  // The calendar's own hours and its minimum scheduling notice. Both are
+  // availability rules, and both are what the override exists for.
+  'outside the working hours',
+  'outside working hours',
+  'minimum scheduling notice'
+];
+
+export function isSlotUnavailable(detail) {
+  if (!detail || typeof detail !== 'string') return false;
+  const d = detail.toLowerCase();
+  return OVERRIDABLE.some((phrase) => d.includes(phrase));
+}

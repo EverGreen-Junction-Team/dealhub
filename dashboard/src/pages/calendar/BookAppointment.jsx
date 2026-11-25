@@ -2,13 +2,169 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { Select, Input, TimePicker, DatePicker, InputNumber, Checkbox, Button } from 'antd'
 import {
   CloseOutlined, ClockCircleOutlined, UserOutlined, TeamOutlined,
-  EnvironmentOutlined, CalendarOutlined, BellOutlined
+  EnvironmentOutlined, CalendarOutlined, BellOutlined, FileTextOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ContactPicker from '../shared/ContactPicker'
 import { useModal } from '../../hooks/useModal'
 import { appointmentsAPI } from '../../api/appointments'
 import { isoForSlot, DEFAULT_SLOT_MINUTES } from '../../utils/calendarTime'
+
+// ── The look ──────────────────────────────────────────────────────────
+//
+// Scoped under .pp-quick so nothing here escapes into the rest of the app.
+//
+// The controls are borderless until you point at one. That is the trick that
+// makes a card of eight inputs read as a card of eight FACTS — the boxes
+// appear only for the row you are about to change. It needs CSS rather than
+// props because ContactPicker's Select is inside another component and takes
+// no styling of its own; one rule here covers every control on the card and
+// keeps them consistent, which eight separate `variant` props would not.
+const QUICK_CSS = `
+/* ── THE CONTROLS HAVE EDGES NOW ─────────────────────────────────────
+ *
+ * This reverses a deliberate decision, twice. The card was built
+ * borderless on purpose — the idea being that eight inputs with eight
+ * boxes read as a form, while eight borderless rows read as eight
+ * FACTS, with the box appearing only for the row you are about to
+ * change. The first correction added a faint fill, because fully
+ * transparent meant "Unassigned" and "Choose a calendar" were
+ * indistinguishable from the help text under them.
+ *
+ * A fill was not enough either. The report both times was the same —
+ * the options are not clear — and the second one came with GHL's own
+ * appointment modal beside it: white fields, a real 1px border on every
+ * one, nothing hidden until hover. Two reports of the same confusion
+ * against one designer's intent is not a tie.
+ *
+ * The reason the original idea does not survive contact is that
+ * discoverability cannot be a hover state. A rep scanning this card
+ * decides what is editable BEFORE moving the pointer, and a control
+ * that only looks like a control once it is found is only found by
+ * people who already knew.
+ *
+ * Hover and focus still escalate — border darkens, then goes brand —
+ * so the three steps survive; they just start from something visible. */
+.pp-quick .ant-select-selector,
+.pp-quick .ant-picker,
+.pp-quick .ant-input-number,
+.pp-quick .ant-input {
+  background: var(--surface-card);
+  border-color: var(--border-default) !important;
+  box-shadow: none !important;
+  transition: background 110ms linear, border-color 110ms linear;
+}
+.pp-quick .ant-select:hover .ant-select-selector,
+.pp-quick .ant-picker:hover,
+.pp-quick .ant-input-number:hover,
+.pp-quick .ant-input:hover {
+  background: var(--surface-card);
+  border-color: var(--border-strong) !important;
+}
+/* Focus still draws a real border. Hover is a hint that something is
+   editable; focus has to say exactly which box the keyboard is in. */
+.pp-quick .ant-select-focused .ant-select-selector,
+.pp-quick .ant-picker-focused,
+.pp-quick .ant-input-number-focused,
+.pp-quick .ant-input:focus {
+  background: var(--surface-card);
+  border-color: var(--brand-primary) !important;
+}
+.pp-quick .ant-picker-input > input { cursor: pointer; }
+
+.pp-quick-title.ant-input {
+  /* The exception: it already has focus and an underline, so a fill as
+     well would make the loudest thing on the card louder still. */
+  background: transparent;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text-heading);
+  padding-left: 6px;
+  border-bottom: 1px solid var(--border-default) !important;
+  border-radius: 0;
+}
+.pp-quick-title.ant-input:focus {
+  border-bottom: 2px solid var(--brand-primary) !important;
+  background: transparent;
+}
+.pp-quick-sub {
+  margin: 6px 0 var(--space-4) 6px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.pp-quick-row {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: start;
+  gap: 8px;
+  /* minWidth 0 so a long calendar or contact name truncates inside its
+     control instead of widening the grid column and the card with it. */
+  min-width: 0;
+  padding: 6px 0;
+}
+/* ── LABELS ARE READ, NOT DECORATED ──────────────────────────────────
+ *
+ * These were 13px, uppercase, letter-spaced and --text-muted. Every one
+ * of those four choices makes a label harder to read, and together they
+ * made the card's own field names quieter than the values beside them.
+ * Uppercase is the worst of them: it strips the word shapes the eye
+ * actually reads and makes short labels look like category tags rather
+ * than names of things.
+ *
+ * GHL's own appointment modal, which is the comparison that prompted
+ * this, does none of it: sentence case, a step up in size, near-black,
+ * medium weight. That is what a label looks like when it is meant to be
+ * read rather than to recede, so that is what these are now. */
+.pp-quick-label {
+  margin: 0 0 3px 12px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-body);
+}
+
+.pp-quick-icon {
+  display: flex;
+  justify-content: center;
+  /* Aligns with the LABEL now, not with the control below it. */
+  padding-top: 2px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+/* --text-muted, not --text-faint. Faint is #6f7784: 4.52:1 on white, a
+   pass by 0.02, and these lines carry the things a rep most needs to
+   read — which calendar, whose, how long. */
+.pp-quick-hint {
+  display: block;
+  margin: 3px 0 0 12px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.pp-quick-x {
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pp-quick-x:hover { background: var(--surface-sunken); }
+.pp-quick-more {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: var(--text-sm);
+  color: var(--text-link);
+  cursor: pointer;
+}
+.pp-quick-more:hover { text-decoration: underline; }
+.pp-quick-dim {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+`
 
 // Book an appointment from the board, as Google Calendar's quick-create card.
 //
@@ -120,8 +276,17 @@ export default function BookAppointment({
   // because there is no fuller editor to send you to.
   const [more, setMore] = useState(false)
 
+  // What the dispatcher wants the visit's owner to know. Lands in GHL's
+  // appointment description — the only free-text field Create Appointment
+  // has (verified against the v3 docs). See createGhlAppointment.
+  const [notes, setNotes] = useState('')
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  // Set when GHL refused on AVAILABILITY — a taken slot, or outside the
+  // calendar's hours. Only then is "Book it anyway" offered; the server
+  // decides, because only it sees GHL's own wording.
+  const [canOverride, setCanOverride] = useState(false)
 
   // Escape closes it. Bound here rather than in useModal — see that hook's
   // note: every dialog owns its own, guarded against firing mid-save so a
@@ -157,8 +322,22 @@ export default function BookAppointment({
 
   const chosenCalendar = calendars.find((c) => c.id === calendarId)
 
-  const submit = async () => {
+  // ── OVERRIDING, AND ONLY ON PURPOSE ──────────────────────────────
+  //
+  // GHL's availability check is the calendar owner's rule, and most of
+  // the time it is right: a slot that is taken is taken. But a
+  // dispatcher double-booking a surveyor because the customer can only
+  // do 3pm is a decision a person makes, not a mistake to prevent — and
+  // GHL's own calendar lets an admin do exactly that.
+  //
+  // So the first save always respects availability. Only when GHL says
+  // no FOR THAT REASON does the card offer a second, explicit button,
+  // and only that button sends ignoreFreeSlotValidation. Defaulting the
+  // override on would make the check decorative; never offering it
+  // would leave the rep with nowhere to go but GHL itself.
+  const submit = async (override = false) => {
     setError(null)
+    setCanOverride(false)
     if (!calendarId) return setError('Pick a calendar.')
     if (!contactId) return setError('Pick a customer.')
 
@@ -182,7 +361,9 @@ export default function BookAppointment({
         assignedUserId: assignedUserId || undefined,
         title: title.trim() || undefined,
         address: address.trim() || undefined,
-        notifyCustomer
+        description: notes.trim() || undefined,
+        notifyCustomer,
+        ...(override ? { ignoreAvailability: true } : {})
       })
       onBooked?.(res.appointment, { notified: notifyCustomer })
     } catch (err) {
@@ -190,6 +371,7 @@ export default function BookAppointment({
       // calendar's availability — "outside working hours", "slot taken" —
       // and that names the thing the dispatcher has to change.
       setError(err.message || 'That booking was refused.')
+      setCanOverride(!override && err.data?.canOverride === true)
       setSaving(false)
     }
   }
@@ -266,7 +448,7 @@ export default function BookAppointment({
           placeholder="Add title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          onPressEnter={() => { if (!saving) submit() }}
+          onPressEnter={() => { if (!saving) submit(false) }}
         />
         <p className="pp-quick-sub">
           {/* Shortened. It sat directly under the one field with focus and
@@ -386,7 +568,35 @@ export default function BookAppointment({
           </>
         )}
 
-        {error && <div style={{ marginTop: 'var(--space-3)' }}><Problem>{error}</Problem></div>}
+        {/* Always visible, not under More options: GHL's own modal puts
+            Internal notes on the main form, and a note is the thing a
+            dispatcher most often has to say ("side gate, dog"). */}
+        <Row icon={<FileTextOutlined />} label="Internal notes">
+          <Input.TextArea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add an internal note"
+            autoSize={{ minRows: 2, maxRows: 6 }}
+            maxLength={5000}
+          />
+          <Hint>Saved on the appointment in your CRM. Not sent to the customer.</Hint>
+        </Row>
+
+        {error && (
+          <div style={{ marginTop: 'var(--space-3)', display: 'grid', gap: 'var(--space-2)' }}>
+            <Problem>{error}</Problem>
+            {canOverride && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                <Button danger onClick={() => submit(true)} loading={saving}>
+                  Book it anyway
+                </Button>
+                <span className="pp-quick-dim">
+                  Ignores the calendar's availability. Anything already in this slot stays.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div
           style={{
@@ -405,7 +615,7 @@ export default function BookAppointment({
           </button>
           <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
             <Button onClick={onClose} disabled={saving}>Cancel</Button>
-            <Button type="primary" shape="round" onClick={submit} loading={saving}>
+            <Button type="primary" shape="round" onClick={() => submit(false)} loading={saving}>
               Save
             </Button>
           </div>
@@ -532,132 +742,4 @@ function Problem({ children }) {
   )
 }
 
-// ── The look ──────────────────────────────────────────────────────────
-//
-// Scoped under .pp-quick so nothing here escapes into the rest of the app.
-//
-// The controls are borderless until you point at one. That is the trick that
-// makes a card of eight inputs read as a card of eight FACTS — the boxes
-// appear only for the row you are about to change. It needs CSS rather than
-// props because ContactPicker's Select is inside another component and takes
-// no styling of its own; one rule here covers every control on the card and
-// keeps them consistent, which eight separate `variant` props would not.
-const QUICK_CSS = `
-/* ── Borderless, but not INVISIBLE ───────────────────────────────────
- *
- * The first version made every control fully transparent until hovered,
- * so the card read as a paragraph of grey text with nothing in it that
- * looked like it could be changed. "Unassigned" and "Choose a calendar"
- * were indistinguishable from the help text beneath them.
- *
- * A faint fill fixes that at no cost to the look: the row still reads as
- * a fact rather than a form field, but the shape of the box tells you
- * where the fact ends and where you can click. Hover darkens it, focus
- * draws a real border — three steps instead of two. */
-.pp-quick .ant-select-selector,
-.pp-quick .ant-picker,
-.pp-quick .ant-input-number,
-.pp-quick .ant-input {
-  background: var(--surface-sunken);
-  border-color: transparent !important;
-  box-shadow: none !important;
-  transition: background 110ms linear, border-color 110ms linear;
-}
-.pp-quick .ant-select:hover .ant-select-selector,
-.pp-quick .ant-picker:hover,
-.pp-quick .ant-input-number:hover,
-.pp-quick .ant-input:hover {
-  background: var(--gray-100);
-}
-/* Focus still draws a real border. Hover is a hint that something is
-   editable; focus has to say exactly which box the keyboard is in. */
-.pp-quick .ant-select-focused .ant-select-selector,
-.pp-quick .ant-picker-focused,
-.pp-quick .ant-input-number-focused,
-.pp-quick .ant-input:focus {
-  background: var(--surface-card);
-  border-color: var(--brand-primary) !important;
-}
-.pp-quick .ant-picker-input > input { cursor: pointer; }
 
-.pp-quick-title.ant-input {
-  /* The exception: it already has focus and an underline, so a fill as
-     well would make the loudest thing on the card louder still. */
-  background: transparent;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
-  color: var(--text-heading);
-  padding-left: 6px;
-  border-bottom: 1px solid var(--border-default) !important;
-  border-radius: 0;
-}
-.pp-quick-title.ant-input:focus {
-  border-bottom: 2px solid var(--brand-primary) !important;
-  background: transparent;
-}
-.pp-quick-sub {
-  margin: 4px 0 var(--space-3) 6px;
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-}
-
-.pp-quick-row {
-  display: grid;
-  grid-template-columns: 26px 1fr;
-  align-items: start;
-  gap: 6px;
-  /* minWidth 0 so a long calendar or contact name truncates inside its
-     control instead of widening the grid column and the card with it. */
-  min-width: 0;
-  padding: 3px 0;
-}
-/* Small, quiet, and above its control — enough to name the row without
-   turning the card back into a stack of form fields. */
-.pp-quick-label {
-  margin: 0 0 1px 12px;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.pp-quick-icon {
-  display: flex;
-  justify-content: center;
-  /* Aligns with the LABEL now, not with the control below it. */
-  padding-top: 2px;
-  font-size: 15px;
-  color: var(--text-muted);
-}
-.pp-quick-hint {
-  display: block;
-  margin: 1px 0 0 12px;
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-}
-
-.pp-quick-x {
-  border: none;
-  background: none;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.pp-quick-x:hover { background: var(--surface-sunken); }
-.pp-quick-more {
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: var(--text-sm);
-  color: var(--text-link);
-  cursor: pointer;
-}
-.pp-quick-more:hover { text-decoration: underline; }
-.pp-quick-dim {
-  font-size: var(--text-sm);
-  color: var(--text-faint);
-  padding: 0 2px;
-}
-`

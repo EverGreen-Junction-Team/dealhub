@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { Tooltip } from 'antd'
+import { Popover } from 'antd'
+import AppointmentDetail from './AppointmentDetail'
 import { monthWeeks, groupByDay, movePatch } from './boardLayout'
 import { colourFor } from './CalendarSidebar'
 import {
-  isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, durationMinutes
+  isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone
 } from '../../utils/calendarTime'
 
 // The month view.
@@ -246,22 +247,15 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent
     ? (a.title || 'Blocked')
     : (a.contactName || a.title || 'Appointment')
 
-  const tip = (
-    <div style={{ display: 'grid', gap: 3, fontSize: 'var(--text-sm)' }}>
-      <strong>{label}</strong>
-      <span>
-        {clockTime(a.startsAt, zone)}
-        {a.endsAt ? `–${clockTime(a.endsAt, zone)}` : ''}
-        {` · ${durationMinutes(a.startsAt, a.endsAt)} min`}
-      </span>
-      {a.assignedUserName && <span>{a.assignedUserName}</span>}
-      {!isBlocked && <span style={{ opacity: 0.75 }}>{a.dealName || 'No deal linked'}</span>}
-      {a.status && !isBlocked && <span style={{ opacity: 0.75 }}>Status: {a.status}</span>}
-    </div>
-  )
 
   return (
-    <Tooltip title={tip} mouseEnterDelay={0.4}>
+    <Popover
+      content={<AppointmentDetail appointment={a} zone={zone} accent={accent} />}
+      trigger="hover"
+      mouseEnterDelay={0.4}
+      rootClassName="pp-portal"
+      styles={{ body: { padding: 'var(--space-4)' } }}
+    >
       <div
         className={!isBlocked && !cancelled ? 'pp-appt-chip' : undefined}
         draggable={!isBlocked && !busy}
@@ -315,6 +309,6 @@ function MonthChip({ appointment: a, zone, busy, onOpenDeal, onDragStart, accent
         </span>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
       </div>
-    </Tooltip>
+    </Popover>
   )
 }

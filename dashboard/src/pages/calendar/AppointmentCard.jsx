@@ -1,7 +1,7 @@
 import React from 'react'
-import { Tooltip, Dropdown } from 'antd'
-import { clockTime, zoneNote } from '../../utils/calendarTime'
-import { formatMoney } from '../../utils/money'
+import { Popover, Dropdown } from 'antd'
+import AppointmentDetail from './AppointmentDetail'
+import { clockTime } from '../../utils/calendarTime'
 
 // One booking on the board.
 //
@@ -75,7 +75,6 @@ export default function AppointmentCard({
   const widthPct = 100 / lanes
   const leftPct = widthPct * lane
 
-  const otherZone = zoneNote(a.timezone, zone)
 
   // Blocked time is not a booking and must not pretend to be one: no
   // customer, no deal, and — crucially — it cannot be dragged. GHL's
@@ -126,39 +125,18 @@ export default function AppointmentCard({
     }
   }
 
-  const tip = (
-    <div style={{ display: 'grid', gap: 4, fontSize: 'var(--text-sm)' }}>
-      <strong>{label}</strong>
-      <span>
-        {clockTime(a.startsAt, zone)}
-        {a.endsAt ? `–${clockTime(a.endsAt, zone)}` : ''}
-        {otherZone ? ` · booked in ${otherZone}` : ''}
-      </span>
-      {a.title && a.title !== label && <span>{a.title}</span>}
-      {!isBlocked && (
-        a.dealName
-          ? (
-            <span>
-              {a.dealName}
-              {a.dealValue != null ? ` · ${formatMoney(a.dealValue, a.dealCurrency)}` : ''}
-            </span>
-          )
-          // Shown, not hidden. NULL is the common and correct state when the
-          // customer has more than one open deal and the server declined to
-          // guess — see migration 143. Leaving the line out would read as
-          // "this booking has no job", which is a different claim.
-          : <span style={{ opacity: 0.75 }}>No deal linked</span>
-      )}
-      {a.address && <span style={{ opacity: 0.75 }}>{a.address}</span>}
-      {a.status && !isBlocked && <span style={{ opacity: 0.75 }}>Status: {a.status}</span>}
-      {clippedBefore && <span style={{ opacity: 0.75 }}>Starts before the board's first hour</span>}
-      {clippedAfter && <span style={{ opacity: 0.75 }}>Runs past the board's last hour</span>}
-      {!isBlocked && a.dealId && <span style={{ opacity: 0.75 }}>Click to open the deal</span>}
-    </div>
-  )
-
   return (
-    <Tooltip title={tip} mouseEnterDelay={0.35} placement="right">
+    <Popover
+      // A light card, not a dark tooltip — see AppointmentDetail for why.
+      // rootClassName because it portals to <body>, outside [data-dealhub],
+      // where none of the type or colour tokens exist without it.
+      content={<AppointmentDetail appointment={a} zone={zone} accent={accent} clippedBefore={clippedBefore} clippedAfter={clippedAfter} />}
+      trigger="hover"
+      mouseEnterDelay={0.35}
+      placement="right"
+      rootClassName="pp-portal"
+      styles={{ body: { padding: 'var(--space-4)' } }}
+    >
       <div
         draggable={draggable}
         onDragStart={(e) => {
@@ -326,6 +304,6 @@ export default function AppointmentCard({
           </div>
         )}
       </div>
-    </Tooltip>
+    </Popover>
   )
 }

@@ -41,18 +41,22 @@
 // fix and the error says so plainly.
 
 import { ghlRequest } from './ghlClient.js';
-import { rejectionMessage, logRejection } from './ghlRejection.js';
+import { rejectionMessage, logRejection, isSlotUnavailable } from './ghlRejection.js';
 import { logger } from '../utils/logger.js';
 
 const enc = encodeURIComponent;
 
 export class AppointmentWriteError extends Error {
-  constructor(message, { status = 400, field = null, detail = null } = {}) {
+  constructor(message, { status = 400, field = null, detail = null, canOverride = false } = {}) {
     super(message);
     this.name = 'AppointmentWriteError';
     this.status = status;
     this.field = field;
     this.detail = detail;
+    // True only when GHL refused on availability — a taken slot, or a
+    // time outside the calendar's hours — which ignoreFreeSlotValidation
+    // gets past. The card offers "Book it anyway" on exactly this.
+    this.canOverride = canOverride;
   }
 }
 
@@ -117,7 +121,9 @@ function translateGhlError(err, { appointmentId = null, verb } = {}) {
     // and the whole sales team sees these.
     logRejection('ghlAppointmentWrite', { status, id: appointmentId, detail, body });
     const rej = rejectionMessage('appointment', detail);
-    return new AppointmentWriteError(rej.message, { status: rej.status, detail });
+    return new AppointmentWriteError(rej.message, {
+      status: rej.status, detail, canOverride: isSlotUnavailable(detail)
+    });
   }
   logger.error(
     { err, status, appointmentId, body },
@@ -162,7 +168,8 @@ function translateGhlError(err, { appointmentId = null, verb } = {}) {
  */
 export async function createGhlAppointment(install, {
   calendarId, contactId, startTime, endTime, title, address,
-  assignedUserId, appointmentStatus, notifyCustomer, ignoreAvailability
+  assignedUserId, appointmentStatus, notifyCustomer, ignoreAvailability,
+  description
 } = {}) {
   if (!calendarId) {
     throw new AppointmentWriteError(
@@ -195,6 +202,26 @@ export async function createGhlAppointment(install, {
     // than anything generic we could invent here.
     ...(title ? { title } : {}),
     ...(address ? { address } : {}),
+    // ── THE NOTE, AND WHAT GHL WILL ACTUALLY DO WITH IT ───────────
+    //
+    // `description` is the ONLY free-text field on Create Appointment.
+    // Verified against the v3 docs on 25 Nov 2026: the create and
+    // update bodies have no `notes` field at all. Get Appointment
+    // returns an `event.notes`, but the docs never say how to write
+    // it through this route.
+    //
+    // GHL's own "Internal notes" box is a different thing: a separate
+    // resource at POST /calendars/appointments/{id}/notes, capped at
+    // 5000 characters, and — per the docs — "stored on the contact".
+    // Writing there would need a second call after the appointment
+    // exists and would put the text on the customer's record, which is
+    // not what "internal" implies to the person typing it.
+    //
+    // So this lands in the appointment's description, where it is
+    // attached to the booking itself and visible on the appointment in
+    // GHL. If parity with that box is wanted later it is a second
+    // call, not a change to this one.
+    ...(description ? { description } : {}),
     ...(assignedUserId ? { assignedUserId } : {}),
     // 'confirmed' unless told otherwise. A booking made deliberately by a
     // dispatcher is confirmed by definition; leaving it unset makes the

@@ -361,7 +361,7 @@ appointmentsRouter.post('/', async (req, res, next) => {
   const locationId = req.locationId;
   const {
     calendarId, contactId, startTime, endTime, title, address,
-    assignedUserId, notifyCustomer, ignoreAvailability
+    assignedUserId, notifyCustomer, ignoreAvailability, description
   } = req.body || {};
 
   try {
@@ -377,13 +377,22 @@ appointmentsRouter.post('/', async (req, res, next) => {
       // Passed through, never defaulted here — ghlAppointmentWrite owns the
       // decision and documents why booking is the one case where notifying
       // the customer is arguably right.
-      notifyCustomer, ignoreAvailability
+      notifyCustomer, ignoreAvailability,
+      // The note the dispatcher typed. Lands in GHL's appointment
+      // description — see createGhlAppointment for why that and not the
+      // separate notes resource.
+      description
     });
 
     res.status(201).json({ appointment: created });
   } catch (err) {
     if (err instanceof AppointmentWriteError) {
-      return res.status(err.status).json({ error: err.message, field: err.field });
+      return res.status(err.status).json({
+        error: err.message, field: err.field,
+        // Lets the card offer "Book it anyway" only when the override
+        // would actually get past this refusal.
+        canOverride: err.canOverride === true
+      });
     }
     logger.error({ err, locationId }, 'POST /api/appointments failed');
     next(err);

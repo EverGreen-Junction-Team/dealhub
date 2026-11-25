@@ -34,7 +34,7 @@ import assert from 'node:assert/strict';
 
 process.env.DATABASE_URL ||= 'postgres://unused';
 process.env.SESSION_JWT_SECRET ||= 'unused';
-const { safeDetail, rejectionMessage } = await import('../ghlRejection.js');
+const { safeDetail, rejectionMessage, isSlotUnavailable } = await import('../ghlRejection.js');
 
 // ── What a rep should see ─────────────────────────────────────────────
 
@@ -157,4 +157,38 @@ test('a refused delete WITH a reason gives the reason', () => {
     rejectionMessage('task', 'This task is locked', { action: 'delete' }).message,
     /would not delete that task: This task is locked/
   );
+});
+
+
+// ── Which refusals the override can get past ─────────────────────────
+//
+// Decides whether the booking card offers "Book it anyway". A false
+// positive is the expensive mistake: the retry fails identically and the
+// button learns to be ignored.
+
+test('a taken slot is overridable — the production message', () => {
+  assert.equal(isSlotUnavailable('The slot you have selected is no longer available'), true);
+  assert.equal(isSlotUnavailable('This slot is not available'), true);
+});
+
+test('the calendar\'s own hours and notice period are overridable', () => {
+  assert.equal(isSlotUnavailable('The slot is outside the working hours'), true);
+  assert.equal(isSlotUnavailable('Booking violates minimum scheduling notice'), true);
+});
+
+test('validation failures are NOT overridable', () => {
+  for (const d of [
+    'contactId must be a string',
+    'Calendar not found',
+    'Contact not found for id:88qfhZVULZ41Bl7BipOA',
+    'startTime must be a valid ISO 8601 date string'
+  ]) {
+    assert.equal(isSlotUnavailable(d), false, d);
+  }
+});
+
+test('nothing is overridable by default', () => {
+  for (const d of ['', null, undefined, 42, {}]) {
+    assert.equal(isSlotUnavailable(d), false, String(d));
+  }
 });

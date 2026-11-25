@@ -7,6 +7,7 @@ import TimeGrid from '../calendar/TimeGrid'
 import MonthGrid from '../calendar/MonthGrid'
 import { monthWeeks, UNASSIGNED } from '../calendar/boardLayout'
 import CalendarSidebar from '../calendar/CalendarSidebar'
+import { overlayPending } from '../calendar/pendingWrites'
 import BookAppointment from '../calendar/BookAppointment'
 import { appointmentsAPI } from '../../api/appointments'
 import { boardZone } from '../../utils/calendarTime'
@@ -314,6 +315,11 @@ export default function CalendarTab({ onOpenDeal }) {
     return `${span.from.format('D MMM YYYY')} – ${to.format('D MMM YYYY')}`
   }, [view, fromDay, span])
 
+  // Accepted writes our database has not caught up with — see pendingWrites.
+  const pendingWrites = useRef(new Map())
+  // For naming a new assignee before the webhook brings the name.
+  const resourcesRef = useRef([])
+
   const load = useCallback(async () => {
     // Already showing something? Then this is a refresh, not a load.
     if (hasDrawn.current) setRefreshing(true)
@@ -329,8 +335,9 @@ export default function CalendarTab({ onOpenDeal }) {
         // spinner, no flash of an empty grid. That is what makes a checkbox
         // list feel like one.
       })
+      resourcesRef.current = res.resources || []
       setData({
-        appointments: res.appointments || [],
+        appointments: overlayPending(res.appointments || [], pendingWrites.current),
         resources: res.resources || [],
         timezone: res.timezone || null
       })
@@ -379,6 +386,22 @@ export default function CalendarTab({ onOpenDeal }) {
 
     try {
       await appointmentsAPI.update(id, patch)
+      // Accepted. Hold the new position over reloads until our row agrees
+      // — the reload below would otherwise put the card BACK, because the
+      // webhook that writes our row has not arrived yet.
+      pendingWrites.current.set(id, {
+        at: Date.now(),
+        fields: {
+          ...(patch.startTime ? { startsAt: patch.startTime, endsAt: patch.endTime } : {}),
+          ...('assignedUserId' in patch
+            ? {
+                assignedUserId: patch.assignedUserId,
+                assignedUserName: resourcesRef.current
+                  .find((r) => r.id === patch.assignedUserId)?.name || null
+              }
+            : {})
+        }
+      })
       // Refetch rather than trusting the echo to be complete.
       //
       // The write landed in GHL; our row is written by the AppointmentUpdate
@@ -409,16 +432,23 @@ export default function CalendarTab({ onOpenDeal }) {
 
   // Cancel, reinstate, or record an outcome.
   //
-  // Not optimistic, unlike a move. A drag has already shown the rep where
-  // the card went and reverting it is visible; a status change would alter
-  // only a colour, and a colour that flickers back is easy to miss — so this
-  // waits for the server and then reloads. It is one click, not a gesture,
-  // so the wait costs nothing in feel.
+  // Waits for the CRM to ACCEPT it before showing it — a status that
+  // flickered on and then back would be easy to miss — but once accepted it
+  // is shown at once and held until our row agrees (see pendingWrites).
   const handleSetStatus = useCallback(async (appointment, appointmentStatus) => {
     const id = appointment.id
     setBusyIds((s) => new Set(s).add(id))
     try {
       await appointmentsAPI.update(id, { appointmentStatus })
+      // Shown as soon as the CRM accepts it, and held over reloads until
+      // our row agrees. It used to reload straight away and get the OLD
+      // status back — "Saved" over a card that had not changed, which on
+      // the live board looked enough like a failure to be clicked twice.
+      pendingWrites.current.set(id, { at: Date.now(), fields: { status: appointmentStatus } })
+      setData((d) => ({
+        ...d,
+        appointments: d.appointments.map((a) => (a.id === id ? { ...a, status: appointmentStatus } : a))
+      }))
       await load()
       say(
         appointmentStatus === 'cancelled' ? 'Cancelled — the customer was not emailed'

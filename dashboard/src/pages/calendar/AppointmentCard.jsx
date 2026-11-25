@@ -137,12 +137,18 @@ export default function AppointmentCard({
       // Outcomes, which are what make the board worth reading back. A
       // no-show recorded on the day is a fact; reconstructed a week later
       // it is a guess.
-      statusActions.push({
-        key: 'showed', label: 'Mark as attended', onClick: () => onSetStatus(whole, 'showed')
-      })
-      statusActions.push({
-        key: 'noshow', label: 'Mark as a no-show', onClick: () => onSetStatus(whole, 'noshow')
-      })
+      // Not the one it already is. "Mark as attended" on an attended
+      // booking was offered on the live board; it does nothing but write.
+      if (status !== 'showed') {
+        statusActions.push({
+          key: 'showed', label: 'Mark as attended', onClick: () => onSetStatus(whole, 'showed')
+        })
+      }
+      if (status !== 'noshow') {
+        statusActions.push({
+          key: 'noshow', label: 'Mark as a no-show', onClick: () => onSetStatus(whole, 'noshow')
+        })
+      }
     }
   }
 

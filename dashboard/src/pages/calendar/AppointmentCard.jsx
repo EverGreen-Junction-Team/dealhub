@@ -331,7 +331,9 @@ export default function AppointmentCard({
             {isBlocked
               ? 'Blocked'
               : isPiece
-                ? (a._edge === 'end'
+                ? (a._edge === 'daily'
+                    ? `Daily until ${inZone(whole.endsAt, zone).format('ddd D MMM')}`
+                    : a._edge === 'end'
                     ? `from ${inZone(whole.startsAt, zone).format('ddd D MMM, HH:mm')}`
                     : `until ${inZone(whole.endsAt, zone).format('ddd D MMM, HH:mm')}`)
                 : (showOwner

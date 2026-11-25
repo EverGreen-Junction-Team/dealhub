@@ -4,7 +4,7 @@ import DraftSlot from './DraftSlot'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
   DAY_START_MIN, DAY_END_MIN, boardHeightPx, hourMarks, clampToWindow,
-  groupIntoCells, cellKey, isLong, longSpan, longStartPiece, longEndPiece, minutesForDrop, isRealMove, movePatch,
+  groupIntoCells, cellKey, isLong, longSpan, longStartPiece, longEndPiece, dailyWindow, dailyPieces, minutesForDrop, isRealMove, movePatch,
   UNASSIGNED, PIXELS_PER_MINUTE, WORK_START_MIN, WORK_END_MIN
 } from './boardLayout'
 import {
@@ -81,14 +81,25 @@ export default function ResourceBoard({
   // the timeline (as on the week grid), and on EVERY day it covers, a
   // slim row under the person's name. Kept out of the time column so
   // double-clicking a slot there still books.
-  const long = useMemo(() => appointments.filter(isLong), [appointments])
+  // Spanning (all-day) bookings get the row under the name; daily-window
+  // ones (10:30–11:00 across several days) are cards in the column on
+  // each day — see dailyWindow in boardLayout.
+  const long = useMemo(
+    () => appointments.filter((a) => isLong(a) && !dailyWindow(a, zone)),
+    [appointments, zone]
+  )
+  const daily = useMemo(
+    () => appointments.filter((a) => isLong(a) && dailyWindow(a, zone)),
+    [appointments, zone]
+  )
   const cells = useMemo(
     () => groupIntoCells([
       ...appointments.filter((a) => !isLong(a)),
+      ...daily.flatMap((a) => dailyPieces(a, dayKeys, zone)),
       ...long.map(longStartPiece),
       ...long.map((a) => longEndPiece(a, zone)).filter(Boolean)
     ], zone),
-    [appointments, long, zone]
+    [appointments, long, daily, dayKeys, zone]
   )
   const longByCell = useMemo(() => {
     const m = new Map()
@@ -353,9 +364,11 @@ export default function ResourceBoard({
               const key = cellKey(day, col.id === UNASSIGNED ? null : col.id)
               const items = cells.get(key) || []
               const longs = longByCell.get(key) || []
-              // Each booking once: the start marker IS the long booking on
-              // its first day, so it is not counted again.
-              const booked = items.filter((i) => !i._whole).length + longs.length
+              // Each booking once: a spanning booking's start/end markers are
+              // already counted by its row under the name, so they are not
+              // counted again. A DAILY card is the booking's only presence
+              // that day, so it counts.
+              const booked = items.filter((i) => !i._whole || i._edge === 'daily').length + longs.length
               const isHover = hover === key
               return (
                 <div

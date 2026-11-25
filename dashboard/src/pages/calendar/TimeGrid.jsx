@@ -5,7 +5,7 @@ import { colourFor } from './CalendarSidebar'
 import {
   DAY_START_MIN, DAY_END_MIN, WORK_START_MIN, WORK_END_MIN,
   boardHeightPx, hourMarks, clampToWindow,
-  groupByDay, isLong, longSpan, longStartPiece, longEndPiece, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
+  groupByDay, isLong, longSpan, longStartPiece, longEndPiece, dailyWindow, dailyPieces, minutesForDrop, isRealMove, movePatch, PIXELS_PER_MINUTE
 } from './boardLayout'
 import {
   isoForSlot, minutesNow, dayKeyNow, inZone, zoneAbbrev
@@ -58,26 +58,37 @@ export default function TimeGrid({
   // so do we, which only works if the two are told apart.
   const pressedAt = useRef(null)
 
-  // Days-long appointments go to the strip under the headings, not into
-  // the time columns — see isLong in boardLayout for the live case.
-  const timed = useMemo(() => appointments.filter((a) => !isLong(a)), [appointments])
-  const long = useMemo(() => appointments.filter(isLong), [appointments])
-  // The start marker goes in with the timed ones, so it lane-packs with
-  // whatever else is at 10:30 that day.
-  const cells = useMemo(
-    () => groupByDay([
-      ...timed,
-      ...long.map(longStartPiece),
-      ...long.map((a) => longEndPiece(a, zone)).filter(Boolean)
-    ], zone),
-    [timed, long, zone]
-  )
-
   const dayKeys = useMemo(() => {
     const out = []
     for (let i = 0; i < days; i++) out.push(fromDay.add(i, 'day').format('YYYY-MM-DD'))
     return out
   }, [fromDay, days])
+
+  // Days-long appointments, two kinds (see dailyWindow in boardLayout):
+  //   daily     a window like 10:30–11:00 across several days — drawn at
+  //             that window on EVERY day it covers, in the timeline
+  //   spanning  genuinely all-day — a bar in the strip under the headings,
+  //             with start and end markers in the timeline
+  const timed = useMemo(() => appointments.filter((a) => !isLong(a)), [appointments])
+  const daily = useMemo(
+    () => appointments.filter((a) => isLong(a) && dailyWindow(a, zone)),
+    [appointments, zone]
+  )
+  const long = useMemo(
+    () => appointments.filter((a) => isLong(a) && !dailyWindow(a, zone)),
+    [appointments, zone]
+  )
+  // Everything that lives in the timeline, lane-packed together so a
+  // daily 10:30 sits beside anything else at 10:30 that day.
+  const cells = useMemo(
+    () => groupByDay([
+      ...timed,
+      ...daily.flatMap((a) => dailyPieces(a, dayKeys, zone)),
+      ...long.map(longStartPiece),
+      ...long.map((a) => longEndPiece(a, zone)).filter(Boolean)
+    ], zone),
+    [timed, daily, long, dayKeys, zone]
+  )
 
   const [nowMin, setNowMin] = useState(() => minutesNow(zone))
   useEffect(() => {

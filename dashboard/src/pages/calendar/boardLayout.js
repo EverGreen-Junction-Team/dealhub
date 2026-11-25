@@ -1,5 +1,5 @@
 import {
-  minutesFromMidnight, durationMinutes, dayKey, SNAP_MINUTES
+  minutesFromMidnight, durationMinutes, dayKey, SNAP_MINUTES, isoForSlot as slotIso
 } from '../../utils/calendarTime.js'
 
 // The arithmetic behind the board, with no React in it.
@@ -343,7 +343,48 @@ export function longStartPiece(appointment) {
  *   last day, otherwise              → "until 11:00"
  *   any day between                  → "All day"
  */
+// ── A DAILY WINDOW ────────────────────────────────────────────────────
+//
+// Asked for on the live board: "james stevens" runs 10:30 Tuesday to 11:00
+// the next Monday, and the rep reads that as a 10:30–11:00 slot on each of
+// those days, not as six unbroken days. So a long booking whose start and
+// end times of day make a sensible window — the end later in the day than
+// the start, at most twelve hours apart — is drawn as that window on every
+// day it covers, in the timeline, instead of as a bar at the top.
+//
+// What stays a bar: bookings that genuinely run all day (00:00 → 23:59,
+// or ending earlier in the day than they start), where a per-day window
+// would be the whole day or would make no sense.
+//
+// The hover card still states the real range, so nothing is hidden: the
+// booking in the CRM is one continuous span, and the card says so.
+export function dailyWindow(appointment, zone) {
+  if (!isLong(appointment)) return null
+  const startMin = minutesFromMidnight(appointment.startsAt, zone)
+  const endMin = minutesFromMidnight(appointment.endsAt, zone)
+  const span = endMin - startMin
+  if (startMin === 0 && (endMin === 0 || endMin >= 23 * 60 + 59)) return null
+  if (span < 15 || span > 12 * 60) return null
+  return { startMin, endMin }
+}
+
+/** One card per day the booking covers, at its daily window. */
+export function dailyPieces(appointment, dayKeys, zone) {
+  const w = dailyWindow(appointment, zone)
+  if (!w) return []
+  const first = dayKey(appointment.startsAt, zone)
+  const last = dayKey(appointment.endsAt, zone)
+  const all = []
+  for (const d of dayKeys) if (d >= first && d <= last) all.push(d)
+  return all.map((d) => {
+    const { startTime, endTime } = slotIso(d, w.startMin, w.endMin - w.startMin, zone)
+    return { ...appointment, startsAt: startTime, endsAt: endTime, _whole: appointment, _edge: 'daily' }
+  })
+}
+
 export function longDayLabel(appointment, day, zone, clock) {
+  // A daily-window booking is at its window every day — see dailyWindow.
+  if (dailyWindow(appointment, zone)) return clock(appointment.startsAt)
   const startKey = dayKey(appointment.startsAt, zone)
   const lastInstant = new Date(new Date(appointment.endsAt).getTime() - 60000).toISOString()
   const endKey = dayKey(lastInstant, zone)

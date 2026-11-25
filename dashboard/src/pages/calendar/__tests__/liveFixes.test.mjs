@@ -178,7 +178,9 @@ test('a marker can never be dragged, and acts on the whole appointment', () => {
 test('the people board shows a long booking on every day it covers', () => {
   const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
   assert.match(rb, /const longByCell = useMemo/)
-  assert.match(rb, /const booked = items\.filter\(\(i\) => !i\._whole\)\.length \+ longs\.length/,
+  // Markers of a SPANNING booking are not counted again (its row is);
+  // a DAILY card is the booking's only presence that day, so it counts.
+  assert.match(rb, /const booked = items\.filter\(\(i\) => !i\._whole \|\| i\._edge === 'daily'\)\.length \+ longs\.length/,
     'counted twice on its first day, or not at all after it')
   assert.match(rb, /height: headH/)
 })
@@ -199,10 +201,15 @@ test('a long booking does not restart each morning in the month', async () => {
   const b = await import('../boardLayout.js')
   const t = await import('../../../utils/calendarTime.js')
   const Z = 'Europe/London', clock = (iso) => t.clockTime(iso, Z)
+  // A DAILY-WINDOW booking (10:30 → 11:00 across days) is at 10:30 on
+  // every day — asked for on the live board; see dailyWindow.
   const tue = { startsAt: '2026-11-24T10:30:00Z', endsAt: '2026-11-30T11:00:00Z' }
-  assert.equal(b.longDayLabel(tue, '2026-11-24', Z, clock), '10:30')
-  assert.equal(b.longDayLabel(tue, '2026-11-26', Z, clock), 'All day')
-  assert.equal(b.longDayLabel(tue, '2026-11-30', Z, clock), 'until 11:00')
+  for (const d of ['2026-11-24', '2026-11-26', '2026-11-30']) assert.equal(b.longDayLabel(tue, d, Z, clock), '10:30')
+  // A genuinely SPANNING booking still does not restart each morning.
+  const span = { startsAt: '2026-11-24T22:00:00Z', endsAt: '2026-11-27T02:00:00Z' }
+  assert.equal(b.longDayLabel(span, '2026-11-24', Z, clock), '22:00')
+  assert.equal(b.longDayLabel(span, '2026-11-25', Z, clock), 'All day')
+  assert.equal(b.longDayLabel(span, '2026-11-27', Z, clock), 'until 02:00')
   const allday = { startsAt: '2026-10-26T00:00:00Z', endsAt: '2026-10-31T23:59:00Z' }
   for (const d of ['2026-10-26', '2026-10-28', '2026-10-31']) assert.equal(b.longDayLabel(allday, d, Z, clock), 'All day')
 })
@@ -292,4 +299,25 @@ test('the booking card checks availability before Save, without blocking it', ()
   assert.match(b, /onClick=\{\(\) => pickSlot\(s\)\}/, 'no way to pick an accepted time')
   // A failed check must never stop a booking.
   assert.match(b, /\.catch\(\(\) => \{ if \(!cancelled\) setAvail\(\{ status: 'error', slots: \[\] \}\) \}\)/)
+})
+
+
+// ── A 10:30–11:00 window across days is drawn at 10:30–11:00 each day ──
+
+test('a daily-window booking is a card at its window on every day it covers', async () => {
+  const b = await import('../boardLayout.js')
+  const Z = 'Europe/London'
+  const live = { id: 'L', startsAt: '2026-11-24T10:30:00Z', endsAt: '2026-11-30T11:00:00Z' }
+  assert.deepEqual(b.dailyWindow(live, Z), { startMin: 630, endMin: 660 })
+  const wk = ['2026-11-23', '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27', '2026-11-28', '2026-11-29']
+  const pieces = b.dailyPieces(live, wk, Z)
+  assert.equal(pieces.length, 6, 'Tue to Sun')
+  assert.ok(pieces.every((p) => p._whole === live && p._edge === 'daily' && p.id === 'L'))
+  // Genuinely all-day bookings keep the bar.
+  assert.equal(b.dailyWindow({ startsAt: '2026-10-26T00:00:00Z', endsAt: '2026-10-31T23:59:00Z' }, Z), null)
+  assert.equal(b.dailyWindow({ startsAt: '2026-11-24T22:00:00Z', endsAt: '2026-11-27T02:00:00Z' }, Z), null)
+  const grid = readFileSync(new URL('../TimeGrid.jsx', import.meta.url), 'utf8')
+  assert.match(grid, /daily\.flatMap\(\(a\) => dailyPieces\(a, dayKeys, zone\)\)/)
+  const rb = readFileSync(new URL('../ResourceBoard.jsx', import.meta.url), 'utf8')
+  assert.match(rb, /i\._edge === 'daily'/, 'a daily card does not count as booked')
 })

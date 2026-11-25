@@ -139,6 +139,9 @@ export default function CalendarSidebar({
         // CLIPS. A calendar called "Vault Suite Vaultsuite's Personal
         // Calendar" is wider than this box, and without this it was drawn
         // straight across the border and over the grid beside it.
+        // border-box, so maxHeight includes the padding. Content-box made
+        // the rail 36px taller than its bound — enough to scroll the page.
+        boxSizing: 'border-box',
         overflowX: 'hidden',
         overflowY: maxHeight ? 'auto' : 'hidden',
         ...(maxHeight ? { maxHeight } : {}),

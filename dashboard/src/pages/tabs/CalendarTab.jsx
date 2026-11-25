@@ -67,7 +67,22 @@ const CALENDAR_TYPE_SCALE = {
   // that reads --surface-page (the rail, the toolbar, the grid's own
   // chrome) follows without each one being told separately.
   '--surface-page': 'var(--white)',
-  background: 'var(--white)'
+  background: 'var(--white)',
+
+  // ── THE PAGE MUST NOT BE WIDER OR TALLER THAN THE WINDOW ───────────
+  //
+  // Shell is a CSS grid with no column template, so its one column is
+  // `auto` — and a grid item will not shrink below its content. On the
+  // People board, twelve columns of reps are wide content, so the board
+  // widened the COLUMN, the column widened the page, and the toolbar,
+  // being as wide as the page, put Book past the right edge of the frame.
+  // minmax(0, 1fr) lets the column be the width of the window and leaves
+  // the board to scroll sideways inside its own box, which it already does.
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  // Shell's bottom padding is 48px, for list pages that end in content.
+  // Here the grid is sized to end 16px above the window's edge, so 48px
+  // below it was a page that scrolled by 32px for nothing.
+  padding: 'var(--space-3) 20px var(--space-3)'
 }
 
 // ── WHY A BOARD AND NOT A SHARED WEEK ────────────────────────────────
@@ -621,7 +636,10 @@ export default function CalendarTab({ onOpenDeal }) {
               The month view has no gutter to put it in, and a missing
               sub-account timezone is a WARNING rather than a label, so
               both of those still say it here. */}
-          {(view === 'month' || data.timezone == null) && (
+          {/* `!loading` on the warning: before the first response there IS
+              no timezone yet, and the bar announced "this sub-account has
+              no timezone set" for the length of every page load. */}
+          {(view === 'month' || (!loading && data.timezone == null)) && (
             <span
               title={`Times shown in ${zone}`}
               style={{
@@ -630,7 +648,7 @@ export default function CalendarTab({ onOpenDeal }) {
               }}
             >
               Times shown in {zone}
-              {data.timezone == null ? ' — this sub-account has no timezone set' : ''}
+              {!loading && data.timezone == null ? ' — this sub-account has no timezone set' : ''}
             </span>
           )}
         </div>

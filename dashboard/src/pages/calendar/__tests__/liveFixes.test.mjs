@@ -98,3 +98,21 @@ test('the people board opens near now, and its labels sit below their lines', ()
   assert.match(rb, /top: m\.top \+ 3/)
   assert.ok(!/top: m\.top - 7/.test(rb), 'labels straddle their lines again')
 })
+
+// ── Second pass on the live board ────────────────────────────────────
+
+test('the tab column can shrink, so a wide board cannot widen the page', () => {
+  // Shell is a grid with an `auto` column; without this a 12-rep board
+  // widened the page and pushed Book off the frame.
+  assert.match(tab, /gridTemplateColumns: 'minmax\(0, 1fr\)'/)
+})
+
+test('the rail counts its padding inside its bound', () => {
+  const rail = readFileSync(new URL('../CalendarSidebar.jsx', import.meta.url), 'utf8')
+  assert.match(rail, /boxSizing: 'border-box',\s*\n\s*overflowX: 'hidden'/)
+})
+
+test('no "no timezone set" warning while the first load is in flight', () => {
+  assert.match(tab, /\(view === 'month' \|\| \(!loading && data\.timezone == null\)\)/)
+  assert.match(tab, /\{!loading && data\.timezone == null \? ' — this sub-account has no timezone set' : ''\}/)
+})

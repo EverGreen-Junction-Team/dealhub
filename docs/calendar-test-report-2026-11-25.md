@@ -154,3 +154,33 @@ Then: the Mon 23 Nov 09:00–11:30 block should appear (grey, hatched) for James
 ## Commits
 
 `0061dc3` `222dc9b` `604400f` `5f0b5b7` `064ed95` `364169d` `0c3a484` `a7926f3` `c5e637e` `280c801` `42bae71` `047f61e` `c909b33` `b758983` `4b533e9` `7afcd26` `15eb64a` `d5989ed` `d17374a` — all on `main`, all deployed, all pushed. Each was committed only after lint, the calendar tests and the build passed (except `064ed95`, which went out with one stale assertion and was corrected in `364169d`).
+
+---
+
+## Deal and record linking — live pass (26 Nov 2026)
+
+Tested on the live board with one test booking: "zz deal-link QA (test, safe to
+delete)", Mon 30 Nov 09:00, on jaladanki srinivas's personal calendar. The
+customer is the "vhia berano" record that holds the TEST V deal; it has no
+email or phone, and the confirmation email was off. The booking is cancelled.
+
+| Check | Result |
+|---|---|
+| New booking reaches the board by webhook, auto-linked to the customer's only open deal | Pass (TEST V) |
+| ⋯ menu offers "Change deal or records…" first, status items below | Pass |
+| Deal picker offers only this customer's deals | Pass (TEST V only) |
+| Remove the deal → hover says "No deal linked — use ⋯ on the card to link one" | Pass |
+| Link TEST V by hand → toast and hover update | Pass |
+| Hand-made "no deal" survives a real GHL AppointmentUpdate webhook (cancel, reload) | Pass |
+| "Use the automatic link" shows TEST V at once, and after a reload | Pass (after c35e846) |
+| Records section without the objects/associations scopes names the missing permissions | Pass |
+| Linking custom object records | **Not tested** — needs the five scopes and a reauthorisation |
+
+Bugs found live and fixed:
+- 0022920 — a ⋯ menu click also opened the deal page (React bubbles through
+  portals). Affected the status items on any card with a deal, too.
+- c35e846 — "Use the automatic link" left the card empty until the next sync;
+  the route now derives the deal at once.
+- c35e846 — Book after 09:00 defaulted to 09:00 that morning; now the next half
+  hour (seen live: 13:30).
+- c35e846 — an unchanged empty picker labelled its disabled button "Remove deal".

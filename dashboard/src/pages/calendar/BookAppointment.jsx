@@ -260,6 +260,25 @@ const CARD_WIDTH = 520
 // Keep the card this far from the viewport edge when it is nudged back in.
 const EDGE_GUTTER = 12
 
+// Where a new booking starts when nothing was clicked (the Book button).
+//
+// 09:00 — unless that is already gone today. Found live: Book at 12:40 opened
+// a card for 09:00 the same morning, a time GHL would refuse or, worse, book
+// into the past. So today after nine it is the next half hour, and after the
+// last half hour of the day it is tomorrow at nine. Exported for its test.
+export function defaultStart(initial, zone) {
+  const day = dayjs(initial?.day || undefined)
+  if (initial?.minutes != null) return { day, minutes: initial.minutes }
+  const now = inZone(new Date().toISOString(), zone)
+  const nowMins = now.hour() * 60 + now.minute()
+  if (now.format('YYYY-MM-DD') !== day.format('YYYY-MM-DD') || nowMins < 9 * 60) {
+    return { day, minutes: 9 * 60 }
+  }
+  const next = Math.ceil((nowMins + 1) / 30) * 30
+  if (next > 23 * 60 + 30) return { day: day.add(1, 'day'), minutes: 9 * 60 }
+  return { day, minutes: next }
+}
+
 export default function BookAppointment({
   // Prefilled from wherever the rep clicked: a time, a day, a person, and
   // the point on screen to spring from.
@@ -281,11 +300,9 @@ export default function BookAppointment({
 
   const [calendarId, setCalendarId] = useState(null)
   const [contactId, setContactId] = useState(null)
-  const [day, setDay] = useState(() => dayjs(initial?.day || undefined))
+  const [day, setDay] = useState(() => defaultStart(initial, zone).day)
   const [time, setTime] = useState(() => (
-    initial?.minutes != null
-      ? dayjs().startOf('day').add(initial.minutes, 'minute')
-      : dayjs().startOf('day').add(9 * 60, 'minute')
+    dayjs().startOf('day').add(defaultStart(initial, zone).minutes, 'minute')
   ))
   const [duration, setDuration] = useState(DEFAULT_SLOT_MINUTES)
 

@@ -53,7 +53,6 @@ test('a hand-made deal can be handed back to the automatic link', () => {
 
 test('a saved deal shows at once, then reloads', () => {
   assert.match(tab, /const handleDealSaved = useCallback/)
-  assert.match(tab, /dealPinned: true,/)
 })
 
 test('a menu click never also opens the deal (found live)', () => {
@@ -61,4 +60,24 @@ test('a menu click never also opens the deal (found live)', () => {
   // onClick and navigated to the deal instead of opening the dialog.
   assert.match(card, /domEvent\?\.stopPropagation\(\)/)
   assert.match(card, /if \(!e\.currentTarget\.contains\(e\.target\)\) return/)
+})
+
+test('"automatic" shows its answer at once, not after the next sync (found live)', () => {
+  assert.match(tab, /if \(res && 'deal' in res\) \{/)
+  assert.match(tab, /dealPinned: res\.pinned === true,/)
+  const route = read('../../../../../server/src/routes/appointments.js')
+  assert.match(route, /const \{ opportunityId \} = await deriveOpportunityId\(/)
+  assert.match(route, /SET opportunity_pinned = false, opportunity_id = \$3/)
+})
+
+test('an unchanged empty picker never says "Remove deal"', () => {
+  assert.match(links, /\{!dealId && a\.dealId \? 'Remove deal' : 'Save deal'\}/)
+})
+
+test('Book never defaults to a time already gone today (found live)', () => {
+  const book = read('../BookAppointment.jsx')
+  assert.match(book, /export function defaultStart\(initial, zone\)/)
+  assert.match(book, /const next = Math\.ceil\(\(nowMins \+ 1\) \/ 30\) \* 30/)
+  assert.match(book, /if \(next > 23 \* 60 \+ 30\) return \{ day: day\.add\(1, 'day'\), minutes: 9 \* 60 \}/)
+  assert.match(book, /useState\(\(\) => defaultStart\(initial, zone\)\.day\)/)
 })

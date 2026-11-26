@@ -200,7 +200,7 @@ export default function AppointmentLinks({ appointment, zone, onClose, onDealSav
                     disabled={!dealChanged}
                     onClick={() => saveDeal({ dealId: dealId || null })}
                   >
-                    {dealId ? 'Save deal' : 'Remove deal'}
+                    {!dealId && a.dealId ? 'Remove deal' : 'Save deal'}
                   </Button>
                 </div>
               </>

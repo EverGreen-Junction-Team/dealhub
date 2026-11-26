@@ -129,7 +129,7 @@ async function resolveAssignedUserName(locationId, userId) {
  * job and nothing on screen would say it was inferred. NULL reads as
  * "unknown" and the UI can ask.
  */
-async function deriveOpportunityId(locationId, contactId, atTimestamp) {
+export async function deriveOpportunityId(locationId, contactId, atTimestamp) {
   if (!contactId) return { opportunityId: null, decision: null };
   const decision = await resolveOppForContact(locationId, contactId, atTimestamp);
   return {

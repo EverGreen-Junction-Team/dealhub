@@ -12,6 +12,7 @@ import { ghlRequest } from '../services/ghlClient.js';
 import { userMessage } from '../utils/userMessage.js';
 import { logger } from '../utils/logger.js';
 import { pickSlots, slotWindow } from '../services/freeSlots.js';
+import { deriveOpportunityId } from '../services/appointmentWriter.js';
 import {
   linkableObjects, recordsForContact, searchRecords, linkRecord, unlinkRecord
 } from '../services/ghlCustomObjects.js';
@@ -477,7 +478,7 @@ appointmentsRouter.put('/:id/deal', async (req, res, next) => {
   try {
     const result = await withTenant(locationId, async (client) => {
       const { rows: [appt] } = await client.query(
-        `SELECT appointment_id, contact_id, event_kind
+        `SELECT appointment_id, contact_id, event_kind, created_at_ghl, starts_at
            FROM appointments
           WHERE location_id = $1 AND appointment_id = $2 AND deleted_at IS NULL`,
         [locationId, appointmentId]
@@ -486,12 +487,39 @@ appointmentsRouter.put('/:id/deal', async (req, res, next) => {
       if (appt.event_kind === 'blocked') return { status: 400, error: 'Blocked time is not linked to deals' };
 
       if (auto) {
-        await client.query(
-          `UPDATE appointments SET opportunity_pinned = false, updated_at = now()
-            WHERE location_id = $1 AND appointment_id = $2`,
-          [locationId, appointmentId]
+        // Work the automatic link out NOW, the same way the webhook writer
+        // does. Only unpinning left the hand-made choice on screen until the
+        // next sync — found live: "Deal will follow the automatic link again"
+        // over a card still showing no deal. NULL is a real answer here (two
+        // open deals is a decline, by the agreed rule), not "keep the old one".
+        const { opportunityId } = await deriveOpportunityId(
+          locationId, appt.contact_id, appt.created_at_ghl || appt.starts_at || new Date()
         );
-        return { ok: true, pinned: false };
+        await client.query(
+          `UPDATE appointments
+              SET opportunity_pinned = false, opportunity_id = $3, updated_at = now()
+            WHERE location_id = $1 AND appointment_id = $2`,
+          [locationId, appointmentId, opportunityId]
+        );
+        let deal = null;
+        if (opportunityId) {
+          const { rows: [o] } = await client.query(
+            `SELECT opportunity_id, name, monetary_value, currency FROM opportunities
+              WHERE location_id = $1 AND opportunity_id = $2`,
+            [locationId, opportunityId]
+          );
+          deal = o || null;
+        }
+        return {
+          ok: true,
+          pinned: false,
+          deal: deal && {
+            id: deal.opportunity_id,
+            name: deal.name,
+            value: deal.monetary_value == null ? null : Number(deal.monetary_value),
+            currency: deal.currency || null
+          }
+        };
       }
 
       let deal = null;

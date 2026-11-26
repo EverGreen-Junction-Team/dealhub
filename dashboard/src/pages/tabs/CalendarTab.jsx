@@ -475,13 +475,13 @@ export default function CalendarTab({ onOpenDeal }) {
   // then reload so every piece of a multi-day booking agrees.
   const handleDealSaved = useCallback(async (appointment, res, message) => {
     setLinksFor(null)
-    if (res?.pinned) {
+    if (res && 'deal' in res) {
       setData((d) => ({
         ...d,
         appointments: d.appointments.map((x) => (x.id === appointment.id
           ? {
               ...x,
-              dealPinned: true,
+              dealPinned: res.pinned === true,
               dealId: res.deal?.id || null,
               dealName: res.deal?.name || null,
               dealValue: res.deal?.value ?? null,

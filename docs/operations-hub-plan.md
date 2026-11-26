@@ -60,6 +60,59 @@ its original project. Reference: `R-<job no.>-<nn>`.
   Tasks tab and the cross-job Tasks page (s7, s16, s24), Add time (s13, s22).
 - Stage moves when all steps are ticked (writes the GHL stage).
 
+### Slice 1 in detail
+
+**The rule that keeps it independent of Q1:** an opportunity *in the mapped
+Operations pipeline* **is** a project, and one in the mapped Remedials
+pipeline **is** a remedial — however it got there (moved by hand in GHL,
+created by a future "Start project", imported). Deal Hub keeps its own row
+beside it (`projects` / `remedials`), created the first time anyone opens or
+edits the job. So everything below works before Q1 is answered; Q1 only
+decides how opportunities *arrive* in that pipeline.
+
+**Migration 146 — `146_operations.sql`** (every table `location_id`-scoped,
+`ENABLE ROW LEVEL SECURITY` + the usual `tenant_iso` policy):
+
+| Table | Key | Holds |
+|---|---|---|
+| `ops_settings` | `location_id` | Which GHL pipeline is Operations and which is Remedials (a Deal Hub setting — no GHL change) |
+| `projects` | `(location_id, opportunity_id)` → opportunities | job number, sales deal it came from, company (business), showroom / ordering / admin people, fitter, install start/end |
+| `remedials` | `(location_id, opportunity_id)` → opportunities | reference, parent project, type, reason, category, fitter, how reported, taken by |
+| `ops_task_links` | `(location_id, task_id)` | which job a GHL task belongs to, and at which stage (no FK to `tasks`: the row is written before GHL's TaskCreate webhook lands) |
+| `ops_steps` | `id` | the "to do in this stage" checklist per job and stage: title, who, due, done |
+| `ops_time_entries` | `id` | who, date, hours (0 < h ≤ 24), activity, notes; soft delete |
+
+**Decision seams — one file each side, nothing else reads the answers:**
+`server/src/services/opsDecisions.js` and
+`dashboard/src/pages/operations/opsDecisions.js`.
+
+| Question | Seam value now | What it does today | What changes when answered |
+|---|---|---|---|
+| Q1 start a project | `START_PROJECT = null` | `POST /api/ops/projects/start` answers 409 "waiting on the client's decision"; no button is shown | set `'new_linked'` or `'move_same'`; the route's two branches are stubbed in the seam |
+| Q2 job numbers | `JOB_NUMBER_SOURCE = null`, `REMEDIAL_REF_FORMAT = null` | job number / ref are typed by hand (shown as "No job no." until then); the list falls back to the deal name | set `'dealhub'` (issue next per company) or a GHL field key; remedial refs then fill in |
+| Q4 task links | `TASK_LINK_STORE = 'dealhub'` (the only one built) | tasks are GHL CRM tasks on the job's contact; the job link and stage live in `ops_task_links` | `'ghl_projects'` would swap in a second store behind the same 4 functions (`create`, `link`, `unlink`, `listForJob`) |
+
+**Routes — `/api/ops`:** `GET/PUT /settings` (pipeline mapping + a
+stage-name check against §1), `GET /decisions`, `GET /pipeline`
+(both boards), `GET /projects`, `GET/PATCH /projects/:id`,
+`GET /remedials`, `GET/PATCH /remedials/:id`, `POST /remedials` (Log
+remedial: creates the opportunity in the Remedials pipeline at "Reported"),
+steps (`POST /:kind/:id/steps`, `PATCH/DELETE /steps/:stepId`), time
+(`GET/POST /:kind/:id/time`, `PATCH/DELETE /time/:entryId`), tasks
+(`GET /tasks`, `POST /:kind/:id/tasks`, `PUT /tasks/:taskId/job`).
+Ticking the last open step of a stage moves the GHL opportunity to the next
+stage (an app write, like moving a deal on the board).
+
+**Screens** (behind `VITE_FEATURE_OPERATIONS=true`, like the Calendar):
+Home OPERATIONS section (s1); an "Operations hub" pill that switches the top
+menu to Pipeline · Projects · Remedials · Tasks and "Deal hub" to switch back;
+Pipeline board for projects and remedials (s3, s4); Projects list (s5) and
+Remedials list (s14); job pages with header, facts, stage arrows and the
+Overview / Tasks / Add time tabs (s6, s7, s13, s15, s16, s22); Tasks across
+jobs (s24); a Set-up view to map the two pipelines. The other tabs on the job
+page (Orders, Schedule, Money, Files, Activity) belong to later slices and are
+not shown yet.
+
 **Slice 2 — scheduling**
 - Schedule tabs (s9, s18) from linked appointments + key dates.
 - Install schedule (s23) on the existing People board: bars by job colour,

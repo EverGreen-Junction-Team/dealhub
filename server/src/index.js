@@ -13,6 +13,7 @@ import { contactsRouter } from './routes/contacts.js';
 import { businessesRouter } from './routes/businesses.js';
 import { tasksRouter } from './routes/tasks.js';
 import { appointmentsRouter } from './routes/appointments.js';
+import { operationsRouter } from './routes/operations.js';
 import { notesRouter } from './routes/notes.js';
 import { savedViewsRouter } from './routes/savedViews.js';
 import { preferencesRouter } from './routes/preferences.js';
@@ -115,6 +116,8 @@ async function main() {
   app.use('/api/tasks',    dashboardCors, express.json(), tasksRouter);
   app.use('/api/notes',    dashboardCors, express.json(), notesRouter);
   app.use('/api/appointments', dashboardCors, express.json(), appointmentsRouter);
+  // Operations Hub (projects, remedials) — see docs/operations-hub-plan.md.
+  app.use('/api/ops', dashboardCors, express.json(), operationsRouter);
   app.use('/api/saved-views', dashboardCors, express.json(), savedViewsRouter);
   app.use('/api/preferences', dashboardCors, express.json(), preferencesRouter);
   app.use('/api/providers', dashboardCors, express.json(), providersRouter);

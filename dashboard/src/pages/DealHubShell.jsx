@@ -8,6 +8,7 @@ import BusinessesTab from './tabs/BusinessesTab'
 import ContactsTab from './tabs/ContactsTab'
 import TasksTab from './tabs/TasksTab'
 import CalendarTab from './tabs/CalendarTab'
+import OperationsTab from './tabs/OperationsTab'
 import NotesTab from './tabs/NotesTab'
 import ControlCentreTab from './tabs/ControlCentreTab'
 import HomeTab from './tabs/HomeTab'
@@ -98,6 +99,40 @@ const TABS = [
 // it to name a position in the Back tooltip, and a hidden tab still has a
 // name if something navigates there directly.
 const VISIBLE_TABS = TABS.filter((t) => t.id !== 'calendar' || CALENDAR_ENABLED)
+
+// ── OPERATIONS HUB (docs/operations-hub-plan.md, slice 1) ─────────────
+//
+// Behind its own flag, exactly like the Calendar: build with
+// VITE_FEATURE_OPERATIONS=true to show it; anything else hides every
+// operations pill and screen.
+//
+// TWO MENUS, as the design has it (s1: "Opening any Operations card switches
+// the top menu to the Operations items; the Deal hub pill switches back").
+// The sales menu gains an "Operations hub" pill; on any operations screen the
+// menu becomes Home · Deal hub · Pipeline · Projects · Remedials · Tasks ·
+// Control panel, and Deal hub returns to the sales menu.
+const OPERATIONS_ENABLED = import.meta.env.VITE_FEATURE_OPERATIONS === 'true'
+const OPS_TABS = [
+  { id: 'opsPipeline',  label: 'Pipeline',  icon: 'view_kanban' },
+  { id: 'opsProjects',  label: 'Projects',  icon: 'folder_open' },
+  { id: 'opsRemedials', label: 'Remedials', icon: 'build' },
+  { id: 'opsTasks',     label: 'Tasks',     icon: 'checklist' }
+]
+// Reachable from buttons, not the menu.
+const OPS_IDS = new Set([...OPS_TABS.map((t) => t.id), 'opsSetup'])
+for (const t of [...OPS_TABS, { id: 'opsSetup', label: 'Operations set up', icon: 'tune' }]) {
+  TABS.push({ ...t, label: t.id === 'opsPipeline' ? 'Operations hub' : t.label })
+}
+const SALES_MENU = OPERATIONS_ENABLED
+  ? VISIBLE_TABS.flatMap((t) => (t.id === 'hub'
+    ? [t, { id: 'opsPipeline', label: 'Operations hub', icon: 'engineering' }]
+    : [t]))
+  : VISIBLE_TABS
+const OPS_MENU = [
+  ...TABS.filter((t) => t.id === 'home' || t.id === 'hub'),
+  ...OPS_TABS,
+  ...TABS.filter((t) => t.id === 'control')
+]
 
 // One navigation position. Back has to restore ALL of it, not just the tab:
 // arriving at a contact record sets both activeTab AND openContactId, so
@@ -438,7 +473,7 @@ export default function DealHubShell() {
             NAME any more, so the binding went with the markup. */}
         {/* Tab chips */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {VISIBLE_TABS.map((t) => {
+          {(OPERATIONS_ENABLED && OPS_IDS.has(activeTab) ? OPS_MENU : SALES_MENU).map((t) => {
             const active = activeTab === t.id
             // Location-wide count on each section chip. Deal-hub + Control
             // centre chips don't have a meaningful total, so we skip them.
@@ -585,6 +620,9 @@ export default function DealHubShell() {
             cross-tab jump tasks and notes already use. */}
         {CALENDAR_ENABLED && activeTab === 'calendar' && (
           <CalendarTab onOpenDeal={openDeal} />
+        )}
+        {OPERATIONS_ENABLED && OPS_IDS.has(activeTab) && (
+          <OperationsTab view={activeTab} onNavigate={(tab) => navigate({ tab })} />
         )}
         {activeTab === 'notes' && (
           <NotesTab

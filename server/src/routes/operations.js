@@ -923,7 +923,8 @@ operationsRouter.get('/tasks', async (req, res, next) => {
           id: t.opportunity_id,
           label: (t.job_kind === 'project' ? resolveJobNumber(t.job_number, t.custom_fields) : t.ref)
             || t.deal_name || 'Job',
-          stageKey: t.stage_key || stageKeyForName(t.job_kind, t.current_stage_name)
+          stageKey: t.stage_key || stageKeyForName(t.job_kind, t.current_stage_name),
+          stageName: stagesFor(t.job_kind).find((s) => s.key === (t.stage_key || stageKeyForName(t.job_kind, t.current_stage_name)))?.name || null
         }
       }))
     });

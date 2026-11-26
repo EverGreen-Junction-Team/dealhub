@@ -20,6 +20,8 @@ import { useAuth } from '../../context/AuthContext'
 // as the accent's pale wash instead, for the two the design sets back.
 // Same switch DealHubShell reads for the Calendar tab.
 const CALENDAR_ENABLED = import.meta.env.VITE_FEATURE_CALENDAR === 'true'
+// Operations Hub (docs/operations-hub-plan.md) — same flag the shell reads.
+const OPERATIONS_ENABLED = import.meta.env.VITE_FEATURE_OPERATIONS === 'true'
 
 const GROUPS = [
   {
@@ -51,6 +53,21 @@ const GROUPS = [
         : [])
     ]
   },
+  // After the deal is won (s1). Opening one of these switches the top menu
+  // to the operations items; the Deal hub pill switches back.
+  ...(OPERATIONS_ENABLED
+    ? [{
+        label: 'Operations', blurb: 'After the deal is won: projects, remedials and fitting',
+        cards: [
+          { tab: 'opsPipeline', label: 'Operations hub', icon: 'engineering', accent: 'pine',
+            blurb: 'Every job by stage: what is at risk, still to do, and who has it.' },
+          { tab: 'opsProjects', label: 'Projects', icon: 'folder_open', accent: 'teal',
+            blurb: 'Every sold job from deposit to balance, with its steps, tasks and time.' },
+          { tab: 'opsRemedials', label: 'Remedials', icon: 'build', accent: 'clay',
+            blurb: 'Remedials and snags in one list, with their steps, tasks and time.' }
+        ]
+      }]
+    : []),
   {
     label: 'Insights', blurb: 'Ask questions and track trends',
     cards: [

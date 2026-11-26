@@ -93,8 +93,8 @@ decides how opportunities *arrive* in that pipeline.
 | Q4 task links | `TASK_LINK_STORE = 'dealhub'` (the only one built) | tasks are GHL CRM tasks on the job's contact; the job link and stage live in `ops_task_links` | `'ghl_projects'` would swap in a second store behind the same 4 functions (`create`, `link`, `unlink`, `listForJob`) |
 
 **Routes — `/api/ops`:** `GET/PUT /settings` (pipeline mapping + a
-stage-name check against §1), `GET /decisions`, `GET /pipeline`
-(both boards), `GET /projects`, `GET/PATCH /projects/:id`,
+stage-name check against §1), `GET /decisions`, `GET /projects` (the board
+groups this list by stage), `GET/PATCH /projects/:id`,
 `GET /remedials`, `GET/PATCH /remedials/:id`, `POST /remedials` (Log
 remedial: creates the opportunity in the Remedials pipeline at "Reported"),
 steps (`POST /:kind/:id/steps`, `PATCH/DELETE /steps/:stepId`), time
@@ -112,6 +112,31 @@ Overview / Tasks / Add time tabs (s6, s7, s13, s15, s16, s22); Tasks across
 jobs (s24); a Set-up view to map the two pipelines. The other tabs on the job
 page (Orders, Schedule, Money, Files, Activity) belong to later slices and are
 not shown yet.
+
+### Slice 1 — status (26 Nov 2026)
+
+**Built, tested and pushed.** Server: `14770c6`. Dashboard: the commit after
+it. Migration **146** must be run on the server.
+
+- **Turn it on:** set `VITE_FEATURE_OPERATIONS=true` in Vercel and redeploy;
+  without it nothing operations-related shows. Then **Operations hub → Set
+  up** maps the two pipelines (a Deal Hub setting; nothing changes in GHL).
+- **Tested:** 16 unit tests (`server/src/services/__tests__/operations.test.mjs`),
+  8 wiring tests (`dashboard/src/pages/operations/__tests__/operations.test.mjs`),
+  a 26-check end-to-end run of every route on Postgres 17 with GHL mocked,
+  and every screen rendered with fixture data in a browser.
+- **Not tested live:** the two GHL pipelines do not exist yet, so nothing has
+  run against real GHL data.
+
+**Waiting on the client — and exactly where each answer goes:**
+
+| Question | Today | When answered, change |
+|---|---|---|
+| Q1 start a project | No "Start project" button; `POST /api/ops/projects/start` answers 409 `decision_pending`. A deal moved or created in the Operations pipeline in GHL becomes a project automatically. | `START_PROJECT` in `server/src/services/opsDecisions.js`, then fill the branch in `routes/operations.js` → `POST /projects/start`, then add the button. |
+| Q2 job numbers / refs | Typed on each job (Edit); unique per location. Lists fall back to the deal name. | `JOB_NUMBER_SOURCE` (+ `issueJobNumber()` for `'dealhub'`) and `REMEDIAL_REF_FORMAT` in `opsDecisions.js`. A GHL field key makes the number read-only and read from that field. |
+| Q3 pipelines | Nobody has created them. Set up lists the exact stage names and checks them. | Either add them in GHL Settings, or approve the app creating them (needs the `pipelines.create` scope + reauth; not built, and never done without an explicit yes). |
+| Q4 task links | Deal Hub store: tasks are GHL CRM tasks on the customer; job + stage in `ops_task_links`. | `TASK_LINK_STORE` in `opsDecisions.js`; a GHL Projects store would implement the same four functions in `services/opsTaskStore.js`. |
+| Q5–Q8 | Not needed by slice 1. | Slices 3–4 (TrueBlue, Xero/payments, money roles) and Q8 (one location or two) before anything company-specific. |
 
 **Slice 2 — scheduling**
 - Schedule tabs (s9, s18) from linked appointments + key dates.

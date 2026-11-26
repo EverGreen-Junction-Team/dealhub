@@ -55,3 +55,10 @@ test('a saved deal shows at once, then reloads', () => {
   assert.match(tab, /const handleDealSaved = useCallback/)
   assert.match(tab, /dealPinned: true,/)
 })
+
+test('a menu click never also opens the deal (found live)', () => {
+  // React bubbles through portals: the menu item's click reached the card's
+  // onClick and navigated to the deal instead of opening the dialog.
+  assert.match(card, /domEvent\?\.stopPropagation\(\)/)
+  assert.match(card, /if \(!e\.currentTarget\.contains\(e\.target\)\) return/)
+})

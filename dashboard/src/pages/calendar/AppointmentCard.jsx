@@ -196,7 +196,13 @@ export default function AppointmentCard({
         className={!isBlocked && !cancelled ? 'pp-appt' : undefined}
         // Its hover card shows the full text — no native title on top.
         data-noclip=""
-        onClick={() => { if (!isBlocked && a.dealId) onOpenDeal?.(a.dealId) }}
+        onClick={(e) => {
+          // Only a click ON the card. A click in something portalled from
+          // inside it (the ⋯ menu) still bubbles here through React's tree,
+          // though it is nowhere near the card on screen.
+          if (!e.currentTarget.contains(e.target)) return
+          if (!isBlocked && a.dealId) onOpenDeal?.(a.dealId)
+        }}
         role={!isBlocked && a.dealId ? 'button' : undefined}
         tabIndex={!isBlocked && a.dealId ? 0 : undefined}
         onKeyDown={(e) => {
@@ -289,7 +295,16 @@ export default function AppointmentCard({
             trigger={['click']}
             onOpenChange={setMenuOpen}
             menu={{ items: menuActions.map(({ onClick, ...rest }) => rest),
-                    onClick: ({ key }) => menuActions.find((x) => x.key === key)?.onClick?.() }}
+                    onClick: ({ key, domEvent }) => {
+                      // The menu is portalled to <body>, but React bubbles
+                      // through PORTALS along the component tree — so this
+                      // click reached the card's own onClick and opened the
+                      // deal page over whatever the item was meant to do.
+                      // Found live: "Change deal or records…" navigated to
+                      // the deal instead of opening the dialog.
+                      domEvent?.stopPropagation()
+                      menuActions.find((x) => x.key === key)?.onClick?.()
+                    } }}
           >
             <button
               type="button"

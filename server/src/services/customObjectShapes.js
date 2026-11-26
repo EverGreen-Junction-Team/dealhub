@@ -28,7 +28,7 @@ export function pickCustomSchemas(data) {
  */
 export function contactAssociations(data, schemas) {
   const keys = new Map(schemas.map((s) => [s.key, s]));
-  const rows = Array.isArray(data?.associations) ? data.associations : [];
+  const rows = associationRows(data);
   const out = [];
   for (const a of rows) {
     const first = a?.firstObjectKey;
@@ -73,4 +73,35 @@ export function otherSide(relation, contactId) {
   if (relation?.firstRecordId === contactId) return relation.secondRecordId;
   if (relation?.secondRecordId === contactId) return relation.firstRecordId;
   return null;
+}
+
+/**
+ * The rows of a GET /associations/ page. GHL's spec documents the ITEM shape
+ * but not the wrapper, so every plausible one is accepted rather than
+ * guessing one and showing "no record types" when the guess is wrong. Pure.
+ */
+export function associationRows(data) {
+  if (Array.isArray(data)) return data;
+  for (const k of ['associations', 'data', 'items', 'results']) {
+    if (Array.isArray(data?.[k])) return data[k];
+  }
+  return [];
+}
+
+/**
+ * Which contact association a relation belongs to. Pure.
+ *
+ * By id first, then BY OBJECT KEYS. Live GHL responses have been seen to
+ * carry an opaque associationId that matches nothing we listed — the same
+ * trap backfillOpportunityContacts.js documents for deal↔contact — while
+ * firstObjectKey/secondObjectKey are always the real keys.
+ */
+export function matchRelation(relation, associations) {
+  const byId = associations.find((a) => a.id === relation?.associationId);
+  if (byId) return byId;
+  const f = relation?.firstObjectKey;
+  const sk = relation?.secondObjectKey;
+  const other = f === 'contact' ? sk : (sk === 'contact' ? f : null);
+  if (!other) return null;
+  return associations.find((a) => a.objectKey === other) || null;
 }

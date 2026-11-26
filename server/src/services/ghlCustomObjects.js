@@ -34,7 +34,7 @@ import { AssociationError, translateOAuthChannelBlock } from './associationConst
 import { translateRelationError } from './ghlAssociations.js';
 
 import {
-  pickCustomSchemas, contactAssociations, recordLabel, otherSide
+  pickCustomSchemas, contactAssociations, recordLabel, otherSide, associationRows, matchRelation
 } from './customObjectShapes.js';
 
 export { pickCustomSchemas, contactAssociations, recordLabel, otherSide };
@@ -60,7 +60,11 @@ export async function linkableObjects(install) {
       method: 'GET', url: '/associations/',
       params: { locationId, skip, limit: 200 }, scopeOptional: true
     });
-    const page = Array.isArray(data?.associations) ? data.associations : [];
+    const page = associationRows(data);
+    if (skip === 0 && page.length === 0 && data && typeof data === 'object') {
+      // Undocumented wrapper — say what came back, so a live test shows it.
+      logger.warn({ keys: Object.keys(data) }, 'customObjects: no association rows recognised');
+    }
     rows.push(...page);
     if (page.length < 200) break;
   }
@@ -74,7 +78,6 @@ export async function linkableObjects(install) {
 export async function recordsForContact(install, contactId, { schemas, associations }) {
   if (!contactId || associations.length === 0) return [];
   const locationId = install.location_id;
-  const byAssoc = new Map(associations.map((a) => [a.id, a]));
   const schemaByKey = new Map(schemas.map((s) => [s.key, s]));
 
   const { data } = await ghlRequest(install, {
@@ -84,13 +87,13 @@ export async function recordsForContact(install, contactId, { schemas, associati
     scopeOptional: true
   });
   const relations = (Array.isArray(data?.relations) ? data.relations : [])
-    .filter((r) => byAssoc.has(r?.associationId))
+    .map((r) => ({ r, assoc: matchRelation(r, associations) }))
+    .filter((x) => x.assoc && otherSide(x.r, contactId))
     .slice(0, RECORD_LIMIT);
 
   // One request per record — GHL has no batch read. Bounded by RECORD_LIMIT,
   // and a record that fails to load still shows (by id) rather than vanishing.
-  return Promise.all(relations.map(async (r) => {
-    const assoc = byAssoc.get(r.associationId);
+  return Promise.all(relations.map(async ({ r, assoc }) => {
     const schema = schemaByKey.get(assoc.objectKey);
     const recordId = otherSide(r, contactId);
     let label = recordId;
@@ -107,7 +110,7 @@ export async function recordsForContact(install, contactId, { schemas, associati
     }
     return {
       relationId: r.id || r._id,
-      associationId: r.associationId,
+      associationId: assoc.id,
       objectKey: assoc.objectKey,
       objectLabel: schema?.singular || assoc.objectKey,
       id: recordId,
@@ -121,7 +124,9 @@ export async function searchRecords(install, objectKey, q, schema) {
   const { data } = await ghlRequest(install, {
     method: 'POST',
     url: `/objects/${encodeURIComponent(objectKey)}/records/search`,
-    data: { locationId: install.location_id, page: 1, pageLimit: 20, query: q || '' },
+    // All five fields are REQUIRED by GHL's SearchRecordsBody — searchAfter
+    // included, as an empty array for the first page.
+    data: { locationId: install.location_id, page: 1, pageLimit: 20, query: q || '', searchAfter: [] },
     scopeOptional: true
   });
   const rows = Array.isArray(data?.records) ? data.records : [];

@@ -95,3 +95,29 @@ test('a deal is only linked if it is on the appointment\'s customer', () => {
   assert.match(route, /'That deal is not on this customer'/);
   assert.match(route, /opportunity_pinned = true/);
 });
+
+test('association lists are read whatever the (undocumented) wrapper is', async () => {
+  const { associationRows } = await import('../customObjectShapes.js');
+  const row = { id: 'a' };
+  for (const d of [[row], { associations: [row] }, { data: [row] }, { items: [row] }]) {
+    assert.deepEqual(associationRows(d), [row]);
+  }
+  assert.deepEqual(associationRows({ total: 0 }), []);
+  assert.deepEqual(associationRows(null), []);
+});
+
+test('record search sends every field GHL requires, searchAfter included', () => {
+  assert.match(svc, /data: \{ locationId: install\.location_id, page: 1, pageLimit: 20, query: q \|\| '', searchAfter: \[\] \}/);
+});
+
+test('a relation is matched by object keys when its associationId is opaque', async () => {
+  const { matchRelation } = await import('../customObjectShapes.js');
+  const assocs = [
+    { id: 'AS_P', objectKey: 'custom_objects.projects', contactSide: 'first' },
+    { id: 'AS_S', objectKey: 'custom_objects.sites', contactSide: 'second' }
+  ];
+  assert.equal(matchRelation({ associationId: 'AS_S' }, assocs).id, 'AS_S');
+  assert.equal(matchRelation({ associationId: '6aab95944b05', firstObjectKey: 'contact', secondObjectKey: 'custom_objects.projects' }, assocs).id, 'AS_P');
+  assert.equal(matchRelation({ associationId: 'x', firstObjectKey: 'custom_objects.sites', secondObjectKey: 'contact' }, assocs).id, 'AS_S');
+  assert.equal(matchRelation({ associationId: 'x', firstObjectKey: 'opportunity', secondObjectKey: 'contact' }, assocs), null);
+});

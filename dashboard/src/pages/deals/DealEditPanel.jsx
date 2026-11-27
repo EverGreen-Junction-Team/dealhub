@@ -271,14 +271,19 @@ export default function DealEditPanel({
       // Sequential, not parallel, and deliberately so: status and the field
       // patch both write the same opportunity in GHL, and firing them together
       // let the second overwrite the first's echo.
+      // Whether every deal write is already in our database (the server's
+      // write-through). The parent refetches at once when it is, and waits
+      // for the webhook when it is not.
+      let mirrored = true
+      const track = (r) => { mirrored = mirrored && !!r?.mirrored }
       if (Object.keys(dealPatch).length > 0) {
-        await dealsAPI.update(deal.id, dealPatch)
+        track(await dealsAPI.update(deal.id, dealPatch))
       }
       if (statusChanged) {
-        await dealsAPI.setStatus(deal.id, status, {
+        track(await dealsAPI.setStatus(deal.id, status, {
           lostReasonId: lostReasonId || undefined,
           reason: reason.trim() || undefined
-        })
+        }))
       }
       if (followerChanges?.add?.length) {
         await dealsAPI.addFollowers(deal.id, followerChanges.add)
@@ -295,7 +300,7 @@ export default function DealEditPanel({
       // two are independent, and merging would mean a rejected custom field
       // also loses a perfectly good name change.
       if (Object.keys(cfDraft).length > 0) {
-        await dealsAPI.update(deal.id, {
+        track(await dealsAPI.update(deal.id, {
           customFields: Object.entries(cfDraft).map(([id, v]) => ({
             id,
             // An array is a multi-select; GHL stores those joined. An empty
@@ -303,15 +308,14 @@ export default function DealEditPanel({
             // old value in place.
             fieldValue: Array.isArray(v) ? v.join(',') : (v ?? '')
           }))
-        })
+        }))
       }
       if (Object.keys(contactPatch).length > 0 && primary?.id) {
         await contactsAPI.update(primary.id, contactPatch)
       }
-      // The parent refetches. Nothing is written to our database by these
-      // routes — the webhook does that — so the panel cannot show the
-      // authoritative row itself.
-      onSaved && onSaved()
+      // The parent refetches — at once when the server wrote the change
+      // through, after the webhook's usual delay when it did not.
+      onSaved && onSaved({ mirrored })
     } catch (err) {
       setError(err.message || 'Could not save that — try again')
       setErrorField(err.data?.field || null)

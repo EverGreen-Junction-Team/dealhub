@@ -77,7 +77,9 @@ export default function DealCreatePanel({
         ...(assignedTo ? { assignedTo } : {}),
         ...(closeDate ? { expectedCloseDate: closeDate } : {}),
       })
-      onCreated && onCreated(res?.opportunity || null)
+      // `mirrored`: the new deal is already in our database, so the list can
+      // reload now rather than after the webhook.
+      onCreated && onCreated(res?.opportunity || null, { mirrored: !!res?.mirrored })
     } catch (err) {
       setError(err.message || 'Could not create that deal — try again')
       setErrorField(err.data?.field || null)

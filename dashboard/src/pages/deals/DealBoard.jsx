@@ -606,7 +606,10 @@ export default function DealBoard({
   // A stage id picked in the toolbar's Stage field. The board then shows only
   // the column that holds it — the rest would be columns of deals the filter
   // just excluded.
-  focusColumn
+  focusColumn,
+  // Called after a move has saved, so the page can refresh what sits outside
+  // the board (the stage strip's counts and values).
+  onChanged
 }) {
   // Scrolled across to the fifth stage, stepped into a deal, came
   // back — this is what stops you landing on the first stage again.
@@ -672,8 +675,9 @@ export default function DealBoard({
       // shortly, and again a little later — the counts and totals then come
       // from the server. The move stays on screen in the meantime.
       reload(toColumn)
+      onChanged?.()
       later(1500, () => reload(toColumn))
-      later(5000, () => reload(toColumn))
+      later(5000, () => { reload(toColumn); onChanged?.() })
       // A webhook that never comes: stop holding the move after a minute and
       // show whatever the server has, rather than a card it does not agree with.
       later(60000, () => {
@@ -690,7 +694,7 @@ export default function DealBoard({
       if (entry) dropPending(dealId, entry)
       reload(fromColumn)
     }
-  }, [dropPending, later, reload])
+  }, [dropPending, later, reload, onChanged])
 
   // Every pipeline in scope — the chosen one, or all of them — merged into
   // one set of columns. Built INSIDE the memo: a `list` computed outside is a

@@ -834,7 +834,16 @@ async function enrichEvent(install, event, eventType) {
 
 // ---------------------------------------------------- top-level dispatcher
 
-export async function handleOpportunityEvent(install, eventType, event) {
+// Returns true when the opportunity row was written, false when the event was
+// ignored or dropped (unrelated type, no opportunity id, no contact id).
+//
+// `writeThrough`: called by our OWN write routes straight after GHL accepted a
+// change (services/dealWriteThrough.js), not by a webhook. Everything is the
+// same — GHL's current copy is fetched back and written by this one path, so
+// stage_history stays consistent — except the association refresh, which is a
+// handful of GHL calls the user would wait on and which the webhook does
+// anyway when it arrives.
+export async function handleOpportunityEvent(install, eventType, event, { writeThrough = false } = {}) {
   const locationId = install.location_id;
   const now = eventTimestamp(event);
 
@@ -854,7 +863,7 @@ export async function handleOpportunityEvent(install, eventType, event) {
 
   if (!isCreated && !isStageUpdate && !isDeleted && !isMetaUpdate) {
     logger.debug({ eventType }, 'stageHistoryWriter: ignoring unrelated event');
-    return;
+    return false;
   }
 
   // Enrich BEFORE the DB transaction so we don't tie up a pg connection
@@ -866,12 +875,12 @@ export async function handleOpportunityEvent(install, eventType, event) {
 
   if (!opp.opportunityId) {
     logger.warn({ event }, 'stageHistoryWriter: event missing opportunityId — dropping');
-    return;
+    return false;
   }
   if (!contact.contactId) contact.contactId = opp.contactId;
   if (!contact.contactId) {
     logger.warn({ event }, 'stageHistoryWriter: event missing contactId — dropping');
-    return;
+    return false;
   }
 
   logger.info(
@@ -1037,7 +1046,7 @@ export async function handleOpportunityEvent(install, eventType, event) {
       }
     }
 
-    await refreshAssociationsForOpportunity(install, opp.opportunityId);
+    if (!writeThrough) await refreshAssociationsForOpportunity(install, opp.opportunityId);
 
     // A DEAL'S TAGS COME FROM ITS CONTACTS, NOT FROM THE EVENT.
     //
@@ -1063,6 +1072,36 @@ export async function handleOpportunityEvent(install, eventType, event) {
       logger.warn({ err, locationId, opportunityId: opp.opportunityId }, 'stageHistoryWriter: tag fanout failed (non-fatal)');
     }
   }
+  return true;
+}
+
+// A deal WE deleted, marked deleted now rather than when GHL's
+// OpportunityDelete webhook lands.
+//
+// Not run through handleOpportunityEvent: a deleted deal cannot be fetched
+// back from GHL (404), and the upsert with only an id would replace
+// custom_fields with nothing. So this does exactly what the delete branch does
+// to OUR rows — mark the opportunity deleted and close its open stage row as
+// 'deleted' — and nothing else. When the webhook arrives it finds the row
+// already deleted and no open stage row, and changes nothing that matters.
+export async function markOpportunityDeleted(locationId, opportunityId, at = new Date()) {
+  return withTenant(locationId, async (client) => {
+    await client.query(
+      `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+      [`${locationId}:${opportunityId}`]
+    );
+    const { rowCount } = await client.query(
+      `UPDATE opportunities
+          SET is_deleted = true,
+              deleted_at = COALESCE(deleted_at, $3),
+              updated_at = now()
+        WHERE location_id = $1 AND opportunity_id = $2`,
+      [locationId, opportunityId, at]
+    );
+    const open = await findOpenStageRow(client, locationId, opportunityId);
+    if (open) await closeStageRow(client, open.id, at, { markDeleted: true });
+    return rowCount > 0;
+  });
 }
 
 // Used by the orphan-sweep cron: synthesize a "still pending" stage row for

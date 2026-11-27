@@ -12,7 +12,7 @@ import { DealTasksSection, DealNotesSection } from '../dealhub/DealTasksSection'
 import {
   DealHubSkeleton, DealBodySkeleton
 } from '../dealhub/Skeleton'
-import { dealsAPI } from '../../api/deals'
+import { settleDelay, dealsAPI } from '../../api/deals'
 import { aiAPI } from '../../api/ai'
 import { Truncate } from '../shared/ListChrome'
 import { useTabState } from '../../hooks/useTabState'
@@ -694,7 +694,9 @@ export default function DealHubTab({
             // value is the best we have and holding a spinner over it for
             // ever would be worse than showing it.
             .finally(() => setSavingField((cur) => (cur === pinnedId ? null : cur)))
-        }, 2500)
+          // At once when the server wrote the change through; else the wait
+          // for the webhook described above.
+        }, settleDelay(res))
       } else if (field === 'status') {
         // Its own endpoint — the only one that records a lost reason, and the
         // only one that files the outcome reason in the right custom field.
@@ -703,6 +705,7 @@ export default function DealHubTab({
           lostReasonId: value?.lostReasonId,
           reason: value?.reason
         })
+        res = r
         // The status and the reason are separate GHL calls. ok:true with a
         // reasonError means the deal DID close but the reason did not save —
         // surface that instead of a silent success.
@@ -784,7 +787,8 @@ export default function DealHubTab({
       // stepper/current-stage picker showing the old stage forever, since
       // nothing ever re-ran dealsAPI.stages after the first page load.
       //
-      // Delayed, not immediate — same race the customField branch above
+      // Immediate when the server wrote the change through (`mirrored`);
+      // otherwise delayed — same race the customField branch above
       // already avoids: our PUT goes to GHL, GHL fires a webhook, the
       // handler fetches the opportunity back and only THEN writes our row.
       // A GET issued microseconds after the PUT resolves returns the OLD
@@ -798,7 +802,7 @@ export default function DealHubTab({
               setStages(s.stages || [])
             })
             .catch(() => {})
-        }, 2500)
+        }, settleDelay(res))
       }
       setSavedField(field)
       window.setTimeout(() => setSavedField((f) => (f === field ? null : f)), 2200)

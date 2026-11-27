@@ -9,7 +9,7 @@ import { OwnerFilter, TagFilter, useTags } from '../shared/ListFilters'
 import DealEditPage from '../deals/DealEditPage'
 import ViewSwitch from '../shared/ViewSwitch'
 import { savedViewsAPI } from '../../api/deals'
-import { dealsAPI } from '../../api/deals'
+import { dealsAPI, settleDelay } from '../../api/deals'
 import { usePagedList, useInfiniteScroll } from '../../hooks/usePagedList'
 import { useTabState } from '../../hooks/useTabState'
 import DealCreatePanel from '../deals/DealCreatePanel'
@@ -118,6 +118,12 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
   // holds a full list. The server already counts under the same WHERE as the
   // page, so one request with limit:1 gets the real number.
   const [pipelineCount, setPipelineCount] = useState(null)
+  // Bumped after any deal change made on this tab, so the count and the
+  // stage strip above the views refetch. They used to load once per filter
+  // change — a deal dragged across the board left "Sales Qualified 0" on the
+  // strip until the page was reloaded.
+  const [stripTick, setStripTick] = useState(0)
+  const bumpStrip = useCallback(() => setStripTick((n) => n + 1), [])
   // Per-stage { stageId, count, value, currency } for the pipeline strip,
   // from the same request as the count. Null until loaded, or on a server
   // that does not support ?summary=stages — the strip is then not shown.
@@ -256,7 +262,7 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
     // `view` and `refData` were dependencies only because the board used to
     // substitute the first pipeline here. It no longer does, so refetching the
     // count on a view switch would be a request that cannot change the answer.
-  }, [boardPipelineId, filters, search])
+  }, [boardPipelineId, filters, search, stripTick])
 
   // The Stage field's options. With a pipeline chosen, its stages. With
   // "All pipelines", every stage — names repeat across pipelines ("Won" is
@@ -426,11 +432,11 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
   // Not reload() — that resets to page one, so a rep who had scrolled to deal
   // 60 would be thrown back to the top for editing one row.
   //
-  // Delayed, because our writes go to GoHighLevel and nothing is written to our
-  // database until the webhook lands. An immediate refetch returns the OLD row:
-  // the same race that made the Deal Hub chips read "Not set" after a
-  // successful save.
-  const refreshDeal = useCallback((id) => {
+  // At once when the server wrote the change through to our database
+  // (`mirrored`); otherwise after the webhook's usual delay — an immediate
+  // refetch then returns the OLD row, the same race that made the Deal Hub
+  // chips read "Not set" after a successful save.
+  const refreshDeal = useCallback((id, result) => {
     window.setTimeout(() => {
       dealsAPI.get(id)
         .then((fresh) => {
@@ -438,8 +444,9 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           patchItem((it) => it.id === id, fresh)
         })
         .catch(() => {})
-    }, 2500)
-  }, [patchItem])
+      bumpStrip()
+    }, settleDelay(result))
+  }, [patchItem, bumpStrip])
   const sentinelRef = useInfiniteScroll(loadMore, { enabled: hasMore && !loadingMore })
 
   // GRID VIEW — the picklists for its five custom fields, fetched the first
@@ -532,8 +539,8 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           refError={refError}
           onOpenContact={onOpenContact}
           onClose={() => setOpenDealId(null)}
-          onSaved={() => refreshDeal(openDealId)}
-          onDeleted={() => { setOpenDealId(null); reload() }}
+          onSaved={(result) => refreshDeal(openDealId, result)}
+          onDeleted={() => { setOpenDealId(null); reload(); bumpStrip() }}
           // Deliberately does NOT clear openDealId: the rep is stepping out to
           // read this deal in the hub and expects to come back to it, not to
           // the list. Closing is the editor's own Close button.
@@ -779,12 +786,12 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           refError={refError}
           onClose={() => setCreating(false)}
           // A new deal is not in the loaded page, and it may not be on page one
-          // either, so this is a full reload rather than a patch. The delay is
-          // the webhook race: our POST goes to GHL and our row is written when
-          // the webhook lands, so an immediate refetch would not include it.
-          onCreated={() => {
+          // either, so this is a full reload rather than a patch. At once when
+          // the server already wrote it to our database; otherwise after the
+          // webhook's usual delay, or the reload would not include it.
+          onCreated={(_opp, result) => {
             setCreating(false)
-            window.setTimeout(() => reload(), 2500)
+            window.setTimeout(() => { reload(); bumpStrip() }, settleDelay(result))
           }}
         />
       )}
@@ -869,6 +876,8 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           // The toolbar's Stage narrows the board to that one column rather
           // than being sent as a filter — the columns ARE the stages.
           focusColumn={filters.stageId || undefined}
+          // A card moved: the strip's per-stage counts and values change too.
+          onChanged={bumpStrip}
           // A card opens the DEAL HUB.
           //
           // This was the deal's own editor page for a while, on the reasoning

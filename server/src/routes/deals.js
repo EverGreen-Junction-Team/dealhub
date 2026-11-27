@@ -23,6 +23,7 @@ import {
   deleteGhlOpportunity, addGhlOpportunityFollowers, removeGhlOpportunityFollowers,
   fetchGhlLostReasons, OpportunityWriteError
 } from '../services/ghlOpportunityWrite.js';
+import { mirrorOpportunity, mirrorOpportunityDeleted } from '../services/dealWriteThrough.js';
 import {
   OUTCOME_REASON_FIELD, outcomeReasonFor, outcomeReasonKey, CLOSED_STATUSES
 } from '../services/outcomeReason.js';
@@ -2266,7 +2267,7 @@ dealsRouter.get('/:id/reassignment-targets', async (req, res, next) => {
 async function resolveDealForWrite(locationId, opportunityId) {
   const row = await withTenant(locationId, async (client) => {
     const { rows } = await client.query(
-      `SELECT opportunity_id, name, pipeline_id, status
+      `SELECT opportunity_id, name, pipeline_id, status, contact_id
          FROM opportunities
         WHERE location_id = $1 AND opportunity_id = $2
           -- Both flags, matching every read in this file. is_deleted is GHL's
@@ -2708,8 +2709,20 @@ dealsRouter.patch('/:id', async (req, res, next) => {
       );
     }
     const opportunity = await updateGhlOpportunity(install, opportunityId, req.body);
+    // Our copy now, not when the webhook lands — services/dealWriteThrough.js.
+    // A stage (or pipeline) change goes in as a stage update so stage_history
+    // records the move; anything else is a plain update.
+    const movesStage = !!(req.body.pipelineStageId || req.body.pipelineId);
+    const mirrored = await mirrorOpportunity(install, opportunityId, {
+      eventType: movesStage ? 'OpportunityStageUpdate' : 'OpportunityUpdate',
+      contactId: deal.contact_id,
+      expectStageId: req.body.pipelineStageId || null
+    });
+    // AFTER the write-through, not before: GHL's read-back omits a cleared
+    // field, and the write-through's upsert keeps a missing value (COALESCE),
+    // so the clear has to be applied on top of it.
     await applyClearedCustomFields(locationId, opportunityId, req.body.customFields);
-    res.json({ opportunity, source: 'ghl' });
+    res.json({ opportunity, source: 'ghl', mirrored });
   } catch (err) {
     sendDealError(res, err, next, { locationId, opportunityId });
   }
@@ -2758,7 +2771,7 @@ dealsRouter.put('/:id/status', async (req, res, next) => {
   }
 
   try {
-    const { install } = await resolveDealForWrite(locationId, opportunityId);
+    const { install, deal } = await resolveDealForWrite(locationId, opportunityId);
 
     // 1. Status. Throws on failure, so nothing below runs.
     await setGhlOpportunityStatus(install, opportunityId, { status, lostReasonId });
@@ -2813,10 +2826,17 @@ dealsRouter.put('/:id/status', async (req, res, next) => {
       }
     }
 
+    // Status and reason are both in GHL now; take GHL's copy into ours.
+    const mirrored = await mirrorOpportunity(install, opportunityId, {
+      eventType: 'OpportunityStatusUpdate',
+      contactId: deal.contact_id
+    });
+
     res.json({
       ok: true,
       id: opportunityId,
       status: normalised,
+      mirrored,
       reasonSaved,
       reasonError,
       reasonField: needsReason ? OUTCOME_REASON_FIELD[normalised] : null,
@@ -2871,7 +2891,15 @@ dealsRouter.post('/', async (req, res, next) => {
       return res.status(409).json({ error: inactive.message, reason: inactive.reason });
     }
     const opportunity = await createGhlOpportunity(install, body);
-    res.status(201).json({ opportunity, source: 'ghl' });
+    // In our list now, rather than when OpportunityCreate lands. The webhook
+    // still does its own work when it arrives (the orphan queue among it).
+    const mirrored = opportunity?.id
+      ? await mirrorOpportunity(install, opportunity.id, {
+        eventType: 'OpportunityCreate',
+        contactId: opportunity.contactId || contactId
+      })
+      : false;
+    res.status(201).json({ opportunity, source: 'ghl', mirrored });
   } catch (err) {
     sendDealError(res, err, next, { locationId, contactId });
   }
@@ -2879,9 +2907,11 @@ dealsRouter.post('/', async (req, res, next) => {
 
 // DELETE /api/deals/:id
 //
-// Hard delete in GHL. Our row is left to the OpportunityDelete webhook, which
-// also closes the open stage_history row — doing it here would leave that row
-// open forever and inflate every "days in stage" figure the deal feeds.
+// Hard delete in GHL, then marked deleted here at once. Not just the
+// opportunities row: markOpportunityDeleted also closes the open
+// stage_history row as 'deleted', exactly as the OpportunityDelete webhook
+// does — marking the row alone would leave that stage open forever and
+// inflate every "days in stage" figure the deal feeds.
 dealsRouter.delete('/:id', async (req, res, next) => {
   const locationId = req.locationId;
   const opportunityId = req.params.id;
@@ -2889,7 +2919,8 @@ dealsRouter.delete('/:id', async (req, res, next) => {
   try {
     const { install } = await resolveDealForWrite(locationId, opportunityId);
     await deleteGhlOpportunity(install, opportunityId);
-    res.json({ ok: true, id: opportunityId });
+    const mirrored = await mirrorOpportunityDeleted(install, opportunityId);
+    res.json({ ok: true, id: opportunityId, mirrored });
   } catch (err) {
     sendDealError(res, err, next, { locationId, opportunityId });
   }

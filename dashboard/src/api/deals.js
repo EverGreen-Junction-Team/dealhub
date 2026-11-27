@@ -2,6 +2,14 @@ import apiClient from './client'
 
 // Endpoints backing the Deal Hub view.
 // Contract mirrors the shapes returned by server/src/routes/deals.js.
+// How long to wait before re-reading a deal after a write. Nothing when the
+// server says the write is already in our database; otherwise the old guess
+// at GHL's webhook round trip.
+export const WEBHOOK_WAIT_MS = 2500
+export function settleDelay(res) {
+  return res?.mirrored ? 0 : WEBHOOK_WAIT_MS
+}
+
 export const dealsAPI = {
 
   // Upload files to a FILE_UPLOAD custom field.
@@ -74,9 +82,13 @@ export const dealsAPI = {
   // need the opportunities.write scope, separate from the readonly the sync
   // uses.
   //
-  // Nothing is written locally: opportunities have full webhook coverage, and
-  // stage_history (every "days in stage" figure) is maintained only by that
-  // path. So a change appears here once the webhook lands, not instantly.
+  // WRITTEN THROUGH. After GHL accepts a change the server fetches GHL's copy
+  // back and writes it to our database before answering — through the same
+  // handler the webhook uses, so stage_history stays right (the server's
+  // services/dealWriteThrough.js). The response then carries `mirrored: true`
+  // and a refetch straight away shows the change. When it is false (GHL slow
+  // to read back, say) the change still lands with the webhook, so callers
+  // wait for that instead — settleDelay() below.
 
   // Send only what changed. STATUS IS NOT ACCEPTED here — use setStatus, the
   // only route that can record a lost reason.

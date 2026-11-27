@@ -376,11 +376,22 @@ appointmentsRouter.get('/calendars', async (req, res, next) => {
     const rows = Array.isArray(data?.calendars) ? data.calendars : [];
     // The colours chosen in Deal Hub (migration 148). A calendar without one
     // gets the dashboard palette's default, so `colour: null` is normal.
-    const colours = colourMap(await withTenant(locationId, async (client) => {
-      const { rows: r } = await client.query(
-        'SELECT calendar_id, colour FROM calendar_colours WHERE location_id = $1', [locationId]);
-      return r;
-    }));
+    //
+    // NEVER FATAL. The list is what the Book form and the sidebar's
+    // Calendars section are built from; a colour is decoration. Found live:
+    // with the code deployed ahead of migration 148 this query threw, the
+    // whole list answered 500, and booking had no calendar to pick. Now the
+    // list comes back with default colours and the failure is logged.
+    let colours = new Map();
+    try {
+      colours = colourMap(await withTenant(locationId, async (client) => {
+        const { rows: r } = await client.query(
+          'SELECT calendar_id, colour FROM calendar_colours WHERE location_id = $1', [locationId]);
+        return r;
+      }));
+    } catch (err) {
+      logger.error({ err, locationId }, 'calendar colours could not be read — using defaults (is migration 148 applied?)');
+    }
     res.json({
       calendars: rows
         // Inactive calendars are GHL's soft-delete: one is a calendar

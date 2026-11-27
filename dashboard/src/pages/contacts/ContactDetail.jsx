@@ -6,6 +6,7 @@ import {
   Panel, StateMessage, SkeletonStyles, Bar, formatDate, initialsFor, nameFor, DealPill, Truncate
 } from '../shared/ListChrome'
 import TagSelect from '../shared/TagSelect'
+import ContactPicker from '../shared/ContactPicker'
 import { htmlToText } from '../../utils/sanitiseHtml'
 import EmailBody from '../dealhub/EmailBody'
 import AttachmentChip from '../dealhub/AttachmentChip'
@@ -53,7 +54,7 @@ function fromGhl(c) {
   return Object.keys(out).length ? out : null
 }
 
-export default function ContactDetail({ contactId, onBack, onOpenDeal, onOpenTab }) {
+export default function ContactDetail({ contactId, onBack, onOpenDeal, onOpenTab, onOpenContact }) {
   const [contact, setContact] = useState(null)
   const [error, setError] = useState(null)
 
@@ -69,7 +70,7 @@ export default function ContactDetail({ contactId, onBack, onOpenDeal, onOpenTab
 
   if (error) {
     return (
-      <Shell onBack={onBack}>
+      <Shell onBack={onBack} onOpenContact={onOpenContact} currentId={contactId}>
         <div
           style={{
             padding: 16, borderLeft: '3px solid var(--status-stuck)',
@@ -85,7 +86,7 @@ export default function ContactDetail({ contactId, onBack, onOpenDeal, onOpenTab
 
   if (!contact) {
     return (
-      <Shell onBack={onBack}>
+      <Shell onBack={onBack} onOpenContact={onOpenContact} currentId={contactId}>
         <SkeletonStyles />
         {[120, 220, 260, 140].map((h, i) => (
           <div
@@ -105,7 +106,7 @@ export default function ContactDetail({ contactId, onBack, onOpenDeal, onOpenTab
   }
 
   return (
-    <Shell onBack={onBack}>
+    <Shell onBack={onBack} onOpenContact={onOpenContact} currentId={contactId}>
       {/* PANEL ORDER: Details, Deals, Tasks and notes, All messages, Do not
           disturb, Custom
           fields. Asked for directly, and it reads as the order a rep works
@@ -170,7 +171,7 @@ function TasksAndNotes({ contactId, contact, onOpenTab }) {
   )
 }
 
-function Shell({ children, onBack }) {
+function Shell({ children, onBack, onOpenContact, currentId }) {
   return (
     <div
       style={{
@@ -182,11 +183,19 @@ function Shell({ children, onBack }) {
         display: 'grid', gap: 14
       }}
     >
+      {/* The way out, and the way ACROSS. "All contacts" goes back to the
+          list; the search beside it opens another contact directly — asked
+          for so moving between people is not list → search → click every
+          time. Back (the nav's) still returns to this one. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+        flexWrap: 'wrap', justifyContent: 'space-between'
+      }}>
       {onBack && (
         <button
           onClick={onBack}
           style={{
-            justifySelf: 'start',
+            justifySelf: 'start', flex: 'none',
             display: 'inline-flex', alignItems: 'center', gap: 6,
             // A solid slate pill, as the design draws it — the same treatment
             // as the nav's Back button, so "go back" looks like one control.
@@ -202,6 +211,23 @@ function Shell({ children, onBack }) {
           All contacts
         </button>
       )}
+      {onOpenContact && (
+        <span style={{ display: 'inline-flex', width: 'min(340px, 100%)', marginLeft: 'auto' }}>
+          <ContactPicker
+            // Always empty: it is a way to go somewhere, not a field. The
+            // record shown is named in the card below. Keyed by the open
+            // contact so it clears after a jump — with no value antd keeps
+            // its own last pick, and the box went on naming the person you
+            // had just jumped to.
+            key={currentId || 'none'}
+            value={null}
+            onChange={(id) => { if (id && id !== currentId) onOpenContact(id) }}
+            exclude={currentId ? [currentId] : []}
+            placeholder="Jump to another contact…"
+          />
+        </span>
+      )}
+      </div>
       {children}
     </div>
   )

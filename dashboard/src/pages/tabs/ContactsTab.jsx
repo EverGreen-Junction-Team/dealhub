@@ -244,6 +244,9 @@ export default function ContactsTab({
         }}
         onOpenDeal={onOpenDeal}
         onOpenTab={onOpenTab}
+        // The search beside "All contacts": opens another record, through the
+        // same path as a click in the list, so the nav's Back returns here.
+        onOpenContact={openRecord}
       />
     )
   }

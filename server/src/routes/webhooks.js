@@ -156,10 +156,9 @@ webhooksRouter.post('/ghl', async (req, res) => {
   }
 
   const event = req.body || {};
-  // Full raw payload — useful while onboarding new event types (tasks,
-  // notes, messages, etc.) so we can see the exact shape GHL sends.
-  // Trim later once the new event types are stable.
-  logger.info({ payload: event }, 'webhook: raw payload received');
+  // No per-webhook log line. Every payload is archived whole to ghl_raw just
+  // below (look it up by webhookId), so logging it too only flooded the log
+  // with a full copy of every event GHL sends.
 
   const eventType = event.type || event.event || event.eventType;
   // Dedup key MUST be unique per delivery, not per record. GHL puts the
@@ -304,7 +303,8 @@ webhooksRouter.post('/ghl', async (req, res) => {
     if (typeof eventType === 'string'
         && /appointment|calendar|block/i.test(eventType)) {
       logger.warn(
-        { eventType, eventId, locationId, payload: event },
+        // Not the payload: it is in ghl_raw under this eventId.
+        { eventType, eventId, locationId },
         'webhook: calendar-shaped event type we do not handle — if this is a '
         + 'blocked slot or a renamed appointment event, appointmentWriter '
         + 'needs a case for it (see APPOINTMENT_TYPES)'

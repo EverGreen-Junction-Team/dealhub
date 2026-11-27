@@ -97,12 +97,35 @@ function slimErr(err) {
 // default level is `notice`, so production keeps errors, warnings and those
 // events, and drops the routine info lines (each webhook applied, each sync
 // page, each request). LOG_LEVEL=info or =debug brings the detail back.
+// A webhook EVENT or PAYLOAD as a short summary, never the whole thing.
+//
+// Twenty-odd call sites log `{ event }` when a webhook cannot be processed
+// ("missing contact id — dropping"), and a GHL event is a few KB of contact
+// details, custom fields and message bodies. The whole payload is already
+// archived in ghl_raw, findable by webhookId — so the log keeps what
+// identifies it and what is needed to see why it was dropped: its type, its
+// ids and which fields it had.
+export function slimEvent(e) {
+  if (!e || typeof e !== 'object') return e;
+  const out = {
+    type: e.type || e.event || e.eventType,
+    webhookId: e.webhookId || e.eventId,
+    id: e.id,
+    locationId: e.locationId || e.location_id,
+    keys: Object.keys(e).slice(0, 40)
+  };
+  for (const k of Object.keys(out)) if (out[k] === undefined) delete out[k];
+  return out;
+}
+
 export const logger = pino({
   level: config.logLevel,
   customLevels: { notice: 35 },
   base: { service: 'pipelinepulse-server' },
   serializers: {
-    err: slimErr
+    err: slimErr,
+    event: slimEvent,
+    payload: slimEvent
   },
   // Belt-and-braces: even if a Bearer somehow slipped into a log call,
   // pino's redact masks it. Path is `*.authorization` (case-insensitive in

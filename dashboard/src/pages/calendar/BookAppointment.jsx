@@ -628,6 +628,9 @@ export default function BookAppointment({
             placeholder="Unassigned"
             value={assignedUserId}
             onChange={setAssignedUserId}
+            // Type to find a person.
+            showSearch
+            optionFilterProp="label"
             options={assignable.map((r) => ({ value: r.id, label: r.name }))}
           />
         </Row>
@@ -639,10 +642,15 @@ export default function BookAppointment({
             value={calendarId}
             onChange={setCalendarId}
             placeholder={loadingCalendars ? 'Loading…' : 'Choose a calendar'}
+            // Type to find a calendar. Matched on `search`, the plain name:
+            // the label is a colour dot and the name, not text.
+            showSearch
+            optionFilterProp="search"
             // A colour dot before each name — the colour that calendar's
             // bookings are drawn in, so the choice reads like the sidebar.
             options={calendars.map((c) => ({
               value: c.id,
+              search: c.name || '',
               label: (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                   <span

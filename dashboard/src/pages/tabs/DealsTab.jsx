@@ -606,6 +606,9 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
                   '' is a real choice — "all pipelines" — in every view. */}
               <Select
                 aria-label="Pipeline"
+                // Type to find a pipeline by name.
+                showSearch
+                optionFilterProp="label"
                 value={boardPipelineId ?? ''}
                 onChange={(v) => {
                   setBoardPipelineId(v)

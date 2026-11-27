@@ -351,6 +351,9 @@ export default function ContactsTab({
                 <Select
                   value={activeViewId || ''}
                   onChange={(id) => applyView(id || null)}
+                  // Type to find a saved view by name.
+                  showSearch
+                  optionFilterProp="label"
                   options={[
                     { value: '', label: 'All contacts' },
                     ...views.map((v) => ({ value: v.id, label: v.name }))

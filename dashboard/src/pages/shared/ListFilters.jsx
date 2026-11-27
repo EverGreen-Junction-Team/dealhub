@@ -190,6 +190,13 @@ export function OwnerFilter({
         value={value}
         onChange={onChange}
         options={options}
+        // TYPE TO FIND SOMEONE. A sub-account's user list runs long, and
+        // scrolling it for one name was the only way in. Matches anywhere in
+        // the name, any case: "char" finds Charlie Stoyle. "Mine", "All" and
+        // "Unassigned" are searchable too, by those words.
+        showSearch
+        optionFilterProp="label"
+        notFoundContent="No one by that name"
         popupClassName="pp-menu"
         style={{ width }}
         styles={{ root: { height: 34 } }}

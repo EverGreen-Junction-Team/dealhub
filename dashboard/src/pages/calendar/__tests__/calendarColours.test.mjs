@@ -50,3 +50,15 @@ test('choosing a colour does not tick or untick the calendar', () => {
   assert.match(s, /const stop = \(e\) => \{ e\.preventDefault\(\); e\.stopPropagation\(\) \}/)
   assert.match(s, /onClick=\{\(e\) => \{ stop\(e\); setOpen/)
 })
+
+test('"+N more" opens the day list over the cell, not the day view', () => {
+  const s = src('MonthGrid.jsx')
+  assert.match(s, /open=\{moreDay === day\}/)
+  assert.match(s, /<DayList/)
+  // The day view is still one click away, from the date in the list.
+  assert.match(s, /onOpenDay=\{onOpenDay \? \(\) => \{ setMoreDay\(null\); onOpenDay\(day\) \} : null\}/)
+  // The more button itself no longer navigates.
+  assert.doesNotMatch(s, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onOpenDay\?\.\(day\) \}\}/)
+  // Every booking in the list is coloured by its calendar.
+  assert.match(s.slice(s.indexOf('function DayList')), /colourOfAppointment\(calendarColours/)
+})

@@ -917,9 +917,10 @@ export default function CalendarTab({ onOpenDeal }) {
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
           onBookAt={setBooking}
-          // "+N more" drops into that day rather than trying to grow the
-          // cell — a month row that expands pushes the weeks below it off
-          // screen, which is worse than one more click.
+          // "+N more" opens the day's full list over the cell (MonthGrid's
+          // DayList); the date at the top of that list drops into the day
+          // view. The cell never grows — a month row that expands pushes
+          // the weeks below it off screen.
           onOpenDay={(day) => { setFromDay(dayjs(day)); setView('day') }}
           draft={draft}
         />

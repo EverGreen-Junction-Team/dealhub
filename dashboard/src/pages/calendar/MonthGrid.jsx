@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Popover } from 'antd'
+import { CloseOutlined } from '@ant-design/icons'
 import AppointmentDetail from './AppointmentDetail'
 import { monthWeeks, groupByDay, movePatch, isLong, longSpan, longDayLabel } from './boardLayout'
 import { colourOfAppointment } from './calendarColours'
@@ -55,6 +56,8 @@ export default function MonthGrid({
 }) {
   const dragging = useRef(null)
   const [hover, setHover] = useState(null)
+  // The day whose "+N more" list is open, if any. One at a time.
+  const [moreDay, setMoreDay] = useState(null)
 
   const weeks = useMemo(() => monthWeeks(fromDay), [fromDay])
   // A days-long booking is listed on EVERY day it covers, not only its
@@ -240,10 +243,43 @@ export default function MonthGrid({
                   />
                 ))}
 
+                {/* "+N more" opens the WHOLE day's list over the cell, as
+                    Google does — every booking in its calendar colour, each
+                    one opening its deal — rather than leaving the month.
+                    The date at the top of the list still goes to the day
+                    view, for when the time of day is the question. */}
                 {items.length > MAX_PER_CELL && (
+                  <Popover
+                    open={moreDay === day}
+                    onOpenChange={(o) => setMoreDay(o ? day : null)}
+                    trigger="click"
+                    placement="bottom"
+                    rootClassName="pp-portal"
+                    styles={{ body: { padding: 0 } }}
+                    content={
+                      <DayList
+                        day={day}
+                        items={items}
+                        zone={zone}
+                        busyIds={busyIds}
+                        calendarColours={calendarColours}
+                        onClose={() => setMoreDay(null)}
+                        onOpenDay={onOpenDay ? () => { setMoreDay(null); onOpenDay(day) } : null}
+                        onOpenDeal={(id) => { setMoreDay(null); onOpenDeal?.(id) }}
+                        onDragStart={(appointment) => {
+                          dragging.current = { appointment }
+                          // Out of the way, so the cell it is going to can
+                          // be seen and dropped on.
+                          setMoreDay(null)
+                        }}
+                      />
+                    }
+                  >
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onOpenDay?.(day) }}
+                    aria-haspopup="dialog"
+                    aria-expanded={moreDay === day}
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                       display: 'block', width: '100%',
                       border: 'none', background: 'none',
@@ -254,12 +290,83 @@ export default function MonthGrid({
                   >
                     +{items.length - MAX_PER_CELL} more
                   </button>
+                  </Popover>
                 )}
               </div>
             )
           })}
         </div>
       ))}
+    </div>
+  )
+}
+
+// The whole of one day, opened from "+N more": the weekday and date at the
+// top, then every booking in time order. The chips are the cell's own, so
+// they look, hover, drag and open exactly as they do in the cell.
+function DayList({ day, items, zone, busyIds, calendarColours, onClose, onOpenDay, onOpenDeal, onDragStart }) {
+  const d = inZone(`${day}T12:00:00`, zone)
+  const isToday = day === dayKeyNow(zone)
+  return (
+    <div
+      role="dialog"
+      aria-label={`Everything on ${d.format('dddd D MMMM')}`}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
+      style={{ width: 260, padding: '10px 10px 8px', position: 'relative' }}
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        style={{
+          position: 'absolute', top: 6, right: 6,
+          border: 'none', background: 'none', cursor: 'pointer',
+          padding: 4, borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)'
+        }}
+      >
+        <CloseOutlined />
+      </button>
+      <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <div
+          style={{
+            fontSize: 'var(--text-xs)', letterSpacing: 'var(--tracking-label)',
+            textTransform: 'uppercase', color: 'var(--text-muted)'
+          }}
+        >
+          {d.format('ddd')}
+        </div>
+        <button
+          type="button"
+          onClick={onOpenDay || undefined}
+          disabled={!onOpenDay}
+          title={onOpenDay ? 'Open this day' : undefined}
+          style={{
+            width: 40, height: 40, marginTop: 2,
+            border: 'none', borderRadius: '50%',
+            background: isToday ? 'var(--brand-primary)' : 'transparent',
+            color: isToday ? '#fff' : 'var(--text-heading)',
+            fontSize: 22, lineHeight: '40px',
+            cursor: onOpenDay ? 'pointer' : 'default'
+          }}
+        >
+          {d.format('D')}
+        </button>
+      </div>
+      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+        {items.map((a) => (
+          <MonthChip
+            key={a.id}
+            appointment={a}
+            day={day}
+            zone={zone}
+            busy={busyIds?.has(a.id)}
+            accent={colourOfAppointment(calendarColours, a._whole || a)}
+            onOpenDeal={onOpenDeal}
+            onDragStart={onDragStart}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -325,8 +432,8 @@ function MonthChip({ appointment: a, day, zone, busy, onOpenDeal, onDragStart, a
           textDecoration: cancelled ? 'line-through' : 'none'
         }}
       >
-        {/* The dot IS the colour coding now. Six pixels of the person's
-            hue, in the one place on a single-line chip where a colour can
+        {/* The dot IS the colour coding now. Six pixels of the calendar's
+            colour, in the one place on a single-line chip where a colour can
             sit without competing with the words beside it. */}
         {!isBlocked && (
           <span

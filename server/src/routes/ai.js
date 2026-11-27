@@ -396,7 +396,7 @@ aiRouter.delete('/conversations/:conversationId', async (req, res, next) => {
       // way.
       return res.status(404).json({ error: 'Conversation not found', deleted: 0 });
     }
-    logger.info({ locationId, conversationId, deleted }, 'ai: conversation deleted');
+    logger.notice({ locationId, conversationId, deleted }, 'ai: conversation deleted');
     res.json({ deleted });
   } catch (err) {
     logger.error({ err, locationId, conversationId }, 'DELETE /api/ai/conversations/:conversationId failed');

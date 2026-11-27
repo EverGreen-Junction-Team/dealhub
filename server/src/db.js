@@ -25,7 +25,7 @@ pool.on('error', (err) => {
 // boot output is reassuring.
 export async function pingDb() {
   const { rows } = await pool.query('SELECT current_database() AS db, current_user AS role, now() AS now');
-  logger.info(rows[0], 'Postgres connected');
+  logger.notice(rows[0], 'Postgres connected');
 }
 
 // Run a callback with a connection that has `app.location_id` set for the

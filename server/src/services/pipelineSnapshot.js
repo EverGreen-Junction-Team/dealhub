@@ -223,7 +223,7 @@ export async function captureSnapshotsForAllInstalls({ snapshotDate = null } = {
     scope: 'all', status: failed ? 'partial' : 'success', startedAt,
     stats: { locations: rows.length, captured, failed }
   });
-  logger.info({ locations: rows.length, captured, failed }, 'pipelineSnapshot: done');
+  logger.notice({ locations: rows.length, captured, failed }, 'pipelineSnapshot: done');
   return { locations: rows.length, captured, failed };
 }
 
@@ -240,5 +240,5 @@ export function startPipelineSnapshotCron(expression = '30 3 * * *') {
     try { await captureSnapshotsForAllInstalls(); }
     catch (err) { logger.error({ err }, 'pipelineSnapshot: scheduled run failed'); }
   });
-  logger.info({ cron: expression }, 'pipelineSnapshot: daily capture scheduled');
+  logger.notice({ cron: expression }, 'pipelineSnapshot: daily capture scheduled');
 }

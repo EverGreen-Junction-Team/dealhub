@@ -91,8 +91,15 @@ function slimErr(err) {
   return base;
 }
 
+// LEVELS. `notice` sits between info and warn: the events worth keeping in
+// production — the server starting, installs and uninstalls, every write
+// Deal Hub makes to GHL, hand edits, and the daily jobs' summaries. The
+// default level is `notice`, so production keeps errors, warnings and those
+// events, and drops the routine info lines (each webhook applied, each sync
+// page, each request). LOG_LEVEL=info or =debug brings the detail back.
 export const logger = pino({
   level: config.logLevel,
+  customLevels: { notice: 35 },
   base: { service: 'pipelinepulse-server' },
   serializers: {
     err: slimErr
@@ -127,6 +134,6 @@ export const logger = pino({
     censor: '[REDACTED]'
   },
   transport: config.nodeEnv === 'development'
-    ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:HH:MM:ss' } }
+    ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:HH:MM:ss', customLevels: 'trace:10,debug:20,info:30,notice:35,warn:40,error:50,fatal:60' } }
     : undefined
 });

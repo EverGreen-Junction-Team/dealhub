@@ -193,7 +193,7 @@ export async function mintLocationInstall(companyId, locationId) {
     scopes: String(d.scope || '').split(' ').filter(Boolean),
     tokenSource: 'agency'
   });
-  logger.info({ companyId, locationId: install.location_id }, 'agencyInstall: sub-account token minted');
+  logger.notice({ companyId, locationId: install.location_id }, 'agencyInstall: sub-account token minted');
   return install;
 }
 
@@ -321,6 +321,6 @@ export async function markAgencyUninstalled(companyId, { eventTs = null } = {}) 
       [companyId]
     );
   });
-  logger.info({ companyId, locations: rows.length }, 'agencyInstall: agency uninstalled');
+  logger.notice({ companyId, locations: rows.length }, 'agencyInstall: agency uninstalled');
   return rows.length;
 }

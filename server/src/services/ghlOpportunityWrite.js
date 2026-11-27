@@ -125,7 +125,7 @@ export async function updateGhlOpportunity(install, opportunityId, input, { allo
       url: `/opportunities/${enc(opportunityId)}`,
       data: patch
     });
-    logger.info(
+    logger.notice(
       { opportunityId, fields: Object.keys(patch) },
       'ghlOpportunityWrite: deal updated'
     );
@@ -154,7 +154,7 @@ export async function setGhlOpportunityStatus(install, opportunityId, { status, 
       url: `/opportunities/${enc(opportunityId)}/status`,
       data: body
     });
-    logger.info(
+    logger.notice(
       { opportunityId, ...body },
       'ghlOpportunityWrite: deal status set'
     );
@@ -193,7 +193,7 @@ export async function createGhlOpportunity(install, { contactId, ...input }) {
       data: { ...patch, contactId, locationId: install.location_id }
     });
     const opp = data?.opportunity || null;
-    logger.info(
+    logger.notice(
       { opportunityId: opp?.id, contactId, fields: Object.keys(patch) },
       'ghlOpportunityWrite: deal created'
     );
@@ -223,7 +223,7 @@ export async function deleteGhlOpportunity(install, opportunityId) {
     throw translateGhlError(err, { opportunityId, verb: 'delete', install });
   }
 
-  logger.info({ opportunityId }, 'ghlOpportunityWrite: deal deleted');
+  logger.notice({ opportunityId }, 'ghlOpportunityWrite: deal deleted');
   return true;
 }
 
@@ -243,7 +243,7 @@ export async function addGhlOpportunityFollowers(install, opportunityId, input) 
       url: `/opportunities/${enc(opportunityId)}/followers`,
       data: { followers }
     });
-    logger.info(
+    logger.notice(
       { opportunityId, requested: followers, added: data?.followersAdded },
       'ghlOpportunityWrite: followers added'
     );
@@ -271,7 +271,7 @@ export async function removeGhlOpportunityFollowers(install, opportunityId, inpu
       url: `/opportunities/${enc(opportunityId)}/followers`,
       data: { followers }
     });
-    logger.info(
+    logger.notice(
       { opportunityId, requested: followers, removed: data?.followersRemoved },
       'ghlOpportunityWrite: followers removed'
     );

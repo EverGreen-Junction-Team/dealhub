@@ -155,7 +155,7 @@ controlRouter.put('/business-context', async (req, res, next) => {
     // than waiting out the TTL.
     invalidateBusinessContext(locationId);
 
-    logger.info(
+    logger.notice(
       { locationId, sizeBytes, version: row.content_version },
       'control: business context saved'
     );
@@ -281,7 +281,7 @@ controlRouter.post('/sync/:kind', async (req, res, next) => {
   const locationId = req.locationId;
   const kind = req.params.kind;
   const job = SYNCABLE[kind];
-  logger.info({ locationId, kind, known: !!job }, 'control: manual sync starting');
+  logger.notice({ locationId, kind, known: !!job }, 'control: manual sync starting');
 
   // An allow-list, not a lookup on whatever was passed: this takes a name
   // straight from the URL and would otherwise invite calling anything that
@@ -315,7 +315,7 @@ controlRouter.post('/sync/:kind', async (req, res, next) => {
       });
     }
 
-    logger.info({ locationId, kind, ...result, ms }, 'control: manual sync finished');
+    logger.notice({ locationId, kind, ...result, ms }, 'control: manual sync finished');
     return res.json({ ok: true, kind, label: job.label, ms, ...result });
   } catch (err) {
     logger.error({ err, locationId, kind }, 'POST /control/sync failed');

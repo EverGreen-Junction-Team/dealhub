@@ -296,7 +296,7 @@ export async function markOpportunityDeletedLocally(install, opportunityId, { co
         [locationId, opportunityId]
       );
     }
-    logger.info({ locationId, opportunityId, via }, 'opportunities: deal marked deleted locally');
+    logger.notice({ locationId, opportunityId, via }, 'opportunities: deal marked deleted locally');
     return true;
   } catch (err) {
     logger.warn({ err, locationId, opportunityId, via }, 'opportunities: could not mark deal deleted locally');

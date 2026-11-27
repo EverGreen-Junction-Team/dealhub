@@ -142,7 +142,7 @@ export async function createGhlNote(install, contactId, input) {
       data: patch
     });
     const note = data?.note || null;
-    logger.info(
+    logger.notice(
       { contactId, noteId: note?.id, fields: Object.keys(patch) },
       'ghlNoteWrite: note created'
     );
@@ -216,7 +216,7 @@ export async function updateGhlNote(install, { contactId, noteId }, input) {
       }
     }
 
-    logger.info(
+    logger.notice(
       { noteId, contactId, fields: Object.keys(patch) },
       'ghlNoteWrite: note updated'
     );
@@ -266,6 +266,6 @@ export async function deleteGhlNote(install, { contactId, noteId }) {
     );
   }
 
-  logger.info({ noteId, contactId }, 'ghlNoteWrite: note deleted');
+  logger.notice({ noteId, contactId }, 'ghlNoteWrite: note deleted');
   return true;
 }

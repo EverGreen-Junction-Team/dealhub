@@ -2433,7 +2433,7 @@ dealsRouter.put('/:id/messages/:messageId/mapping', async (req, res, next) => {
       reviewNote: targetOppId ? 'moved via deal hub' : 'unlinked via deal hub'
     });
 
-    logger.info(
+    logger.notice(
       { locationId, messageId, opportunityId: targetOppId, reviewedBy: req.session?.userId || 'unknown' },
       'message mapping changed by hand'
     );
@@ -2660,7 +2660,7 @@ dealsRouter.post('/:id/messages', async (req, res, next) => {
       }
     }
 
-    logger.info(
+    logger.notice(
       { locationId, opportunityId, contactId, type, messageId: sent.messageId, reply: !!reply },
       'composer: message sent'
     );
@@ -3056,7 +3056,7 @@ dealsRouter.put('/:id/primary-contact', async (req, res, next) => {
       );
     });
 
-    logger.info(
+    logger.notice(
       { locationId, opportunityId, contactId },
       'deal primary contact changed'
     );

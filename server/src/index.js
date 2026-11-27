@@ -46,6 +46,14 @@ async function main() {
       `${req.method} ${req.url} ${res.statusCode} ${responseTime}ms`,
     customErrorMessage: (req, res, err) =>
       `${req.method} ${req.url} ${res.statusCode} ${err.message}`,
+    // A request that worked logs at info — hidden at the default `notice`
+    // level. A client error (4xx) is a warning and a server error an error,
+    // except 401/404, which bots and expired sessions produce all day.
+    customLogLevel: (_req, res, err) => {
+      if (err || res.statusCode >= 500) return 'error';
+      if (res.statusCode >= 400 && res.statusCode !== 401 && res.statusCode !== 404) return 'warn';
+      return 'info';
+    },
     // Drop /health from the access log entirely — pollutes the stream
     // with monitoring-probe noise (Cloudflare + uptime checks hit it often).
     autoLogging: {
@@ -182,7 +190,7 @@ async function main() {
   });
 
   app.listen(config.port, () => {
-    logger.info(
+    logger.notice(
       { port: config.port, publicBaseUrl: config.publicBaseUrl, env: config.nodeEnv },
       'pipelinepulse-server listening'
     );

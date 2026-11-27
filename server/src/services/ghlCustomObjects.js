@@ -149,7 +149,7 @@ export async function linkRecord(install, assoc, contactId, recordId) {
       data: { locationId: install.location_id, associationId: assoc.id, firstRecordId, secondRecordId },
       scopeOptional: true
     });
-    logger.info({ associationId: assoc.id, firstRecordId, secondRecordId }, 'customObjects: relation created');
+    logger.notice({ associationId: assoc.id, firstRecordId, secondRecordId }, 'customObjects: relation created');
     return data || null;
   } catch (err) {
     if (err.code === 'GHL_SCOPE_MISSING') throw err;
@@ -169,7 +169,7 @@ export async function unlinkRecord(install, relationId) {
       params: { locationId: install.location_id },
       scopeOptional: true
     });
-    logger.info({ relationId }, 'customObjects: relation deleted');
+    logger.notice({ relationId }, 'customObjects: relation deleted');
     return true;
   } catch (err) {
     if (err.code === 'GHL_SCOPE_MISSING') throw err;

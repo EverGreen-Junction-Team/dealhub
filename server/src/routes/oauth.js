@@ -74,7 +74,7 @@ oauthRouter.get('/callback', async (req, res, next) => {
           WHERE company_id = $1 AND uninstalled_at IS NULL AND reauth_required_at IS NULL`,
         [tokens.companyId]
       );
-      logger.info({ companyId: tokens.companyId, ...synced, listFailed, held: held.length }, 'oauth: agency install recorded');
+      logger.notice({ companyId: tokens.companyId, ...synced, listFailed, held: held.length }, 'oauth: agency install recorded');
       return res.type('html').send(installPage({
         title: 'Deal Hub is installed for your agency',
         lead: held.length
@@ -107,7 +107,7 @@ oauthRouter.get('/callback', async (req, res, next) => {
     }
 
     const install = await upsertInstall(tokens);
-    logger.info(
+    logger.notice(
       { locationId: install.location_id, companyId: install.company_id },
       'oauth: install recorded'
     );

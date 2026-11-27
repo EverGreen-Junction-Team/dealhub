@@ -393,7 +393,7 @@ async function performRefresh(client, install) {
   // now a real event.
   if (data.refresh_token && data.refresh_token !== currentRefresh) {
     await writeRefreshToken(client, install, data.refresh_token);
-    logger.info(
+    logger.notice(
       { locationId: install.location_id },
       'GHL rotated the refresh token — new value stored in Vault'
     );

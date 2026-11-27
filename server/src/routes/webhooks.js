@@ -231,14 +231,14 @@ webhooksRouter.post('/ghl', async (req, res) => {
           const agency = existing ? null : await getAgencyInstall(event.companyId);
           if (agency) {
             await mintLocationInstall(event.companyId, locationId);
-            logger.info({ locationId, companyId: event.companyId, eventId }, 'webhook: INSTALL — sub-account token minted from agency');
+            logger.notice({ locationId, companyId: event.companyId, eventId }, 'webhook: INSTALL — sub-account token minted from agency');
             return res.json({ ok: true, type: 'install_minted' });
           }
         } catch (err) {
           logger.error({ err, locationId, companyId: event.companyId, eventId }, 'webhook: INSTALL mint failed');
         }
       }
-      logger.info(
+      logger.notice(
         { locationId, companyId: event.companyId, companyName: event.companyName, eventId },
         'webhook: INSTALL notification received (OAuth callback handles credentials)'
       );
@@ -250,7 +250,7 @@ webhooksRouter.post('/ghl', async (req, res) => {
       // so an older UNINSTALL redelivered later is known to be stale.
       await noteAgencyInstallEvent(event.companyId, event.timestamp).catch((err) =>
         logger.warn({ err, companyId: event.companyId }, 'webhook: could not note agency INSTALL'));
-      logger.info({ companyId: event.companyId, eventId }, 'webhook: agency INSTALL noted');
+      logger.notice({ companyId: event.companyId, eventId }, 'webhook: agency INSTALL noted');
       return res.json({ ok: true, type: 'agency_install_noted' });
     }
 
@@ -258,7 +258,7 @@ webhooksRouter.post('/ghl', async (req, res) => {
       try {
         const n = await markAgencyUninstalled(event.companyId, { eventTs: event.timestamp });
         if (n < 0) return res.json({ ok: true, type: 'agency_uninstall_stale' });
-        logger.info({ companyId: event.companyId, locations: n, eventId }, 'webhook: agency UNINSTALL processed');
+        logger.notice({ companyId: event.companyId, locations: n, eventId }, 'webhook: agency UNINSTALL processed');
         return res.json({ ok: true, type: 'agency_uninstall_processed', locations: n });
       } catch (err) {
         logger.error({ err, companyId: event.companyId, eventId }, 'webhook: agency UNINSTALL failed');
@@ -269,7 +269,7 @@ webhooksRouter.post('/ghl', async (req, res) => {
     if (eventType === 'UNINSTALL') {
       try {
         const wasMarked = await markUninstalled(locationId);
-        logger.info(
+        logger.notice(
           { locationId, companyId: event.companyId, eventId, wasMarked },
           'webhook: UNINSTALL processed — install marked inactive + tokens cleared'
         );

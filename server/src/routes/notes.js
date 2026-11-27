@@ -612,7 +612,7 @@ notesRouter.put('/:id/local-links', async (req, res, next) => {
     if (result.error) {
       return res.status(result.status).json({ error: result.error, field: result.field || null });
     }
-    logger.info(
+    logger.notice(
       { locationId, noteId, opportunityId },
       'note deal set locally (GHL note relations need the notes.write scope)'
     );

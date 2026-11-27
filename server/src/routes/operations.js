@@ -74,7 +74,7 @@ operationsRouter.put('/enabled', async (req, res, next) => {
              enabled_at = now(), updated_at = now()`,
       [locationId, enabled, req.session?.userId || null]
     ));
-    logger.info({ locationId, enabled, by: req.session?.userId || null }, 'ops: sub-account switch changed');
+    logger.notice({ locationId, enabled, by: req.session?.userId || null }, 'ops: sub-account switch changed');
     res.json({ enabled });
   } catch (err) {
     logger.error({ err, locationId }, 'PUT /api/ops/enabled failed');

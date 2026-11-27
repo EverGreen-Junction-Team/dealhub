@@ -291,7 +291,7 @@ export async function handleUserUpsert(install, event) {
     } else if (Array.isArray(found)) {
       // Search answered and did not list them: gone from GHL.
       await upsertUser(locationId, fromEvent, { markInactive: true });
-      logger.info({ locationId, userId: fromEvent.userId, eventType: event.type },
+      logger.notice({ locationId, userId: fromEvent.userId, eventType: event.type },
         'userWriter: user not in /users/search — soft-deleted');
       return;
     }
@@ -305,7 +305,7 @@ export async function handleUserUpsert(install, event) {
     // again, so this takes the same soft-delete path UserDelete does.
     if (full?.__notFound) {
       await upsertUser(locationId, fromEvent, { markInactive: true });
-      logger.info(
+      logger.notice(
         { locationId, userId: fromEvent.userId, eventType: event.type },
         'userWriter: user no longer exists in GHL — soft-deleted'
       );

@@ -970,7 +970,7 @@ contactsRouter.put('/:id/dnd', async (req, res, next) => {
     });
 
     if (!dnd) return res.status(404).json({ error: 'Contact not found' });
-    logger.info({ locationId, contactId, channel, blocked }, 'contacts: dnd updated');
+    logger.notice({ locationId, contactId, channel, blocked }, 'contacts: dnd updated');
     res.json({ dnd: dndOf(dnd) });
   } catch (err) {
     logger.error({ err, locationId, contactId }, 'PUT /api/contacts/:id/dnd failed');
@@ -1370,7 +1370,7 @@ contactsRouter.put('/:id/messages/mapping', async (req, res, next) => {
       }
     }
 
-    logger.info(
+    logger.notice(
       { locationId, contactId, opportunityId, requested: messageIds.length, moved },
       'messages bulk-mapped by hand'
     );

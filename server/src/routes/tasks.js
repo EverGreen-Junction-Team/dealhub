@@ -816,7 +816,7 @@ tasksRouter.put('/:id/local-links', async (req, res, next) => {
     if (result.error) {
       return res.status(result.status).json({ error: result.error, field: result.field || null });
     }
-    logger.info(
+    logger.notice(
       { locationId, taskId, opportunityId: body.opportunityId, businessId: body.businessId },
       'task links set locally (GHL blocks task relation writes over OAuth)'
     );

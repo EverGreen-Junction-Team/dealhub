@@ -276,7 +276,7 @@ export async function createGhlTask(install, contactId, input) {
       data: patch
     });
     const task = data?.task || null;
-    logger.info(
+    logger.notice(
       { contactId, taskId: task?.id, fields: Object.keys(patch) },
       'ghlTaskWrite: task created'
     );
@@ -329,7 +329,7 @@ export async function updateGhlTask(install, { contactId, taskId }, input) {
     );
   }
 
-  logger.info(
+  logger.notice(
     { taskId, contactId, fields: Object.keys(patch) },
     'ghlTaskWrite: task updated'
   );
@@ -380,7 +380,7 @@ export async function setGhlTaskCompleted(install, { contactId, taskId }, comple
     );
   }
 
-  logger.info({ taskId, contactId, completed }, 'ghlTaskWrite: task completion set');
+  logger.notice({ taskId, contactId, completed }, 'ghlTaskWrite: task completion set');
   return task;
 }
 
@@ -423,6 +423,6 @@ export async function deleteGhlTask(install, { contactId, taskId }) {
     );
   }
 
-  logger.info({ taskId, contactId }, 'ghlTaskWrite: task deleted');
+  logger.notice({ taskId, contactId }, 'ghlTaskWrite: task deleted');
   return true;
 }

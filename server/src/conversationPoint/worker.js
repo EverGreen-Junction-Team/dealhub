@@ -183,7 +183,7 @@ export async function tick(batch = config.conversationPoint.workerBatch) {
 
 export function startConversationPointWorker() {
   if (!config.conversationPoint.enabled) {
-    logger.info('conversationPoint: disabled (CP_ENABLED=false)');
+    logger.notice('conversationPoint: disabled (CP_ENABLED=false)');
     return;
   }
   const every = Math.max(1000, config.conversationPoint.workerIntervalMs);

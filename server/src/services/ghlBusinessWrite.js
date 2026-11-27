@@ -226,7 +226,7 @@ export async function createGhlBusiness(install, input) {
     );
   }
 
-  logger.info(
+  logger.notice(
     { businessId: business?.id, fields: Object.keys(patch) },
     'ghlBusinessWrite: business created'
   );
@@ -275,7 +275,7 @@ export async function updateGhlBusiness(install, businessId, input) {
     );
   }
 
-  logger.info(
+  logger.notice(
     { businessId, fields: Object.keys(patch) },
     'ghlBusinessWrite: business updated'
   );
@@ -315,6 +315,6 @@ export async function deleteGhlBusiness(install, businessId) {
     );
   }
 
-  logger.info({ businessId }, 'ghlBusinessWrite: business deleted');
+  logger.notice({ businessId }, 'ghlBusinessWrite: business deleted');
   return true;
 }

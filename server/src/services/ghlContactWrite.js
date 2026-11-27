@@ -90,7 +90,7 @@ export async function updateGhlContact(install, contactId, input) {
       url: `/contacts/${encodeURIComponent(contactId)}`,
       data: patch
     });
-    logger.info(
+    logger.notice(
       { contactId, fields: Object.keys(patch) },
       'ghlContactWrite: contact updated in GHL'
     );
@@ -129,7 +129,7 @@ export async function createGhlContact(install, input) {
       url: '/contacts/',
       data: { ...patch, locationId: install.location_id }
     });
-    logger.info(
+    logger.notice(
       { fields: Object.keys(patch) },
       'ghlContactWrite: contact created in GHL'
     );

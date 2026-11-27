@@ -30,7 +30,7 @@ export async function purgeOldProcessedEvents() {
       `DELETE FROM processed_events WHERE processed_at < now() - interval '14 days'`
     );
     if (rowCount > 0) {
-      logger.info({ deleted: rowCount }, 'cleanup.processedEvents: rows purged');
+      logger.notice({ deleted: rowCount }, 'cleanup.processedEvents: rows purged');
     } else {
       logger.debug('cleanup.processedEvents: nothing to purge');
     }
@@ -60,7 +60,7 @@ export async function purgeOldGhlRaw() {
       `DELETE FROM ghl_raw WHERE received_at < now() - interval '30 days'`
     );
     if (rowCount > 0) {
-      logger.info({ deleted: rowCount }, 'cleanup.ghlRaw: rows purged');
+      logger.notice({ deleted: rowCount }, 'cleanup.ghlRaw: rows purged');
     } else {
       logger.debug('cleanup.ghlRaw: nothing to purge');
     }
@@ -85,7 +85,7 @@ export async function purgeOldSyncRunsWithLog() {
   try {
     const { deleted } = await purgeOldSyncRuns();
     if (deleted > 0) {
-      logger.info({ deleted }, 'cleanup.syncRuns: rows purged');
+      logger.notice({ deleted }, 'cleanup.syncRuns: rows purged');
     }
     await recordSyncRun({
       jobName: 'purgeSyncRuns', objectType: 'sync_runs',
@@ -170,7 +170,7 @@ export async function runOrphanSweep() {
       }
     }
   }
-  logger.info({ processed, failed, durationMs: Date.now() - started }, 'orphanSweep: complete');
+  logger.notice({ processed, failed, durationMs: Date.now() - started }, 'orphanSweep: complete');
   await recordSyncRun({
     jobName: 'orphanSweep', objectType: 'pending_opportunities',
     scope: 'all',
@@ -294,5 +294,5 @@ export function startOrphanSweepCron() {
     try { await purgeOldSyncRunsWithLog(); }
     catch (err) { logger.error({ err }, 'cleanup.syncRuns: scheduled run failed'); }
   });
-  logger.info({ cron: config.orphanSweepCron }, 'daily cron scheduled (orphanSweep + processed_events purge + ghl_raw purge + tags + custom fields + pipelines + users + businesses + contacts + opportunities + tasks + appointments + conversation providers + sync_runs purge; callRecordingSync + messagesSync paused per client request)');
+  logger.notice({ cron: config.orphanSweepCron }, 'daily cron scheduled (orphanSweep + processed_events purge + ghl_raw purge + tags + custom fields + pipelines + users + businesses + contacts + opportunities + tasks + appointments + conversation providers + sync_runs purge; callRecordingSync + messagesSync paused per client request)');
 }

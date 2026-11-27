@@ -341,7 +341,7 @@ export async function syncConversationProvidersForLocation(install) {
 
     await client.query('COMMIT');
     const total = Object.values(byChannel).reduce((a, b) => a + b, 0);
-    logger.info(
+    logger.notice(
       { locationId, byChannel, storedByType, distinct: seenIds.size, total,
         failedChannels, softDeleted: deletedCount, durationMs: Date.now() - started },
       'conversationProvidersSync: daily sync complete'

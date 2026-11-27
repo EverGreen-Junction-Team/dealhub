@@ -21,7 +21,9 @@ function softReq(name) {
 export const config = {
   port: Number(process.env.PORT || 4000),
   nodeEnv: process.env.NODE_ENV || 'development',
-  logLevel: process.env.LOG_LEVEL || 'info',
+  // `notice` keeps errors, warnings and the important events only — see
+  // utils/logger.js. Set LOG_LEVEL=info (or debug) to see everything.
+  logLevel: process.env.LOG_LEVEL || 'notice',
   publicBaseUrl: process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 4000}`,
 
   databaseUrl: req('DATABASE_URL'),

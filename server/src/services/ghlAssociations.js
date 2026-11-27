@@ -271,7 +271,7 @@ async function createRelation(install, assoc, firstRecordId, secondRecordId, opt
     // for every OTHER kind of GHL rejection instead of that one.
     throw translateRelationError(err, describeAssoc(assoc));
   }
-  logger.info(
+  logger.notice(
     { associationId: assoc.id, firstRecordId, secondRecordId, id: data?.id },
     'ghlAssociations: relation created'
   );
@@ -342,7 +342,7 @@ async function deleteRelation(install, assoc, firstRecordId, secondRecordId) {
     if (oauthBlocked !== err) throw oauthBlocked;
     throw translateRelationError(err, describeAssoc(assoc));
   }
-  logger.info(
+  logger.notice(
     { associationId: assoc.id, relationId: id },
     'ghlAssociations: relation deleted'
   );
@@ -502,7 +502,7 @@ export async function removeDealContact(install, relationId) {
     if (oauthBlocked !== err) throw oauthBlocked;
     throw translateRelationError(err, 'The people on a deal');
   }
-  logger.info(
+  logger.notice(
     { relationId, associationId: ASSOCIATIONS.OPPORTUNITY_CONTACT.id },
     'ghlAssociations: deal contact unlinked'
   );

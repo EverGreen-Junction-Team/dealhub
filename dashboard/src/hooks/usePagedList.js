@@ -29,14 +29,25 @@ export function usePagedList({ fetchPage, key, deps = [] }) {
 
   const cursorRef = useRef(null)
   // Guards against two loadMore calls racing (fast scroll, or the observer
-  // firing twice before state settles).
+  // firing twice before state settles). It guards LOAD MORE only — see load().
   const inFlight = useRef(false)
   // Monotonic token: only the newest request may write to state.
   const seq = useRef(0)
 
   const load = useCallback(
     async (mode) => {
-      if (inFlight.current) return
+      // A NEW LIST IS NEVER SKIPPED.
+      //
+      // This guard used to apply to every load. Typing "sdg" into Tasks'
+      // search sent q=s and nothing else: "s" started a request, "d" and "g"
+      // each arrived while it was in flight and returned here, and when "s"
+      // answered — still the newest token, since the skipped calls never took
+      // one — its rows were shown under a box reading "sdg". The same for any
+      // filter changed while a page was loading.
+      //
+      // A reset takes a new token and goes regardless; the token is what
+      // drops the superseded response. Only "load more" waits its turn.
+      if (mode !== 'reset' && inFlight.current) return
       const token = mode === 'reset' ? ++seq.current : seq.current
       inFlight.current = true
       if (mode === 'more') setLoadingMore(true)
@@ -64,8 +75,13 @@ export function usePagedList({ fetchPage, key, deps = [] }) {
         // A stale total beside a failed load is worse than none.
         setTotal(null)
       } finally {
-        inFlight.current = false
-        setLoadingMore(false)
+        // Only the newest request clears these. A superseded one finishing
+        // late must not mark the CURRENT request as done — that would let a
+        // load-more start against a list that is still being replaced.
+        if (token === seq.current) {
+          inFlight.current = false
+          setLoadingMore(false)
+        }
       }
     },
     // fetchPage is recreated per render by callers; deps are what actually

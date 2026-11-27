@@ -241,10 +241,15 @@ function Column({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [over, setOver] = useState(false)
+  const latest = useRef(0)
 
   // `quiet`: a refresh after a move. The cards are already right on screen,
   // so no skeleton rows flash in under them.
   const load = useCallback(async (nextCursor = null, { quiet = false } = {}) => {
+    // Only the newest request may write. Typing "sdg" into the search sends
+    // three queries, and they can answer out of order — without this the
+    // column could settle on the rows for "sd".
+    const token = nextCursor ? latest.current : ++latest.current
     if (!quiet) setLoading(true)
     setError(null)
     try {
@@ -270,15 +275,17 @@ function Column({
         sort: sort || undefined,
         dir: sort ? (dir || 'desc') : undefined
       })
+      if (token !== latest.current) return
       setServerDeals((prev) => (nextCursor ? [...prev, ...(r.deals || [])] : (r.deals || [])))
       setCursor(r.nextCursor || null)
       setHasMore(!!r.hasMore)
       if (typeof r.totalCount === 'number') setTotal(r.totalCount)
       if (typeof r.totalValue === 'number') setTotalValue(r.totalValue)
     } catch (e) {
+      if (token !== latest.current) return
       setError(e.message || 'Could not load this stage')
     } finally {
-      setLoading(false)
+      if (token === latest.current) setLoading(false)
     }
   }, [stage.id, search, status, tag, assignedTo, sort, dir])
 

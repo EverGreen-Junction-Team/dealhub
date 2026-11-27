@@ -85,3 +85,9 @@ test('the move is held until the target column’s own rows contain the deal', (
   const move = board.slice(board.indexOf('const move = useCallback'), board.indexOf('// Every pipeline in scope'))
   assert.match(move, /catch \(e\) \{[\s\S]*dropPending\(dealId, entry\)/)
 })
+
+test('a column keeps only the newest answer — a fast search cannot settle on an older word', () => {
+  const load = board.slice(board.indexOf('const load = useCallback'), board.indexOf('useEffect(() => { load(null) }'))
+  assert.match(load, /const token = nextCursor \? latest\.current : \+\+latest\.current/)
+  assert.match(load, /if \(token !== latest\.current\) return\n\s+setServerDeals/)
+})

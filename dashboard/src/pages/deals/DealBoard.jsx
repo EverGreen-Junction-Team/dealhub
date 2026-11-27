@@ -4,6 +4,7 @@ import { formatMoney } from '../../utils/money'
 import { Bar, SkeletonStyles, DealPill } from '../shared/ListChrome'
 import { NotSet } from '../dealhub/FieldCard'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
+import { applyPending } from './boardMoves'
 
 // The pipeline as a board: one column per stage, deals as cards.
 //
@@ -221,8 +222,15 @@ function DealCard({ deal, onOpen, onOpenInHub, onDragStart, dragging }) {
 }
 
 // One stage. Owns its own deals, count and paging.
-function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onOpenInHub, onMoved, registerReload }) {
-  const [deals, setDeals] = useState([])
+// MOVES IN FLIGHT — see boardMoves.js: why a moved card is drawn at once
+// and held in its new column until the server agrees.
+function Column({
+  stage, search, status, tag, assignedTo, sort, dir, onOpen, onOpenInHub, onMoved, registerReload,
+  pending, onConfirmed, onDragDeal
+}) {
+  // What the SERVER returned. What is drawn is `deals`, below: these rows
+  // with any move in flight laid over them.
+  const [serverDeals, setServerDeals] = useState([])
   const [total, setTotal] = useState(null)
   // The STAGE's value from the server (sum over every matching deal), not the
   // loaded page's. Null until the first load, or on a server that predates
@@ -234,8 +242,10 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
   const [error, setError] = useState(null)
   const [over, setOver] = useState(false)
 
-  const load = useCallback(async (nextCursor = null) => {
-    setLoading(true)
+  // `quiet`: a refresh after a move. The cards are already right on screen,
+  // so no skeleton rows flash in under them.
+  const load = useCallback(async (nextCursor = null, { quiet = false } = {}) => {
+    if (!quiet) setLoading(true)
     setError(null)
     try {
       const r = await dealsAPI.list({
@@ -260,7 +270,7 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
         sort: sort || undefined,
         dir: sort ? (dir || 'desc') : undefined
       })
-      setDeals((prev) => (nextCursor ? [...prev, ...(r.deals || [])] : (r.deals || [])))
+      setServerDeals((prev) => (nextCursor ? [...prev, ...(r.deals || [])] : (r.deals || [])))
       setCursor(r.nextCursor || null)
       setHasMore(!!r.hasMore)
       if (typeof r.totalCount === 'number') setTotal(r.totalCount)
@@ -274,10 +284,29 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
 
   useEffect(() => { load(null) }, [load])
 
-  // The parent moves a card optimistically, then tells both affected columns
-  // to refetch so the counts and totals come from the server rather than
-  // being recomputed in two places.
-  useEffect(() => registerReload(stage.id, () => load(null)), [registerReload, stage.id, load])
+  // The board moves a card at once (see applyPending), then asks the columns
+  // it touched to refetch, so counts and totals come back from the server.
+  // Registered under the COLUMN's id — the joined list for a merged column —
+  // which is the key the board must look it up by.
+  useEffect(
+    () => registerReload(stage.id, (opts) => load(null, opts)),
+    [registerReload, stage.id, load]
+  )
+
+  const { deals, countDelta, valueDelta } = useMemo(
+    () => applyPending(serverDeals, pending, stage.id),
+    [serverDeals, pending, stage.id]
+  )
+
+  // The server has caught up with a move into this column: its own rows now
+  // hold the deal, so the overlay can go.
+  useEffect(() => {
+    if (!pending?.size || !onConfirmed) return
+    const ids = new Set(serverDeals.map((d) => d.id))
+    for (const [id, p] of pending) {
+      if (p.column === stage.id && ids.has(id)) onConfirmed(id, p)
+    }
+  }, [serverDeals, pending, stage.id, onConfirmed])
 
   // Column value: the sum of what is LOADED, labelled as such when more
   // remains. Printing a partial sum as if it were the stage total would be a
@@ -287,7 +316,9 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
     [deals]
   )
   // A partial sum only when the server gave no total AND more deals remain.
-  const stageValue = totalValue ?? loadedValue
+  // The server's figures, adjusted for any move it has not caught up with.
+  const stageValue = totalValue != null ? totalValue + valueDelta : loadedValue
+  const stageCount = total != null ? Math.max(0, total + countDelta) : deals.length
   const partial = totalValue == null && hasMore
   const currency = deals[0]?.currency
 
@@ -306,8 +337,14 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
         // merged stage name backed by several ids — one per pipeline — and
         // sending the joined list as a stage id would write nonsense to the
         // CRM. stageIdFor resolves it against the deal's own pipeline.
-        const to = stage.stageIdFor?.(fromPipeline) ?? stage.id
-        if (id && to && from !== to) onMoved(id, from, to)
+        // Null when the deal's pipeline has no stage of this name — NOT the
+        // joined list, which `?? stage.id` used to fall back to.
+        const to = stage.stageIdFor ? stage.stageIdFor(fromPipeline) : stage.id
+        // Same column: nothing to do. Compared as COLUMNS — `to` is one real
+        // stage id and `from` a column id, so for a merged column they never
+        // matched and dropping a card back where it was wrote to the CRM.
+        if (!id || from === stage.id) return
+        onMoved({ dealId: id, fromColumn: from, toColumn: stage.id, toStageId: to || null, toName: stage.name })
       }}
       style={{
         // 360, not 320: the cards now carry a four-row field table, and at 320
@@ -367,7 +404,7 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
             fontSize: 'var(--text-base)', fontWeight: 600,
             fontVariantNumeric: 'tabular-nums', color: 'var(--text-body)'
           }}>
-            {total ?? deals.length}
+            {stageCount}
           </span>
         </div>
         <div
@@ -425,6 +462,9 @@ function Column({ stage, search, status, tag, assignedTo, sort, dir, onOpen, onO
               // and a deal dragged between columns stays in its pipeline.
               e.dataTransfer.setData('text/pipeline-id', deal.pipelineId || '')
               e.dataTransfer.effectAllowed = 'move'
+              // The whole deal, so the board can draw it in its new column
+              // before the server has it there.
+              onDragDeal?.(deal)
             }}
           />
         ))}
@@ -573,31 +613,84 @@ export default function DealBoard({
   const boardScroll = useElementScrollMemory('deals', 'board')
 
   const [moveError, setMoveError] = useState(null)
-  // stageId -> reload fn, so a move can refresh exactly the two columns it
-  // touched rather than the whole board.
+  // COLUMN id -> reload fn, so a move can refresh exactly the two columns it
+  // touched rather than the whole board. Keyed by the column's own id (the
+  // joined list for a merged column), never by a single stage id.
   const reloaders = useRef(new Map())
 
-  const registerReload = useCallback((stageId, fn) => {
-    reloaders.current.set(stageId, fn)
-    return () => reloaders.current.delete(stageId)
+  const registerReload = useCallback((columnId, fn) => {
+    reloaders.current.set(columnId, fn)
+    return () => reloaders.current.delete(columnId)
+  }, [])
+  const reload = useCallback((columnId) => reloaders.current.get(columnId)?.({ quiet: true }), [])
+
+  // Moves the server has not caught up with — see applyPending.
+  const [pending, setPending] = useState(() => new Map())
+  const pendingRef = useRef(pending)
+  pendingRef.current = pending
+  const dropPending = useCallback((dealId, entry) => {
+    setPending((prev) => {
+      if (!prev.has(dealId) || (entry && prev.get(dealId) !== entry)) return prev
+      const next = new Map(prev)
+      next.delete(dealId)
+      return next
+    })
   }, [])
 
-  const move = useCallback(async (dealId, fromStage, toStage) => {
+  // The card being dragged, whole: the drop only carries its id.
+  const dragged = useRef(null)
+  const onDragDeal = useCallback((deal) => { dragged.current = deal }, [])
+
+  const timers = useRef([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  const later = useCallback((ms, fn) => { timers.current.push(setTimeout(fn, ms)) }, [])
+
+  // The target column's own rows now hold the deal: the overlay goes, and
+  // the column it left refetches too, so it cannot show a stale copy.
+  const onConfirmed = useCallback((dealId, entry) => {
+    dropPending(dealId, entry)
+    if (entry?.from) reload(entry.from)
+  }, [dropPending, reload])
+
+  const move = useCallback(async ({ dealId, fromColumn, toColumn, toStageId, toName }) => {
     setMoveError(null)
+    const deal = dragged.current?.id === dealId ? dragged.current : null
+    dragged.current = null
+    if (!toStageId) {
+      setMoveError(`${deal?.name || 'That deal'} can't go into “${toName}” — its pipeline has no stage by that name.`)
+      return
+    }
+    // Shown in its new column at once. `pipelineStageId` updated too, so
+    // anything on the card that reads the stage agrees with where it sits.
+    const entry = deal
+      ? { deal: { ...deal, pipelineStageId: toStageId }, column: toColumn, from: fromColumn }
+      : null
+    if (entry) setPending((prev) => new Map(prev).set(dealId, entry))
     try {
-      await dealsAPI.update(dealId, { pipelineStageId: toStage })
-      // Refetch BOTH columns rather than moving the card locally: the stage
-      // change also updates the deal's timestamps and its position in the
-      // sort, and a locally-inserted card would sit in the wrong place until
-      // the next load.
-      reloaders.current.get(fromStage)?.()
-      reloaders.current.get(toStage)?.()
+      await dealsAPI.update(dealId, { pipelineStageId: toStageId })
+      // Saved in GHL. Our copy follows when its webhook lands, so look again
+      // shortly, and again a little later — the counts and totals then come
+      // from the server. The move stays on screen in the meantime.
+      reload(toColumn)
+      later(1500, () => reload(toColumn))
+      later(5000, () => reload(toColumn))
+      // A webhook that never comes: stop holding the move after a minute and
+      // show whatever the server has, rather than a card it does not agree with.
+      later(60000, () => {
+        if (entry && pendingRef.current.get(dealId) === entry) {
+          dropPending(dealId, entry)
+          reload(fromColumn)
+          reload(toColumn)
+        }
+      })
+      if (!entry) reload(fromColumn)
     } catch (e) {
       setMoveError(e.message || 'That deal could not be moved')
       // Put the card back where it was — the move did not happen.
-      reloaders.current.get(fromStage)?.()
+      if (entry) dropPending(dealId, entry)
+      reload(fromColumn)
     }
-  }, [])
+  }, [dropPending, later, reload])
 
   // Every pipeline in scope — the chosen one, or all of them — merged into
   // one set of columns. Built INSIDE the memo: a `list` computed outside is a
@@ -652,6 +745,9 @@ export default function DealBoard({
             onOpenInHub={onOpenInHub}
             onMoved={move}
             registerReload={registerReload}
+            pending={pending}
+            onConfirmed={onConfirmed}
+            onDragDeal={onDragDeal}
           />
         ))}
       </div>

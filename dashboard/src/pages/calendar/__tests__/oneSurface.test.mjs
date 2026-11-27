@@ -62,18 +62,20 @@ test('the resource board divides the column BODY, not just its head', () => {
   assert.ok(rules.length >= 2, 'only one divider on the board — the body is undivided')
 })
 
-test('a booked card is filled, and only a booked card', () => {
-  // Colour means "somebody is booked here". Blocked time is the absence
-  // of availability and keeps its grey hatch; a cancelled slot is still
-  // spoken for but nobody is coming, so it stays plain — a tinted one
-  // would make a dead afternoon look booked, which is the exact
-  // question this view is opened to answer.
+test('a booked card is filled; blocked time too, in its calendar colour', () => {
+  // Colour means "on this calendar". Blocked time is washed in its
+  // calendar's colour (asked for: the team reads the diary by colour) and
+  // keeps its hatch, so it never reads as work; with no calendar colour
+  // it stays grey. A cancelled slot is still spoken for but nobody is
+  // coming, so it stays plain — a tinted one would make a dead afternoon
+  // look booked.
   const src = code('AppointmentCard.jsx')
-  assert.match(src, /className=\{!isBlocked && !cancelled \? 'pp-appt' : undefined\}/,
-    'the fill is no longer limited to live bookings')
-  assert.match(src, /background: isBlocked\s*\n\s*\? style\.tint\s*\n\s*: \(cancelled \? 'var\(--surface-card\)' : undefined\)/,
+  assert.match(src, /const tinted = !cancelled && \(!isBlocked \|\| hasCalendarColour\(accent\)\)/,
+    'the fill rule changed: cancelled must stay plain, uncoloured blocked time grey')
+  assert.match(src, /className=\{tinted \? 'pp-appt' : undefined\}/)
+  assert.match(src, /background: tinted\s*\n\s*\? undefined/,
     'an inline background would beat the class that paints the wash')
-  assert.match(src, /repeating-linear-gradient/, 'blocked time lost its hatching')
+  assert.match(src, /backgroundImage: isBlocked \? BLOCKED_HATCH : undefined/, 'blocked time lost its hatching')
 })
 
 test('the fill and the bar are ONE colour at two strengths', () => {
@@ -82,7 +84,7 @@ test('the fill and the bar are ONE colour at two strengths', () => {
   // a single --pp-accent, so they cannot drift apart.
   const src = code('AppointmentCard.jsx')
   assert.match(src, /'--pp-accent': accent \|\| style\.bar/, 'the single colour source is gone')
-  assert.match(src, /borderLeftColor: isBlocked \? style\.bar : \(accent \|\| style\.bar\)/,
+  assert.match(src, /borderLeftColor: isBlocked && !tinted \? style\.bar : \(accent \|\| style\.bar\)/,
     'the bar no longer follows --pp-accent')
   // The heading must not be the status accent on top of that.
   assert.ok(!/color: style\.text/.test(src), 'the card heading is coloured by status again')
@@ -113,7 +115,8 @@ test('status still reads without hue', () => {
   const src = code('AppointmentCard.jsx')
   assert.match(src, /textDecoration: cancelled \? 'line-through'/, 'cancelled lost its strike')
   assert.match(src, /'No-show'/, 'no-show lost its word')
-  assert.match(src, /repeating-linear-gradient/, 'blocked lost its hatch')
+  assert.match(src, /BLOCKED_HATCH/, 'blocked lost its hatch')
+  assert.match(code('calendarColours.js'), /BLOCKED_HATCH =\s*\n?\s*'repeating-linear-gradient/, 'the hatch is gone')
 })
 
 test('the month chip colours a dot, not the whole chip', () => {

@@ -37,7 +37,9 @@ const hhmm = (m) =>
 // Never interactive: pointerEvents none, so the click that would reach the
 // grid underneath still does, and a drag over it is unaffected.
 
-export default function DraftSlot({ top, height, startMin, endMin, title }) {
+// `colour`: the calendar chosen in the booking card, so the slot previews in
+// the colour it will be saved in. Brand green until one is chosen.
+export default function DraftSlot({ top, height, startMin, endMin, title, colour = null }) {
   return (
     <div
       aria-hidden
@@ -46,9 +48,9 @@ export default function DraftSlot({ top, height, startMin, endMin, title }) {
         top, height,
         left: 2, right: 2,
         boxSizing: 'border-box',
-        border: '2px dashed var(--brand-primary)',
+        border: `2px dashed ${colour || 'var(--brand-primary)'}`,
         borderRadius: 'var(--radius-sm)',
-        background: 'var(--tint-pine)',
+        background: colour ? `color-mix(in srgb, ${colour} 18%, #fff)` : 'var(--tint-pine)',
         // Above the booked work — it is what you are looking at right now —
         // but below the now-line, which should never be hidden.
         zIndex: 1,
@@ -58,7 +60,7 @@ export default function DraftSlot({ top, height, startMin, endMin, title }) {
         pointerEvents: 'none',
         fontSize: 'var(--text-xs)',
         lineHeight: 'var(--leading-snug)',
-        color: 'var(--accent-pine-text)'
+        color: colour ? 'var(--text-heading)' : 'var(--accent-pine-text)'
       }}
     >
       <div

@@ -3,6 +3,7 @@ import { Popover, Dropdown } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
 import { clockTime, inZone } from '../../utils/calendarTime'
 import { offsetY } from './pointer'
+import { BLOCKED_HATCH, hasCalendarColour } from './calendarColours'
 
 // One booking on the board.
 //
@@ -73,6 +74,9 @@ export default function AppointmentCard({
     ? BLOCKED_STYLE
     : (STATUS_STYLE[status] || UNKNOWN_STYLE)
   const cancelled = status === 'cancelled'
+  // Blocked time takes its calendar's colour too (its person's Personal
+  // calendar, usually) and keeps its stripes; grey only with no calendar.
+  const tinted = !cancelled && (!isBlocked || hasCalendarColour(accent))
 
   // Lanes share the column's width; see boardLayout.assignLanes for why this
   // is computed per overlap group rather than per column.
@@ -179,7 +183,7 @@ export default function AppointmentCard({
           e.dataTransfer.setData('text/plain', a.id)
           e.dataTransfer.effectAllowed = 'move'
         }}
-        className={!isBlocked && !cancelled ? 'pp-appt' : undefined}
+        className={tinted ? 'pp-appt' : undefined}
         // Its hover card shows the full text — no native title on top.
         data-noclip=""
         onClick={(e) => {
@@ -234,9 +238,10 @@ export default function AppointmentCard({
           // list) it falls back to the status.
           '--pp-accent': accent || style.bar,
 
-          // Blocked time keeps its grey and its hatching — it is the
-          // absence of availability, not a booking, and must not be
-          // counted as work by anyone glancing at the week.
+          // Blocked time is washed in its calendar's colour like a
+          // booking — asked for: the team reads the diary by colour — and
+          // keeps its hatching and the word "Blocked", so it is never
+          // counted as work. With no calendar it stays grey.
           //
           // CANCELLED IS NOT COLOURED EITHER, and that is the point of
           // the rule above: the slot is still spoken for, which is why
@@ -248,13 +253,13 @@ export default function AppointmentCard({
           // Anything else is a live booking and gets its wash from the
           // .pp-appt class, which is why background is left unset here:
           // an inline background would beat the class.
-          background: isBlocked
-            ? style.tint
-            : (cancelled ? 'var(--surface-card)' : undefined),
+          background: tinted
+            ? undefined
+            : (isBlocked ? style.tint : 'var(--surface-card)'),
           border: '1px solid var(--border-strong, var(--gray-200))',
           borderLeftWidth: 4,
           borderLeftStyle: 'solid',
-          borderLeftColor: isBlocked ? style.bar : (accent || style.bar),
+          borderLeftColor: isBlocked && !tinted ? style.bar : (accent || style.bar),
           boxShadow: 'var(--shadow-xs, 0 1px 1px rgba(23, 33, 46, 0.06))',
           borderRadius: 'var(--radius-sm)',
           padding: '3px 6px',
@@ -265,9 +270,7 @@ export default function AppointmentCard({
           opacity: busy ? 0.55 : 1,
           // Blocked time reads as a surface, not an item — it is the absence
           // of availability rather than a thing on the schedule.
-          backgroundImage: isBlocked
-            ? 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.045) 5px, rgba(0,0,0,0.045) 10px)'
-            : undefined,
+          backgroundImage: isBlocked ? BLOCKED_HATCH : undefined,
           boxSizing: 'border-box',
           fontSize: 'var(--text-xs)',
           lineHeight: 'var(--leading-snug)',

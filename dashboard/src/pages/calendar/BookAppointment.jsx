@@ -290,7 +290,10 @@ export default function BookAppointment({
   // Called on every change to when/how long/what it is called, so the grid
   // behind can draw the slot being booked. See DraftSlot: the card says
   // roughly where, and only the grid can say exactly.
-  onDraft
+  onDraft,
+  // calendarIndex() from the board, so each calendar in the picker shows
+  // the colour its bookings are drawn in, and the draft previews in it.
+  calendarColours = null
 }) {
   const modalRef = useModal()
 
@@ -471,10 +474,12 @@ export default function BookAppointment({
       minutes: time.hour() * 60 + time.minute(),
       duration,
       title,
-      userId: assignedUserId || null
+      userId: assignedUserId || null,
+      // The chosen calendar's colour — the colour it will be saved in.
+      colour: (calendarId && calendarColours?.colours?.get(calendarId)) || null
     })
     return () => onDraft?.(null)
-  }, [day, time, duration, title, assignedUserId, onDraft])
+  }, [day, time, duration, title, assignedUserId, calendarId, calendarColours, onDraft])
 
   const place = useAnchoredCard(initial?.anchor, modalRef)
 
@@ -634,7 +639,23 @@ export default function BookAppointment({
             value={calendarId}
             onChange={setCalendarId}
             placeholder={loadingCalendars ? 'Loading…' : 'Choose a calendar'}
-            options={calendars.map((c) => ({ value: c.id, label: c.name }))}
+            // A colour dot before each name — the colour that calendar's
+            // bookings are drawn in, so the choice reads like the sidebar.
+            options={calendars.map((c) => ({
+              value: c.id,
+              label: (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <span
+                    aria-hidden
+                    style={{
+                      flex: 'none', width: 10, height: 10, borderRadius: '50%',
+                      background: calendarColours?.colours?.get(c.id) || 'var(--gray-450)'
+                    }}
+                  />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                </span>
+              )
+            }))}
             notFoundContent={
               calendarsError || (loadingCalendars ? 'Loading…' : 'No calendars')
             }

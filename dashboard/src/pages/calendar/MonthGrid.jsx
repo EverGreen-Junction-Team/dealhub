@@ -3,7 +3,7 @@ import { Popover } from 'antd'
 import { CloseOutlined } from '@ant-design/icons'
 import AppointmentDetail from './AppointmentDetail'
 import { monthWeeks, groupByDay, movePatch, isLong, longSpan, longDayLabel } from './boardLayout'
-import { colourOfAppointment } from './calendarColours'
+import { colourOfAppointment, BLOCKED_HATCH, hasCalendarColour } from './calendarColours'
 import {
   isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, dayKey
 } from '../../utils/calendarTime'
@@ -208,10 +208,10 @@ export default function MonthGrid({
                       display: 'flex', alignItems: 'center', gap: 4,
                       margin: '1px 0',
                       padding: '1px 5px',
-                      border: '1px dashed var(--brand-primary)',
+                      border: `1px dashed ${draft.colour || 'var(--brand-primary)'}`,
                       borderRadius: 'var(--radius-pill)',
-                      background: 'var(--tint-pine)',
-                      color: 'var(--accent-pine-text)',
+                      background: draft.colour ? `color-mix(in srgb, ${draft.colour} 18%, #fff)` : 'var(--tint-pine)',
+                      color: draft.colour ? 'var(--text-heading)' : 'var(--accent-pine-text)',
                       fontSize: 'var(--text-xs)',
                       whiteSpace: 'nowrap', overflow: 'hidden',
                       textOverflow: 'ellipsis'
@@ -396,7 +396,7 @@ function MonthChip({ appointment: a, day, zone, busy, onOpenDeal, onDragStart, a
       styles={{ body: { padding: 'var(--space-4)' } }}
     >
       <div
-        className={!isBlocked && !cancelled ? 'pp-appt-chip' : undefined}
+        className={!cancelled && (!isBlocked || hasCalendarColour(accent)) ? 'pp-appt-chip' : undefined}
         data-noclip=""
         draggable={!isBlocked && !busy}
         onDragStart={(e) => {
@@ -420,9 +420,12 @@ function MonthChip({ appointment: a, day, zone, busy, onOpenDeal, onDragStart, a
           // — at full strength the cell became a block of colour whose
           // shape said nothing.
           '--pp-accent': accent || 'var(--accent-teal)',
-          background: isBlocked
-            ? 'var(--gray-100)'
-            : (cancelled ? 'transparent' : undefined),
+          // Blocked time: its calendar's wash and dot like any booking,
+          // plus stripes; grey only when it has no calendar colour.
+          background: cancelled
+            ? 'transparent'
+            : (isBlocked && !hasCalendarColour(accent) ? 'var(--gray-100)' : undefined),
+          backgroundImage: isBlocked ? BLOCKED_HATCH : undefined,
           color: 'var(--text-body)',
           fontSize: 'var(--text-xs)',
           lineHeight: 1.5,
@@ -435,7 +438,7 @@ function MonthChip({ appointment: a, day, zone, busy, onOpenDeal, onDragStart, a
         {/* The dot IS the colour coding now. Six pixels of the calendar's
             colour, in the one place on a single-line chip where a colour can
             sit without competing with the words beside it. */}
-        {!isBlocked && (
+        {(!isBlocked || hasCalendarColour(accent)) && (
           <span
             aria-hidden
             style={{

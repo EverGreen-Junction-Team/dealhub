@@ -7,7 +7,7 @@ import TimeGrid from '../calendar/TimeGrid'
 import MonthGrid from '../calendar/MonthGrid'
 import { monthWeeks, UNASSIGNED } from '../calendar/boardLayout'
 import CalendarSidebar from '../calendar/CalendarSidebar'
-import { calendarColourMap } from '../calendar/calendarColours'
+import { calendarIndex, calendarOf } from '../calendar/calendarColours'
 import { overlayPending } from '../calendar/pendingWrites'
 import BookAppointment from '../calendar/BookAppointment'
 import AppointmentLinks from '../calendar/AppointmentLinks'
@@ -359,8 +359,13 @@ export default function CalendarTab({ onOpenDeal }) {
   // The calendar list, once. It changes about never, and a failure here is
   // survivable: no Calendars section, everything still drawn, which is
   // better than an error over a filter.
-  // Each calendar's colour — what its bookings are drawn in on every view.
-  const calendarColours = useMemo(() => calendarColourMap(calendars), [calendars])
+  // Each calendar's colour — what its bookings are drawn in on every view —
+  // and each person's Personal calendar, which their blocked time (no
+  // calendar of its own in GHL) belongs to.
+  const calendarColours = useMemo(
+    () => calendarIndex(calendars, data.resources),
+    [calendars, data.resources]
+  )
 
   useEffect(() => {
     let live = true
@@ -569,10 +574,12 @@ export default function CalendarTab({ onOpenDeal }) {
   const calendarCounts = useMemo(() => {
     const m = new Map()
     for (const a of data.appointments) {
-      if (a.calendarId) m.set(a.calendarId, (m.get(a.calendarId) || 0) + 1)
+      // Its own calendar, or its person's Personal one (calendarOf).
+      const cal = calendarOf(calendarColours, a)
+      if (cal) m.set(cal, (m.get(cal) || 0) + 1)
     }
     return m
-  }, [data.appointments])
+  }, [data.appointments, calendarColours])
 
   // Both cuts, applied together: a calendar narrows what KIND of thing is
   // shown, a person narrows WHO is going.
@@ -588,11 +595,13 @@ export default function CalendarTab({ onOpenDeal }) {
     if (!byPerson && !byCalendar) return data.appointments
     return data.appointments.filter((a) => {
       if (byPerson && !byPerson.has(a.assignedUserId || UNASSIGNED)) return false
-      if (byCalendar && a.calendarId && known.has(a.calendarId)
-          && !byCalendar.has(a.calendarId)) return false
+      // Its own calendar, or its person's Personal one — so unticking
+      // somebody's Personal calendar hides their blocked time too.
+      const cal = calendarOf(calendarColours, a)
+      if (byCalendar && cal && known.has(cal) && !byCalendar.has(cal)) return false
       return true
     })
-  }, [data.appointments, people, selectedCalendars, calendars])
+  }, [data.appointments, people, selectedCalendars, calendars, calendarColours])
 
   // The People board's columns follow the ticks too, or you would untick
   // somebody and still be looking at their empty lane.
@@ -972,6 +981,7 @@ export default function CalendarTab({ onOpenDeal }) {
         <BookAppointment
           initial={booking}
           onDraft={setDraft}
+          calendarColours={calendarColours}
           zone={zone}
           resources={data.resources}
           onClose={() => setBooking(null)}

@@ -402,7 +402,13 @@ appointmentsRouter.get('/calendars', async (req, res, next) => {
           id: c.id || c._id,
           name: c.name || 'Calendar',
           timezone: c.timezone || null,
-          colour: colours.get(c.id || c._id) || null
+          colour: colours.get(c.id || c._id) || null,
+          // Who the calendar belongs to. A PERSONAL calendar is one person's
+          // diary, and person-level blocked time (which GHL ties to a user,
+          // not a calendar) is drawn in that calendar's colour.
+          type: c.calendarType || null,
+          userIds: (Array.isArray(c.teamMembers) ? c.teamMembers : [])
+            .map((t) => t?.userId).filter(Boolean)
         }))
         .filter((c) => c.id)
     });

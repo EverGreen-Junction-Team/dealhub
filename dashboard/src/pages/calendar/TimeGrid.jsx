@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
 import DraftSlot from './DraftSlot'
-import { colourOfAppointment } from './calendarColours'
+import { colourOfAppointment, BLOCKED_HATCH } from './calendarColours'
 import {
   DAY_START_MIN, DAY_END_MIN, WORK_START_MIN, WORK_END_MIN,
   boardHeightPx, hourMarks, clampToWindow,
@@ -403,6 +403,7 @@ export default function TimeGrid({
                         // so with a square edge on that side.
                         borderRadius: `${span.clippedStart ? 0 : 6}px ${span.clippedEnd ? 0 : 6}px ${span.clippedEnd ? 0 : 6}px ${span.clippedStart ? 0 : 6}px`,
                         background: cancelled ? 'var(--surface-card)' : undefined,
+                        backgroundImage: a.kind === 'blocked' ? BLOCKED_HATCH : undefined,
                         fontSize: 'var(--text-xs)', color: 'var(--text-heading)',
                         fontWeight: 'var(--weight-semibold)',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -653,6 +654,7 @@ export default function TimeGrid({
                     startMin={start}
                     endMin={end}
                     title={draft.title}
+                    colour={draft.colour}
                   />
                 )
               })()}
@@ -721,6 +723,7 @@ export default function TimeGrid({
                   borderLeft: `4px solid ${accent}`,
                   borderRadius: `${clippedStart ? 0 : 6}px ${clippedEnd ? 0 : 6}px ${clippedEnd ? 0 : 6}px ${clippedStart ? 0 : 6}px`,
                   background: cancelled ? 'var(--surface-card)' : undefined,
+                  backgroundImage: a.kind === 'blocked' ? BLOCKED_HATCH : undefined,
                   textDecoration: cancelled ? 'line-through' : 'none',
                   fontSize: 'var(--text-xs)', color: 'var(--text-heading)',
                   textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden',

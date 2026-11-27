@@ -51,7 +51,7 @@ import MiniMonth from './MiniMonth'
 export default function CalendarSidebar({
   resources, selected, onChange, counts,
   calendars = [], selectedCalendars, onChangeCalendars, calendarCounts,
-  // Map(calendarId → colour) — what each calendar's bookings are drawn in —
+  // calendarIndex() — what each calendar's bookings are drawn in —
   // and the setter behind the swatch (colour '#rrggbb', or null for the
   // default). Without the setter the swatch is shown but cannot be changed.
   calendarColours = null, onChangeCalendarColour = null,
@@ -181,7 +181,7 @@ export default function CalendarSidebar({
                   // The calendar's colour is the card colour on every view,
                   // so it is shown here — on the checkbox, as Google does —
                   // and changed from the swatch beside it.
-                  colour={calendarColours?.get(c.id) || null}
+                  colour={calendarColours?.colours?.get(c.id) || null}
                   colourIsCheckbox
                   onPickColour={onChangeCalendarColour
                     ? (hex) => onChangeCalendarColour(c.id, hex)

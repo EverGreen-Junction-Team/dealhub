@@ -3,16 +3,16 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
-  CALENDAR_PALETTE, calendarColourMap, colourOfAppointment, defaultCalendarColour, NO_CALENDAR_COLOUR
+  CALENDAR_PALETTE, calendarIndex, calendarOf, colourOfAppointment, defaultCalendarColour, NO_CALENDAR_COLOUR
 } from '../calendarColours.js'
 
 const src = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
 
 test('a chosen colour wins; otherwise a default by position', () => {
-  const m = calendarColourMap([{ id: 'a', colour: '#123456' }, { id: 'b' }, { id: 'c', colour: null }])
-  assert.equal(m.get('a'), '#123456')
-  assert.equal(m.get('b'), defaultCalendarColour(1))
-  assert.equal(m.get('c'), defaultCalendarColour(2))
+  const { colours } = calendarIndex([{ id: 'a', colour: '#123456' }, { id: 'b' }, { id: 'c', colour: null }])
+  assert.equal(colours.get('a'), '#123456')
+  assert.equal(colours.get('b'), defaultCalendarColour(1))
+  assert.equal(colours.get('c'), defaultCalendarColour(2))
 })
 
 test('neighbouring calendars get different defaults, and the defaults wrap', () => {
@@ -20,12 +20,28 @@ test('neighbouring calendars get different defaults, and the defaults wrap', () 
   assert.equal(defaultCalendarColour(0), defaultCalendarColour(24))
 })
 
-test('a booking takes its calendar colour; blocked time and unknown calendars are grey', () => {
-  const m = calendarColourMap([{ id: 'a', colour: '#123456' }])
-  assert.equal(colourOfAppointment(m, { calendarId: 'a' }), '#123456')
-  assert.equal(colourOfAppointment(m, { calendarId: 'zz' }), NO_CALENDAR_COLOUR)
-  assert.equal(colourOfAppointment(m, { calendarId: 'a', kind: 'blocked' }), NO_CALENDAR_COLOUR)
+test('a booking takes its calendar colour; unknown calendar with no person is grey', () => {
+  const ix = calendarIndex([{ id: 'a', colour: '#123456' }])
+  assert.equal(colourOfAppointment(ix, { calendarId: 'a' }), '#123456')
+  assert.equal(colourOfAppointment(ix, { calendarId: 'zz' }), NO_CALENDAR_COLOUR)
   assert.equal(colourOfAppointment(null, { calendarId: 'a' }), NO_CALENDAR_COLOUR)
+})
+
+test('blocked time is coloured too — by its calendar, else its person\'s Personal calendar', () => {
+  // Found live: person-level blocked time has no calendar in GHL, only a user.
+  const ix = calendarIndex([
+    { id: 'team', name: 'Team Iris & Gabriel', colour: '#8e24aa', userIds: ['u1', 'u2'] },
+    { id: 'p1', name: "Charlie Stoyle's Personal Calendar", type: 'personal', userIds: ['u1'], colour: '#d50000' },
+    { id: 'p2', name: "Chris Higgs's Personal Calendar", colour: '#0b8043' } // no members: matched by name
+  ], [{ id: 'u1', name: 'Charlie Stoyle' }, { id: 'u3', name: 'Chris Higgs' }])
+  assert.equal(colourOfAppointment(ix, { kind: 'blocked', calendarId: 'team' }), '#8e24aa')
+  assert.equal(colourOfAppointment(ix, { kind: 'blocked', assignedUserId: 'u1' }), '#d50000')
+  assert.equal(colourOfAppointment(ix, { kind: 'blocked', assignedUserId: 'u3' }), '#0b8043')
+  // A team calendar is never a person's own.
+  assert.equal(colourOfAppointment(ix, { kind: 'blocked', assignedUserId: 'u2' }), NO_CALENDAR_COLOUR)
+  // Its own calendar beats its person's.
+  assert.equal(calendarOf(ix, { calendarId: 'team', assignedUserId: 'u1' }), 'team')
+  assert.equal(calendarOf(ix, { assignedUserId: 'u1' }), 'p1')
 })
 
 test('the palette is 24 distinct #rrggbb colours (the server accepts only that form)', () => {
@@ -41,7 +57,9 @@ test('every view colours cards by calendar, not by person', () => {
     assert.doesNotMatch(s, /colourFor\(|statusAccent\(/, f)
   }
   const tab = readFileSync(new URL('../../tabs/CalendarTab.jsx', import.meta.url), 'utf8')
-  assert.equal((tab.match(/calendarColours=\{calendarColours\}/g) || []).length, 4)
+  assert.equal((tab.match(/calendarColours=\{calendarColours\}/g) || []).length, 5)
+  // Counts and the calendar ticks follow the same rule as the colour.
+  assert.equal((tab.match(/calendarOf\(calendarColours, a\)/g) || []).length, 2)
   assert.match(tab, /onChangeCalendarColour=\{handleCalendarColour\}/)
 })
 
@@ -61,4 +79,17 @@ test('"+N more" opens the day list over the cell, not the day view', () => {
   assert.doesNotMatch(s, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onOpenDay\?\.\(day\) \}\}/)
   // Every booking in the list is coloured by its calendar.
   assert.match(s.slice(s.indexOf('function DayList')), /colourOfAppointment\(calendarColours/)
+})
+
+test('the booking card shows each calendar\'s colour and previews the slot in it', () => {
+  const book = src('BookAppointment.jsx')
+  assert.match(book, /background: calendarColours\?\.colours\?\.get\(c\.id\)/, 'no colour dot in the calendar picker')
+  assert.match(book, /colour: \(calendarId && calendarColours\?\.colours\?\.get\(calendarId\)\) \|\| null/)
+  assert.match(book, /\[day, time, duration, title, assignedUserId, calendarId, calendarColours, onDraft\]/,
+    'changing the calendar must repaint the draft')
+  for (const f of ['TimeGrid.jsx', 'ResourceBoard.jsx']) assert.match(src(f), /colour=\{draft\.colour\}/, f)
+  assert.match(src('MonthGrid.jsx'), /draft\.colour \|\| 'var\(--brand-primary\)'/)
+  assert.match(src('DraftSlot.jsx'), /colour \|\| 'var\(--brand-primary\)'/)
+  const tab = readFileSync(new URL('../../tabs/CalendarTab.jsx', import.meta.url), 'utf8')
+  assert.match(tab, /onDraft=\{setDraft\}\s*\n\s*calendarColours=\{calendarColours\}/)
 })

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
-import { colourOfAppointment } from './calendarColours'
+import { colourOfAppointment, BLOCKED_HATCH } from './calendarColours'
 import DraftSlot from './DraftSlot'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
@@ -439,6 +439,7 @@ export default function ResourceBoard({
                             display: 'block', padding: '0 6px',
                             border: '1px solid var(--border-strong)',
                             borderLeft: `3px solid ${colourOfAppointment(calendarColours, a)}`,
+                            backgroundImage: a.kind === 'blocked' ? BLOCKED_HATCH : undefined,
                             borderRadius: 4,
                             fontSize: 'var(--text-xs)', lineHeight: '16px',
                             color: 'var(--text-heading)', textAlign: 'left',
@@ -559,6 +560,7 @@ export default function ResourceBoard({
                             startMin={start}
                             endMin={end}
                             title={draft.title}
+                            colour={draft.colour}
                           />
                         )
                       })()}

@@ -14,6 +14,7 @@ import { usePagedList, useInfiniteScroll } from '../../hooks/usePagedList'
 import { useTabState } from '../../hooks/useTabState'
 import DealCreatePanel from '../deals/DealCreatePanel'
 import DealGridCard from '../deals/DealGridCard'
+import ContactPicker from '../shared/ContactPicker'
 import {
   Shell, SearchInput, StateMessage, DealCardsSkeleton, LoadMore, Panel
 } from '../shared/ListChrome'
@@ -243,6 +244,7 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
       stageId: filters.stageId || undefined,
       assignedTo: filters.assignedTo || undefined,
       tag: filters.tag || undefined,
+      contactId: filters.contactId || undefined,
       pipelineId,
       // One row, because only the count is wanted — totalCount is computed
       // under the same WHERE regardless of the page size.
@@ -663,6 +665,27 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
               />
             </ToolbarField>
 
+            {/* CONTACT — the deals one person is on, as the primary contact
+                or as anyone else on the deal (the server's contactId filter,
+                which the note and task deal pickers already use). Applies on
+                change like Owner, in every view, and marks a saved view as
+                edited. Searches the server: thousands of contacts. */}
+            <ToolbarField label="Contact">
+              <span style={{ display: 'inline-flex', width: 230 }}>
+                <ContactPicker
+                  placeholder="Anyone — type a name"
+                  height={36}
+                  value={filters.contactId || null}
+                  onChange={(id) => {
+                    const next = { ...filters, contactId: id || undefined }
+                    if (!next.contactId) delete next.contactId
+                    setFilters(next)
+                    setDirtyView(activeViewId)
+                  }}
+                />
+              </span>
+            </ToolbarField>
+
             {/* Status and Tag moved out of the Filters side panel (client
                 request, Nov 2026) and apply on change, like Stage and Owner. */}
             <ToolbarField label="Status">
@@ -874,6 +897,7 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           // The screen showed "Deals 0" above columns full of deals.
           tag={filters.tag || undefined}
           assignedTo={filters.assignedTo || undefined}
+          contactId={filters.contactId || undefined}
           sort={sort}
           dir={sortDir}
           // The toolbar's Stage narrows the board to that one column rather
@@ -912,6 +936,7 @@ export default function DealsTab({ onOpenDeal, onOpenContact, onOpenBusiness, on
           status={filters.status || 'open'}
           tag={filters.tag || undefined}
           assignedTo={filters.assignedTo || undefined}
+          contactId={filters.contactId || undefined}
           sort={sort}
           dir={sortDir}
           focusStage={filters.stageId || undefined}

@@ -226,7 +226,7 @@ function DealCard({ deal, onOpen, onOpenInHub, onDragStart, onDragEnd, dragging 
 // MOVES IN FLIGHT — see boardMoves.js: why a moved card is drawn at once
 // and held in its new column until the server agrees.
 function Column({
-  stage, search, status, tag, assignedTo, sort, dir, onOpen, onOpenInHub, onMoved, registerReload,
+  stage, search, status, tag, assignedTo, contactId, sort, dir, onOpen, onOpenInHub, onMoved, registerReload,
   pending, onConfirmed, onDragDeal,
   // The pipeline of the deal being dragged, or null when nothing is.
   dragPipeline = null
@@ -274,6 +274,8 @@ function Column({
         // simply never left the browser on this view.
         tag: tag || undefined,
         assignedTo: assignedTo || undefined,
+        // One person's deals — the toolbar's Contact.
+        contactId: contactId || undefined,
         // The toolbar's Sort, so a column orders its cards the way the list
         // views do. Omitted means the server default (last updated).
         sort: sort || undefined,
@@ -291,7 +293,7 @@ function Column({
     } finally {
       if (token === latest.current) setLoading(false)
     }
-  }, [stage.id, search, status, tag, assignedTo, sort, dir])
+  }, [stage.id, search, status, tag, assignedTo, contactId, sort, dir])
 
   useEffect(() => { load(null) }, [load])
 
@@ -579,7 +581,7 @@ function Column({
 export { mergeStages }
 
 export default function DealBoard({
-  pipeline, pipelines, search, status = 'open', tag, assignedTo, onOpenDeal, onOpenInHub,
+  pipeline, pipelines, search, status = 'open', tag, assignedTo, contactId, onOpenDeal, onOpenInHub,
   sort, dir,
   // A stage id picked in the toolbar's Stage field. The board then shows only
   // the column that holds it — the rest would be columns of deals the filter
@@ -728,6 +730,7 @@ export default function DealBoard({
             status={status}
             tag={tag}
             assignedTo={assignedTo}
+            contactId={contactId}
             sort={sort}
             dir={dir}
             onOpen={onOpenDeal}

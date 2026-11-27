@@ -5,8 +5,7 @@ import dayjs from 'dayjs'
 const { RangePicker } = DatePicker
 import { htmlToText } from '../../utils/sanitiseHtml'
 import ViewSwitch from '../shared/ViewSwitch'
-import WorkFilters from '../shared/WorkFilters'
-import ContactPicker from '../shared/ContactPicker'
+import WorkFilters, { ContactFilter } from '../shared/WorkFilters'
 import { tasksAPI } from '../../api/tasks'
 import { usePagedList, useInfiniteScroll } from '../../hooks/usePagedList'
 import { useTabState } from '../../hooks/useTabState'
@@ -355,27 +354,9 @@ export default function TasksTab({ onOpenDeal, onOpenContact, onOpenBusiness }) 
             <OwnerFilter value={owner} onChange={setOwner} width={190} bare />
           </LabelledControl>
 
-          {/* CONTACT — the tasks about one person, one click from the
-              toolbar. It was only inside the Filters drawer, where nobody
-              looked for it. The SAME setting as the drawer's Contact
-              (filters.contactId), so the two always agree, and choosing a
-              contact clears a deal picked for someone else, as the drawer
-              does. Searches the server: a location has thousands of
-              contacts. */}
+          {/* CONTACT — the tasks about one person; see ContactFilter. */}
           <LabelledControl label="Contact">
-            <span style={{ display: 'inline-flex', width: 230 }}>
-              <ContactPicker
-                placeholder="Anyone — type a name"
-                height={34}
-                value={filters.contactId || null}
-                onChange={(id) => setFilters((f) => {
-                  const next = { ...f, contactId: id || undefined }
-                  if (id !== f.contactId) delete next.dealId
-                  if (!next.contactId) delete next.contactId
-                  return next
-                })}
-              />
-            </span>
+            <ContactFilter filters={filters} onChange={setFilters} />
           </LabelledControl>
 
           <LabelledControl label="Due">

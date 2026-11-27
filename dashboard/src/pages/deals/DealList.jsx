@@ -499,7 +499,7 @@ export default function DealList({
   // stageId -> { count, value, currency } from ?summary=stages, or null.
   stats = null,
   // Filters, sent with every group's request.
-  search, status = 'open', tag, assignedTo, sort, dir,
+  search, status = 'open', tag, assignedTo, contactId, sort, dir,
   // A stage id from the toolbar's Stage field — only its group is shown.
   focusStage,
   onOpenDeal, onOpenInHub, onOpenContact, onOpenBusiness, onOpenTab
@@ -535,9 +535,10 @@ export default function DealList({
     q: search || undefined,
     tag: tag || undefined,
     assignedTo: assignedTo || undefined,
+    contactId: contactId || undefined,
     sort: sort || undefined,
     dir: sort ? (dir || 'desc') : undefined
-  }), [status, search, tag, assignedTo, sort, dir])
+  }), [status, search, tag, assignedTo, contactId, sort, dir])
 
   const visibleCols = COLUMNS.filter((c) => !hidden.has(c.key))
   // Checkbox + Deal + the visible optional columns.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useClipTooltips } from '../hooks/useClipTooltips'
 import DealHubTab from './tabs/DealHubTab'
 import DealsTab from './tabs/DealsTab'
@@ -256,13 +256,32 @@ export default function DealHubShell() {
     return () => ro.disconnect()
   }, [])
 
+  // REFRESH — this page's data again, without the browser's reload.
+  //
+  // Asked for after a search that showed stale results: reloading the whole
+  // browser page inside GHL reloads GHL too, and loses your place. Bumping
+  // this key remounts <main> below, so whichever page is open fetches
+  // everything afresh, exactly as it does on first load. What you had chosen
+  // survives: filters, searches and views are kept per tab (useTabState),
+  // the open deal / contact / business is shell state, and the scroll
+  // position is remembered per page. The tab counts are fetched again too.
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshPage = useCallback(() => {
+    setRefreshKey((k) => k + 1)
+    // Feedback only — the pages show their own loading states. Long enough
+    // to see the icon turn, short enough not to suggest it is waiting.
+    setRefreshing(true)
+    window.setTimeout(() => setRefreshing(false), 700)
+  }, [])
+
   useEffect(() => {
     let alive = true
     summaryAPI.counts()
       .then((c) => alive && setCounts(c))
       .catch(() => {})
     return () => { alive = false }
-  }, [])
+  }, [refreshKey])
 
   const [openBusinessId, setOpenBusinessId] = useState(() => restored?.businessId || null)
   // Which deal the Deals tab should open EXPANDED for editing. Set by the Deal
@@ -554,13 +573,45 @@ export default function DealHubShell() {
           })}
         </div>
 
+        {/* Refresh, at the far end of the row: a page-level action, not a
+            place to go, so it sits apart from the tab chips. */}
+        <button
+          onClick={refreshPage}
+          title="Refresh this page — fetch everything on it again (your filters stay)"
+          aria-label="Refresh this page"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            flex: 'none', marginLeft: 'auto',
+            height: 34, padding: '0 14px 0 11px',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-pill)',
+            background: '#fff', color: 'var(--text-body)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-md)', fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <span
+            className="ms"
+            style={{
+              fontSize: 18,
+              transition: refreshing ? 'transform 700ms ease' : 'none',
+              transform: refreshing ? 'rotate(360deg)' : 'none'
+            }}
+          >
+            refresh
+          </span>
+          Refresh
+        </button>
+
         {/* Global search (⌘K across all tabs) is intentionally deferred
             until each tab's scoped search proves insufficient. Every tab
             already has its own in-page search that fits its content. */}
       </header>
 
-      {/* Tab content */}
-      <main>
+      {/* Tab content. Keyed by refreshKey: Refresh remounts it, so the open
+          page loads afresh — see refreshPage. */}
+      <main key={refreshKey}>
         {activeTab === 'home' && (
           <HomeTab counts={counts} operationsOn={opsOn} onOpenTab={(tab) => navigate({ tab })} />
         )}

@@ -17,6 +17,7 @@ import {
   linkableObjects, recordsForContact, searchRecords, linkRecord, unlinkRecord
 } from '../services/ghlCustomObjects.js';
 import { AssociationError } from '../services/associationConstants.js';
+import { normaliseColour, colourMap } from '../services/calendarColours.js';
 
 export const appointmentsRouter = express.Router();
 appointmentsRouter.use(requireSession);
@@ -373,6 +374,13 @@ appointmentsRouter.get('/calendars', async (req, res, next) => {
       scopeOptional: true
     });
     const rows = Array.isArray(data?.calendars) ? data.calendars : [];
+    // The colours chosen in Deal Hub (migration 148). A calendar without one
+    // gets the dashboard palette's default, so `colour: null` is normal.
+    const colours = colourMap(await withTenant(locationId, async (client) => {
+      const { rows: r } = await client.query(
+        'SELECT calendar_id, colour FROM calendar_colours WHERE location_id = $1', [locationId]);
+      return r;
+    }));
     res.json({
       calendars: rows
         // Inactive calendars are GHL's soft-delete: one is a calendar
@@ -382,7 +390,8 @@ appointmentsRouter.get('/calendars', async (req, res, next) => {
         .map((c) => ({
           id: c.id || c._id,
           name: c.name || 'Calendar',
-          timezone: c.timezone || null
+          timezone: c.timezone || null,
+          colour: colours.get(c.id || c._id) || null
         }))
         .filter((c) => c.id)
     });
@@ -395,6 +404,47 @@ appointmentsRouter.get('/calendars', async (req, res, next) => {
       });
     }
     logger.error({ err, locationId }, 'GET /api/appointments/calendars failed');
+    next(err);
+  }
+});
+
+// ── PUT /api/appointments/calendars/:calendarId/colour ────────────────
+//
+// { colour: '#rrggbb' } sets the colour every booking on this calendar is
+// drawn in; { colour: null } goes back to the palette's default. For the
+// whole sub-account — the same rule as the account's appearance defaults:
+// anyone in it may change it, and updated_by says who did. Stored in Deal
+// Hub only; GHL's own calendar settings are not touched.
+appointmentsRouter.put('/calendars/:calendarId/colour', async (req, res, next) => {
+  const locationId = req.locationId;
+  const calendarId = String(req.params.calendarId || '').trim();
+  const colour = normaliseColour(req.body?.colour);
+  if (!calendarId || calendarId.length > 100) {
+    return res.status(400).json({ error: 'Which calendar?', field: 'calendarId' });
+  }
+  if (colour === undefined) {
+    return res.status(400).json({ error: 'That is not a colour — use #rrggbb', field: 'colour' });
+  }
+  try {
+    await withTenant(locationId, async (client) => {
+      if (colour === null) {
+        await client.query(
+          'DELETE FROM calendar_colours WHERE location_id = $1 AND calendar_id = $2',
+          [locationId, calendarId]);
+      } else {
+        await client.query(
+          `INSERT INTO calendar_colours (location_id, calendar_id, colour, updated_by)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (location_id, calendar_id)
+           DO UPDATE SET colour = EXCLUDED.colour, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+          [locationId, calendarId, colour, req.session?.userId || null]);
+      }
+    });
+    logger.notice({ locationId, calendarId, colour, userId: req.session?.userId || null },
+      'calendar colour changed');
+    res.json({ ok: true, calendarId, colour });
+  } catch (err) {
+    logger.error({ err, locationId, calendarId }, 'PUT /api/appointments/calendars/:id/colour failed');
     next(err);
   }
 });

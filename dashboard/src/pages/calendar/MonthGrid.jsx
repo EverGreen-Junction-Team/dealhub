@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Popover } from 'antd'
 import AppointmentDetail from './AppointmentDetail'
 import { monthWeeks, groupByDay, movePatch, isLong, longSpan, longDayLabel } from './boardLayout'
-import { colourFor } from './CalendarSidebar'
+import { colourOfAppointment } from './calendarColours'
 import {
   isoForSlot, minutesFromMidnight, dayKeyNow, clockTime, inZone, dayKey
 } from '../../utils/calendarTime'
@@ -39,6 +39,8 @@ export default function MonthGrid({
   // For the chip dots. Defaulted, because a caller that has not loaded
   // the rep list yet should get grey dots rather than no month view.
   resources = [],
+  // Map(calendarId → colour): each chip is its calendar's colour.
+  calendarColours = null,
   onOpenDeal, onMove, onBookAt, onOpenDay, busyIds,
   // The slot the open booking card is aiming at. A month cell has no
   // vertical position to place it at, so it is a chip at the top of the
@@ -232,7 +234,7 @@ export default function MonthGrid({
                     day={day}
                     zone={zone}
                     busy={busyIds?.has(a.id)}
-                    accent={colourFor(resources, a.assignedUserId)}
+                    accent={colourOfAppointment(calendarColours, a._whole || a)}
                     onOpenDeal={onOpenDeal}
                     onDragStart={(appointment) => { dragging.current = { appointment } }}
                   />

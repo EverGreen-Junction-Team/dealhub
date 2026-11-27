@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import AppointmentCard, { statusAccent } from './AppointmentCard'
+import AppointmentCard from './AppointmentCard'
+import { colourOfAppointment } from './calendarColours'
 import DraftSlot from './DraftSlot'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
 import {
@@ -49,6 +50,9 @@ export default function ResourceBoard({
   appointments, resources, zone, fromDay, days = 1,
   onOpenDeal, onMove, onSetStatus, onOpenLinks, onBookAt, busyIds,
   hideEmpty = false,
+  // Map(calendarId → colour). The card is its calendar's colour here too —
+  // status is still struck through / spelled out on the card itself.
+  calendarColours = null,
   // How tall the board may be, as a CSS length. The board scrolls INSIDE
   // this rather than growing the page: 24 hours is ~1,900px, and when the
   // page scrolled instead, the people's names slid under the toolbar and
@@ -418,7 +422,7 @@ export default function ResourceBoard({
                     {longs.map((a) => (
                       <Popover
                         key={a.id}
-                        content={<AppointmentDetail appointment={a} zone={zone} accent={statusAccent(a)} />}
+                        content={<AppointmentDetail appointment={a} zone={zone} accent={colourOfAppointment(calendarColours, a)} />}
                         trigger="hover"
                         mouseEnterDelay={0.35}
                         rootClassName="pp-portal"
@@ -430,11 +434,11 @@ export default function ResourceBoard({
                           data-noclip=""
                           onClick={() => { if (a.dealId) onOpenDeal?.(a.dealId) }}
                           style={{
-                            '--pp-accent': statusAccent(a),
+                            '--pp-accent': colourOfAppointment(calendarColours, a),
                             marginTop: 4, height: 18, width: '100%',
                             display: 'block', padding: '0 6px',
                             border: '1px solid var(--border-strong)',
-                            borderLeft: `3px solid ${statusAccent(a)}`,
+                            borderLeft: `3px solid ${colourOfAppointment(calendarColours, a)}`,
                             borderRadius: 4,
                             fontSize: 'var(--text-xs)', lineHeight: '16px',
                             color: 'var(--text-heading)', textAlign: 'left',
@@ -576,6 +580,7 @@ export default function ResourceBoard({
                           onOpenDeal={onOpenDeal}
                           onSetStatus={onSetStatus}
                           onOpenLinks={onOpenLinks}
+                          accent={colourOfAppointment(calendarColours, item._whole || item)}
                           onDragStart={(appointment, grabOffset) => {
                             dragging.current = { appointment, grabOffset }
                           }}

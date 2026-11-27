@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Checkbox, Tooltip } from 'antd'
+import { Checkbox, ConfigProvider, Popover, Tooltip } from 'antd'
+import { CheckOutlined } from '@ant-design/icons'
+import { CALENDAR_PALETTE } from './calendarColours'
 import { UNASSIGNED } from './boardLayout'
 import MiniMonth from './MiniMonth'
 
@@ -40,52 +42,19 @@ import MiniMonth from './MiniMonth'
 // a week of appointments for people who are unticked, which is a few
 // hundred rows: nothing next to the round trip it saves on every toggle.
 //
-// ── EVERY COLUMN IS A COLOUR ─────────────────────────────────────────
+// ── COLOUR IS THE CALENDAR'S ─────────────────────────────────────────
 //
-// Assigned from a fixed palette by position, so a person keeps the same
-// colour for as long as the list does. It is the only way to read a week
-// view where everyone's work is mixed into one column per day — without it
-// you are reading names off cards four to a column.
-
-// Picked from the app's own accent tokens rather than invented, so the
-// calendar stays in step with the rest of Deal Hub. Ordered so neighbours
-// are easy to tell apart — adjacent people get visibly different hues, not
-// two blues.
-// Twelve, not nine. A live sub-account has twelve people, and with nine
-// hues the tenth wrapped round to teal — Brad Ricardo and Marketing Veritas
-// the same colour on the same board, which is the one thing a per-person
-// colour cannot do. The three added are hues the nine do not cover (indigo,
-// olive, magenta), each at least 4.3:1 on white so the bar reads as a bar.
-//
-// `sun` moves to the end: at 1.6:1 on white it is the weakest edge in the
-// set, so it is now only used from the twelfth person onward.
-export const PERSON_COLOURS = [
-  'var(--accent-teal)', 'var(--accent-clay)', 'var(--accent-pine)',
-  'var(--accent-plum)', 'var(--accent-gold)', 'var(--accent-sky)',
-  'var(--accent-rose)', 'var(--accent-brown)',
-  '#4859c9', '#687f1d', '#a8327f',
-  'var(--accent-sun)'
-]
-
-/**
- * A stable colour for one person.
- *
- * By INDEX in the list, not by hashing the id. A hash is stable across
- * sessions but gives no control over neighbours, so two people side by side
- * routinely got near-identical colours — which is the one thing this has to
- * avoid. The list is alphabetical and changes rarely, so position is stable
- * enough in practice.
- */
-export function colourFor(resources, userId) {
-  if (!userId) return 'var(--gray-450)'
-  const i = resources.findIndex((r) => r.id === userId)
-  if (i < 0) return 'var(--gray-450)'
-  return PERSON_COLOURS[i % PERSON_COLOURS.length]
-}
+// Every booking is drawn in its calendar's colour (calendarColours.js), so
+// the calendar rows carry the colour and the swatch that changes it. People
+// have no colour: a second key on the same cards would be noise.
 
 export default function CalendarSidebar({
   resources, selected, onChange, counts,
   calendars = [], selectedCalendars, onChangeCalendars, calendarCounts,
+  // Map(calendarId → colour) — what each calendar's bookings are drawn in —
+  // and the setter behind the swatch (colour '#rrggbb', or null for the
+  // default). Without the setter the swatch is shown but cannot be changed.
+  calendarColours = null, onChangeCalendarColour = null,
   // The month picker at the top. Optional so a caller that has no notion
   // of a current day — there is none today, but the sidebar should not
   // require one — still renders.
@@ -209,9 +178,15 @@ export default function CalendarSidebar({
               return (
                 <Row
                   key={c.id}
-                  // Calendars get no colour swatch. The card colours are the
-                  // PERSON's, and a second colour system on the same cards
-                  // would be two keys for one picture.
+                  // The calendar's colour is the card colour on every view,
+                  // so it is shown here — on the checkbox, as Google does —
+                  // and changed from the swatch beside it.
+                  colour={calendarColours?.get(c.id) || null}
+                  colourIsCheckbox
+                  onPickColour={onChangeCalendarColour
+                    ? (hex) => onChangeCalendarColour(c.id, hex)
+                    : null}
+                  customColour={c.colour || null}
                   label={label}
                   tag={tag}
                   fullName={c.name}
@@ -236,7 +211,9 @@ export default function CalendarSidebar({
           {resources.map((r) => (
             <Row
               key={r.id}
-              colour={colourFor(resources, r.id)}
+              // No colour: the cards are coloured by CALENDAR now, and a
+              // second colour key on the same cards would be two keys for
+              // one picture.
               label={r.name}
               count={counts?.get(r.id) || 0}
               checked={checked.includes(r.id)}
@@ -249,7 +226,6 @@ export default function CalendarSidebar({
               to go looking for it — not one that appears only once there
               is some. */}
           <Row
-            colour="var(--gray-450)"
             label="Unassigned"
             count={counts?.get(UNASSIGNED) || 0}
             checked={checked.includes(UNASSIGNED)}
@@ -355,7 +331,16 @@ export function calendarLabel(name) {
   return m ? { label: m[1].trim(), tag: 'Personal' } : { label: name || 'Untitled calendar', tag: null }
 }
 
-function Row({ colour, label, tag = null, fullName = null, count, checked, onToggle }) {
+function Row({
+  colour, label, tag = null, fullName = null, count, checked, onToggle,
+  // The checkbox itself carries the colour (calendars), rather than a
+  // separate square beside it.
+  colourIsCheckbox = false,
+  // Set → a swatch button opens the colour palette. `customColour` is the
+  // chosen one, if any, so the palette can offer "Default" only when there
+  // is something to go back from.
+  onPickColour = null, customColour = null
+}) {
   const [textRef, clipped] = useClipped(label)
   return (
     <label
@@ -374,8 +359,14 @@ function Row({ colour, label, tag = null, fullName = null, count, checked, onTog
         cursor: 'pointer', fontSize: 'var(--text-sm)'
       }}
     >
-      <Checkbox checked={checked} onChange={onToggle} />
-      {colour && (
+      {colourIsCheckbox && colour
+        ? (
+          <ConfigProvider theme={{ token: { colorPrimary: colour, colorPrimaryHover: colour } }}>
+            <Checkbox checked={checked} onChange={onToggle} />
+          </ConfigProvider>
+          )
+        : <Checkbox checked={checked} onChange={onToggle} />}
+      {colour && !colourIsCheckbox && (
         <span
           aria-hidden
           style={{
@@ -426,6 +417,109 @@ function Row({ colour, label, tag = null, fullName = null, count, checked, onTog
           {count}
         </span>
       )}
+      {onPickColour && (
+        <ColourPicker
+          label={fullName || label}
+          colour={colour}
+          custom={customColour}
+          onPick={onPickColour}
+        />
+      )}
     </label>
+  )
+}
+
+/**
+ * The swatch beside a calendar and the palette it opens.
+ *
+ * Inside the row's <label>, so every click here is stopped from reaching it
+ * — otherwise choosing a colour would also tick or untick the calendar.
+ */
+function ColourPicker({ label, colour, custom, onPick }) {
+  const [open, setOpen] = useState(false)
+  const stop = (e) => { e.preventDefault(); e.stopPropagation() }
+  const pick = (hex) => { setOpen(false); if (hex !== custom) onPick(hex) }
+
+  const content = (
+    <div style={{ width: 6 * 26 }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 6 }}>
+        Colour for everyone in this sub-account
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 26px)', rowGap: 4 }}>
+        {CALENDAR_PALETTE.map((p) => {
+          const on = colour?.toLowerCase() === p.hex
+          return (
+            <Tooltip key={p.hex} title={p.name} mouseEnterDelay={0.4}>
+              <button
+                type="button"
+                aria-label={p.name}
+                aria-pressed={on}
+                onClick={() => pick(p.hex)}
+                style={{
+                  width: 20, height: 20, padding: 0, margin: 3,
+                  borderRadius: '50%', border: 'none', cursor: 'pointer',
+                  background: p.hex, color: '#fff',
+                  display: 'grid', placeItems: 'center', fontSize: 11
+                }}
+              >
+                {on && <CheckOutlined />}
+              </button>
+            </Tooltip>
+          )
+        })}
+      </div>
+      <div
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginTop: 8, fontSize: 'var(--text-xs)'
+        }}
+      >
+        {/* Any colour at all — the browser's own picker. */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--text-link)' }}>
+          <input
+            type="color"
+            value={/^#[0-9a-f]{6}$/i.test(colour || '') ? colour : '#039be5'}
+            onChange={(e) => pick(e.target.value.toLowerCase())}
+            style={{ width: 20, height: 20, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+          />
+          Custom
+        </label>
+        {custom && (
+          <button
+            type="button"
+            onClick={() => pick(null)}
+            style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', color: 'var(--text-link)' }}
+          >
+            Default
+          </button>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <Popover
+      content={content}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+      placement="right"
+      rootClassName="pp-portal"
+    >
+      <Tooltip title={open ? null : `Colour for ${label}`} mouseEnterDelay={0.4}>
+        <button
+          type="button"
+          aria-label={`Change colour for ${label}`}
+          onClick={(e) => { stop(e); setOpen((o) => !o) }}
+          style={{
+            flex: 'none', width: 16, height: 16, padding: 0,
+            border: '2px solid var(--surface-card, #fff)',
+            boxShadow: '0 0 0 1px var(--border-strong, #d0d5dd)',
+            borderRadius: '50%', background: colour || 'var(--gray-450)',
+            cursor: 'pointer'
+          }}
+        />
+      </Tooltip>
+    </Popover>
   )
 }

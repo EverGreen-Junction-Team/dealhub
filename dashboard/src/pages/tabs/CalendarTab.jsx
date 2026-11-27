@@ -7,6 +7,7 @@ import TimeGrid from '../calendar/TimeGrid'
 import MonthGrid from '../calendar/MonthGrid'
 import { monthWeeks, UNASSIGNED } from '../calendar/boardLayout'
 import CalendarSidebar from '../calendar/CalendarSidebar'
+import { calendarColourMap } from '../calendar/calendarColours'
 import { overlayPending } from '../calendar/pendingWrites'
 import BookAppointment from '../calendar/BookAppointment'
 import AppointmentLinks from '../calendar/AppointmentLinks'
@@ -358,6 +359,9 @@ export default function CalendarTab({ onOpenDeal }) {
   // The calendar list, once. It changes about never, and a failure here is
   // survivable: no Calendars section, everything still drawn, which is
   // better than an error over a filter.
+  // Each calendar's colour — what its bookings are drawn in on every view.
+  const calendarColours = useMemo(() => calendarColourMap(calendars), [calendars])
+
   useEffect(() => {
     let live = true
     appointmentsAPI.calendars()
@@ -365,6 +369,19 @@ export default function CalendarTab({ onOpenDeal }) {
       .catch(() => { /* no section; the board is unaffected */ })
     return () => { live = false }
   }, [])
+
+  // A calendar's colour, from the sidebar swatch. Optimistic — every card
+  // repaints at once — and put back if the server refuses.
+  const handleCalendarColour = useCallback(async (calendarId, colour) => {
+    const before = calendars
+    setCalendars((list) => list.map((c) => (c.id === calendarId ? { ...c, colour } : c)))
+    try {
+      await appointmentsAPI.setCalendarColour(calendarId, colour)
+    } catch (err) {
+      setCalendars(before)
+      say(err.message || 'That colour did not save.')
+    }
+  }, [calendars, say])
 
   // Move, reassign, or both at once. See the optimistic note above.
   const handleMove = useCallback(async (appointment, patch) => {
@@ -807,6 +824,8 @@ export default function CalendarTab({ onOpenDeal }) {
             selectedCalendars={selectedCalendars}
             onChangeCalendars={setSelectedCalendars}
             calendarCounts={calendarCounts}
+            calendarColours={calendarColours}
+            onChangeCalendarColour={handleCalendarColour}
             day={fromDay}
             span={span}
             zone={zone}
@@ -892,10 +911,8 @@ export default function CalendarTab({ onOpenDeal }) {
           zone={zone}
           fromDay={fromDay}
           height={`calc(100vh / var(--app-zoom) - ${Math.round(stickyTop) + 20}px)`}
-          // Same list the week view colours its bars from, so a rep is the
-          // same colour in both — the dot and the bar must agree or the
-          // colour coding is worse than none.
           resources={data.resources}
+          calendarColours={calendarColours}
           busyIds={busyIds}
           onOpenDeal={onOpenDeal}
           onMove={handleMove}
@@ -912,6 +929,7 @@ export default function CalendarTab({ onOpenDeal }) {
         <TimeGrid
           appointments={visible}
           resources={data.resources}
+          calendarColours={calendarColours}
           zone={zone}
           fromDay={span.from}
           days={span.days}
@@ -930,6 +948,7 @@ export default function CalendarTab({ onOpenDeal }) {
         <ResourceBoard
           appointments={visible}
           resources={visibleResources}
+          calendarColours={calendarColours}
           zone={zone}
           fromDay={fromDay}
           days={days}
@@ -1026,7 +1045,9 @@ const REFRESH_CSS = `
  * 111, Safari 16.2 and Firefox 113; anything older ignores the second
  * line and gets the white card, which is legible rather than broken.
  *
- * 14% measured across all nine hues in PERSON_COLOURS: the heading
+ * 14% re-measured for the calendar palette (calendarColours.js): the
+ * heading sits at about 12.5:1 and the body at 8:1 on the worst one (red).
+ * Before that, across the nine person colours: the heading
  * (--text-heading) sits at 12.6:1 at worst, the second line
  * (--text-body) at 9.6:1. The card's second line used to be
  * --text-muted, which is 4.69:1 on plain white and fell to 4.12 on

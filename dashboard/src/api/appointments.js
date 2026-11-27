@@ -21,6 +21,10 @@ export const appointmentsAPI = {
   // hold no calendars table — so this is worth caching in the caller rather
   // than asking on every modal open.
   calendars: () => apiClient.get('/api/appointments/calendars'),
+  // The colour a calendar's bookings are drawn in, for the whole
+  // sub-account. '#rrggbb', or null for the palette's default.
+  setCalendarColour: (calendarId, colour) =>
+    apiClient.put(`/api/appointments/calendars/${encodeURIComponent(calendarId)}/colour`, { colour }),
 
   // The times a calendar will accept on one day — so the booking card can
   // say before Save whether the chosen time is open. { slots: [iso, …] }.

@@ -46,6 +46,7 @@ attempt, but 144 cannot be.
 | 143 | `appointments` | HighLevel appointments and blocked time, mirrored. Empty until the scopes in §4 are granted and the first sync runs. |
 | 144 | `ui_preferences` | Zoom and text size, per sub-account (`user_id NULL`) and per user. Empty until somebody saves one; the app's defaults apply meanwhile. |
 | 145 | `appointments.opportunity_pinned` | One column. True when someone linked a deal to a booking (or chose none) from the calendar; the webhook writer and the sweep then leave `opportunity_id` alone. Default false, so every existing row behaves exactly as before. |
+| 148 | `calendar_colours` | New table. The colour each calendar's bookings are drawn in, per sub-account, chosen from the swatch beside the calendar in the sidebar. No row = a default colour by position, so nothing needs setting after deploy. Stored in Deal Hub only; GHL's calendar settings are untouched. |
 
 Both are `location_id`-scoped with the usual `tenant_iso` RLS policy.
 

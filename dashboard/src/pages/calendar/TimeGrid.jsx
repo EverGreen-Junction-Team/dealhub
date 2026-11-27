@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppointmentCard from './AppointmentCard'
 import DraftSlot from './DraftSlot'
-import { colourFor } from './CalendarSidebar'
+import { colourOfAppointment } from './calendarColours'
 import {
   DAY_START_MIN, DAY_END_MIN, WORK_START_MIN, WORK_END_MIN,
   boardHeightPx, hourMarks, clampToWindow,
@@ -44,6 +44,9 @@ const GUTTER_W = 56
 
 export default function TimeGrid({
   appointments, resources = [], zone, fromDay, days = 7,
+  // Map(calendarId → colour) from calendarColours.js: each booking is drawn
+  // in its calendar's colour.
+  calendarColours = null,
   onOpenDeal, onMove, onSetStatus, onOpenLinks, onBookAt, busyIds,
   // The slot currently being booked, if the card is open: see DraftSlot.
   draft,
@@ -370,7 +373,7 @@ export default function TimeGrid({
               }}
             />
             {bars.map(({ a, span }) => {
-              const accent = colourFor(resources, a.assignedUserId)
+              const accent = colourOfAppointment(calendarColours, a._whole || a)
               const cancelled = (a.status || '').toLowerCase() === 'cancelled'
               const name = a.contactName || a.title || 'Appointment'
               return (
@@ -672,7 +675,7 @@ export default function TimeGrid({
                     onSetStatus={onSetStatus}
                     onOpenLinks={onOpenLinks}
                     showOwner
-                    accent={colourFor(resources, item.assignedUserId)}
+                    accent={colourOfAppointment(calendarColours, item._whole || item)}
                     onDragStart={(appointment, grabOffset) => {
                       dragging.current = { appointment, grabOffset }
                     }}
@@ -687,7 +690,7 @@ export default function TimeGrid({
             on `combined` above. In the scroller, so they scroll with the
             hours; positioned on the same minute scale as the cards. */}
         {combined.map(({ a, from, to, piece, clippedStart, clippedEnd }) => {
-          const accent = colourFor(resources, a.assignedUserId)
+          const accent = colourOfAppointment(calendarColours, a._whole || a)
           const startMin = minutesFromMidnightOf(piece.startsAt)
           const endMin = startMin + Math.round((Date.parse(piece.endsAt) - Date.parse(piece.startsAt)) / 60000)
           const cancelled = (a.status || '').toLowerCase() === 'cancelled'

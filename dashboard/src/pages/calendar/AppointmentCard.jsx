@@ -45,15 +45,6 @@ const UNKNOWN_STYLE = { tint: 'var(--tint-sky)', bar: 'var(--accent-sky)', text:
 
 const BLOCKED_STYLE = { tint: 'var(--gray-100)', bar: 'var(--gray-450)', text: 'var(--text-muted)' }
 
-/** The bar colour this card would use on the resource board, where the
- *  colour is the STATUS. Exported so a multi-day chip on that board matches
- *  the start-marker card it belongs to. */
-export function statusAccent(appointment) {
-  if (appointment?.kind === 'blocked') return BLOCKED_STYLE.bar
-  const st = (appointment?.status || '').toLowerCase()
-  return (STATUS_STYLE[st] || UNKNOWN_STYLE).bar
-}
-
 export default function AppointmentCard({
   appointment, zone, top, height, lane, lanes,
   clippedBefore, clippedAfter,
@@ -64,14 +55,9 @@ export default function AppointmentCard({
   // WHOSE it is. On the resource board the column already says that, and
   // repeating it on every card would be noise.
   showOwner = false,
-  // The PERSON's colour, for the bar down the left edge. Only the time views
-  // pass it: there, every rep's work is mixed into one column per day, and
-  // the colour is what lets you read whose is whose without squinting at
-  // names four cards abreast. On the resource board the column already says
-  // whose it is, so the bar keeps showing STATUS instead.
-  //
-  // Status is never lost either way — it is the tint, and cancelled is also
-  // struck through. The bar is the only thing this changes.
+  // The CALENDAR's colour (calendarColours.js), for the fill and the bar
+  // down the left edge — on every view. Status is never lost: cancelled is
+  // struck through, no-show says the word, blocked is hatched grey.
   accent = null
 }) {
   const a = appointment
@@ -232,7 +218,7 @@ export default function AppointmentCard({
           // colour at two strengths and cannot drift apart.
           //
           // Colour therefore means "somebody is booked here", and its
-          // HUE means who. Status is carried by things that are not hue,
+          // HUE means which calendar. Status is carried by things that are not hue,
           // which was always the rule in this file: cancelled is struck
           // through, no-show says the word, blocked is hatched. Roughly
           // one man in twelve cannot separate the red-green pair a
@@ -243,11 +229,9 @@ export default function AppointmentCard({
           // `confirmed` and `showed` do not differ at a glance. They
           // differ in the tooltip and nowhere else.
 
-          // The one colour, and the only place it is chosen. On the time
-          // views it is the PERSON: their work is mixed into one column
-          // per day, and the hue is what separates it. On the resource
-          // board the column already says whose it is, so it falls back
-          // to the status.
+          // The one colour, and the only place it is chosen: the
+          // booking's CALENDAR, on every view. Without one (no calendar
+          // list) it falls back to the status.
           '--pp-accent': accent || style.bar,
 
           // Blocked time keeps its grey and its hatching — it is the

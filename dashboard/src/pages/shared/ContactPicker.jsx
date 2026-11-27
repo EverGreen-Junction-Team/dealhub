@@ -45,7 +45,13 @@ export default function ContactPicker({
   showInitial = true,
   disabled,
   invalid,
-  autoFocus
+  autoFocus,
+  // The empty box's text. A filter says who it covers when empty ("Anyone");
+  // an editor says how to search. The Filters drawer passed "Anyone" for
+  // months and it was silently ignored.
+  placeholder = 'Search by name, email, phone or business',
+  // Box height, for a toolbar whose controls are all one height (Tasks: 34).
+  height
 }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -55,6 +61,25 @@ export default function ContactPicker({
   // The contact currently chosen, kept so its label survives a new search that
   // doesn't include it — otherwise the box would go blank mid-edit.
   const [chosen, setChosen] = useState(null)
+
+  // A VALUE WE HAVE NO NAME FOR. A filter remembers only the contact's id —
+  // Tasks keeps it across a tab switch, a Refresh and a reload — and when the
+  // picker mounts again that contact is rarely in the first page of results.
+  // antd then shows the raw id ("h07KvFvGuKUV…") in the box. So the one
+  // contact is fetched by id and held as `chosen`, which the options always
+  // include. Once per id; a failure leaves the box as it was.
+  useEffect(() => {
+    if (!value) return
+    if (chosen?.id === value || seed.some((c) => c?.id === value) || results.some((c) => c?.id === value)) return
+    let alive = true
+    contactsAPI.get(value)
+      .then((c) => { if (alive && c?.id === value) setChosen(c) })
+      .catch(() => {})
+    return () => { alive = false }
+    // Deliberately on `value` alone: re-running on every result list would
+    // refetch a contact the list simply has not reached yet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
 
   const reqId = useRef(0)
 
@@ -145,8 +170,9 @@ export default function ContactPicker({
       allowClear
       disabled={disabled}
       autoFocus={autoFocus}
-      placeholder="Search by name, email, phone or business"
+      placeholder={placeholder}
       style={{ width: '100%' }}
+      styles={height ? { root: { height } } : undefined}
       // pp-portal: the list renders on <body>, outside [data-dealhub], where
       // none of the colour or type tokens exist without it. Found live —
       // every avatar disc was transparent and the rows fell back to antd's

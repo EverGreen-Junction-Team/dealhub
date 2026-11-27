@@ -4,7 +4,7 @@ import { formatMoney } from '../../utils/money'
 import { Bar, SkeletonStyles, DealPill } from '../shared/ListChrome'
 import { NotSet } from '../dealhub/FieldCard'
 import { useElementScrollMemory } from '../../hooks/useScrollMemory'
-import { applyPending } from './boardMoves'
+import { applyPending, mergeStages } from './boardMoves'
 
 // The pipeline as a board: one column per stage, deals as cards.
 //
@@ -97,7 +97,7 @@ function FollowUpCounts({ tasks, notes }) {
 
 // A card: title band, value and owner, the deal's four facts, then its
 // follow-up counts beside the way into the hub.
-function DealCard({ deal, onOpen, onOpenInHub, onDragStart, dragging }) {
+function DealCard({ deal, onOpen, onOpenInHub, onDragStart, onDragEnd, dragging }) {
   const value = Number(deal.monetaryValue)
   const name = deal.dealTag || deal.opportunityName || 'Untitled deal'
   const contact = deal.contact
@@ -107,6 +107,7 @@ function DealCard({ deal, onOpen, onOpenInHub, onDragStart, dragging }) {
     <article
       draggable
       onDragStart={(e) => onDragStart(e, deal)}
+      onDragEnd={onDragEnd}
       onClick={() => onOpen && onOpen(deal.id)}
       style={{
         background: 'var(--surface-card)',
@@ -226,7 +227,9 @@ function DealCard({ deal, onOpen, onOpenInHub, onDragStart, dragging }) {
 // and held in its new column until the server agrees.
 function Column({
   stage, search, status, tag, assignedTo, sort, dir, onOpen, onOpenInHub, onMoved, registerReload,
-  pending, onConfirmed, onDragDeal
+  pending, onConfirmed, onDragDeal,
+  // The pipeline of the deal being dragged, or null when nothing is.
+  dragPipeline = null
 }) {
   // What the SERVER returned. What is drawn is `deals`, below: these rows
   // with any move in flight laid over them.
@@ -241,6 +244,7 @@ function Column({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [over, setOver] = useState(false)
+  const blocked = dragPipeline !== null && !!stage.stageIdFor && !stage.stageIdFor(dragPipeline)
   const latest = useRef(0)
 
   // `quiet`: a refresh after a move. The cards are already right on screen,
@@ -332,7 +336,14 @@ function Column({
 
   return (
     <section
-      onDragOver={(e) => { e.preventDefault(); setOver(true) }}
+      onDragOver={(e) => {
+        // A stage the dragged deal's pipeline does not have: refuse the drop
+        // here, with the no-drop cursor, rather than after letting go.
+        if (blocked) { e.dataTransfer.dropEffect = 'none'; return }
+        e.preventDefault()
+        setOver(true)
+      }}
+      title={blocked ? `The deal you are dragging is in a pipeline with no “${stage.name}” stage` : undefined}
       onDragLeave={() => setOver(false)}
       onDrop={(e) => {
         e.preventDefault()
@@ -367,6 +378,8 @@ function Column({
         // There is only ever ONE grid now — the pipelines are merged into it
         // — so this no longer multiplies into a screen per pipeline.
         height: 'calc(100vh - 260px)', minHeight: 380,
+        // Faded while a deal that cannot go here is being dragged.
+        opacity: blocked ? 0.45 : 1,
         // gray-100, not gray-50: against a white header and white cards, 50 is
         // a 1.02:1 difference — the header did not read as a header and the
         // cards floated with no visible column behind them.
@@ -374,7 +387,7 @@ function Column({
         border: `1px ${over ? 'dashed' : 'solid'} ${over ? 'var(--green-300)' : 'var(--border-default)'}`,
         borderRadius: 'var(--radius-lg)',
         overflow: 'hidden',
-        transition: 'background 120ms ease'
+        transition: 'background 120ms ease, opacity 120ms ease'
       }}
     >
       {/* Its own band, tinted pine like the design: the stage and its count
@@ -473,6 +486,7 @@ function Column({
               // before the server has it there.
               onDragDeal?.(deal)
             }}
+            onDragEnd={() => onDragDeal?.(null)}
           />
         ))}
         {/* An empty column is also a DROP TARGET, and the old state said
@@ -560,52 +574,9 @@ function Column({
   )
 }
 
-// One pipeline's columns. Split out of DealBoard so the board can render
-// several pipelines stacked when no single one is chosen — each keeps its own
-// stage columns rather than merging stage lists, which would not be a board.
-// MERGED COLUMNS — the board is ONE grid, whatever the pipeline picker says.
-//
-// It used to render a separate full-height board per pipeline when no single
-// one was chosen. Eight pipelines meant eight grids, each with its own
-// horizontal scrollbar, almost all of them reading "No deals here" — the
-// board stopped being a board.
-//
-// Stage NAMES repeat across pipelines: every pipeline here has its own
-// "Quote Sent", each with a different stage_id. So the columns are keyed by
-// name and a column asks for every id that shares it (the list form of
-// stageId, added in routes/deals.js for exactly this). One grid, one scroll,
-// and picking a pipeline narrows the same grid instead of changing its shape.
-export function mergeStages(pipelines) {
-  const byName = new Map()
-  for (const p of pipelines) {
-    for (const st of p.stages || []) {
-      const key = (st.name || '').trim().toLowerCase()
-      if (!key) continue
-      if (!byName.has(key)) {
-        byName.set(key, { name: st.name, ids: [], byPipeline: new Map(), position: st.position ?? 0 })
-      }
-      const slot = byName.get(key)
-      slot.ids.push(st.id)
-      slot.byPipeline.set(p.id, st.id)
-      // The earliest position any pipeline gives this stage. Pipelines order
-      // their shared stages the same way in practice, and taking the minimum
-      // keeps a stage that is 3rd in one and 4th in another from jumping.
-      slot.position = Math.min(slot.position, st.position ?? 0)
-    }
-  }
-  return [...byName.values()]
-    .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
-    // `id` is what Column keys and registers reloaders by; the joined list is
-    // also exactly what the query sends, so the two cannot drift.
-    .map((s) => ({
-      id: s.ids.join(','),
-      name: s.name,
-      position: s.position,
-      // pipelineId -> the stage id this column means in THAT pipeline. A drop
-      // writes one real stage id, never the joined list.
-      stageIdFor: (pipelineId) => s.byPipeline.get(pipelineId) || (s.ids.length === 1 ? s.ids[0] : null)
-    }))
-}
+// MERGED COLUMNS — see boardMoves.js (mergeStages). Re-exported here, where
+// DealsTab has always imported it from.
+export { mergeStages }
 
 export default function DealBoard({
   pipeline, pipelines, search, status = 'open', tag, assignedTo, onOpenDeal, onOpenInHub,
@@ -649,7 +620,13 @@ export default function DealBoard({
 
   // The card being dragged, whole: the drop only carries its id.
   const dragged = useRef(null)
-  const onDragDeal = useCallback((deal) => { dragged.current = deal }, [])
+  const [dragPipeline, setDragPipeline] = useState(null)
+  const onDragDeal = useCallback((deal) => {
+    // Kept for the drop if the drag ended ON a column — the drop event fires
+    // before dragend, and move() takes it from here first.
+    if (deal) dragged.current = deal
+    setDragPipeline(deal ? (deal.pipelineId || '') : null)
+  }, [])
 
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
@@ -667,7 +644,8 @@ export default function DealBoard({
     const deal = dragged.current?.id === dealId ? dragged.current : null
     dragged.current = null
     if (!toStageId) {
-      setMoveError(`${deal?.name || 'That deal'} can't go into “${toName}” — its pipeline has no stage by that name.`)
+      const name = deal?.dealTag || deal?.opportunityName || 'That deal'
+      setMoveError(`${name} can't go into “${toName}” — its pipeline has no stage by that name.`)
       return
     }
     // Shown in its new column at once. `pipelineStageId` updated too, so
@@ -759,6 +737,7 @@ export default function DealBoard({
             pending={pending}
             onConfirmed={onConfirmed}
             onDragDeal={onDragDeal}
+            dragPipeline={dragPipeline}
           />
         ))}
       </div>

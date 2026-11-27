@@ -90,11 +90,9 @@ test('stage is still NOT passed to the board', () => {
 // pipeline has its own "Quote Sent" with a different stage_id — so columns
 // are keyed by NAME and each asks for every id sharing it.
 
-const merge = (() => {
-  const fn = board.slice(board.indexOf('function mergeStages'), board.indexOf('export default function DealBoard'))
-  // eslint-disable-next-line no-new-func
-  return new Function(`${fn}; return mergeStages`)()
-})()
+// Imported, not cut out of the source: it lives in boardMoves.js now, a plain
+// module node can load.
+const { mergeStages: merge } = await import('../boardMoves.js')
 
 const PIPELINES = [
   { id: 'p_brad', name: 'Brad', stages: [

@@ -91,3 +91,38 @@ test('a column keeps only the newest answer — a fast search cannot settle on a
   assert.match(load, /const token = nextCursor \? latest\.current : \+\+latest\.current/)
   assert.match(load, /if \(token !== latest\.current\) return\n\s+setServerDeals/)
 })
+
+// "That stage belongs to a different pipeline than this deal" — reported from
+// the board with All pipelines showing.
+import { mergeStages } from '../boardMoves.js'
+
+const PIPES = [
+  { id: 'sales', stages: [{ id: 's-new', name: 'New lead', position: 0 }, { id: 's-qual', name: 'Sales Qualified', position: 1 }] },
+  { id: 'remedial', stages: [{ id: 'r-new', name: 'New lead', position: 0 }, { id: 'r-book', name: 'Ready to book', position: 1 }] }
+]
+const col = (name) => mergeStages(PIPES).find((c) => c.name === name)
+
+test('a stage only another pipeline has is never chosen for a deal', () => {
+  // Only "sales" has Sales Qualified. A remedial deal dropped there used to
+  // be sent s-qual, which GHL's pipeline check refuses.
+  assert.equal(col('Sales Qualified').stageIdFor('remedial'), null)
+  assert.equal(col('Ready to book').stageIdFor('sales'), null)
+})
+
+test('a deal gets its OWN pipeline\'s stage in a shared column', () => {
+  assert.equal(col('New lead').stageIdFor('sales'), 's-new')
+  assert.equal(col('New lead').stageIdFor('remedial'), 'r-new')
+  assert.equal(col('Sales Qualified').stageIdFor('sales'), 's-qual')
+})
+
+test('only a deal with NO known pipeline falls back to a single-stage column', () => {
+  assert.equal(col('Sales Qualified').stageIdFor(''), 's-qual')
+  assert.equal(col('New lead').stageIdFor(''), null, 'two candidates: no guess')
+})
+
+test('while dragging, a column the deal cannot go into refuses the drop', () => {
+  assert.match(board, /const blocked = dragPipeline !== null && !!stage\.stageIdFor && !stage\.stageIdFor\(dragPipeline\)/)
+  assert.match(board, /if \(blocked\) \{ e\.dataTransfer\.dropEffect = 'none'; return \}/)
+  assert.match(board, /opacity: blocked \? 0\.45 : 1/)
+  assert.match(board, /onDragEnd=\{\(\) => onDragDeal\?\.\(null\)\}/)
+})

@@ -7,7 +7,16 @@ const path = (kind) => (kind === 'remedial' ? 'remedials' : 'projects')
 // Operations Hub, slice 1. See docs/operations-hub-plan.md and
 // server/src/routes/operations.js. A job is a GHL opportunity in the mapped
 // Operations or Remedials pipeline; everything else is Deal Hub's.
+// Fired on window when the Control panel switches the Operations Hub on or
+// off for this sub-account (detail: true/false); the shell's menu follows.
+export const OPS_ENABLED_EVENT = 'pp:ops-enabled'
+
 export const opsAPI = {
+  // Whether THIS sub-account has the Operations Hub (Control panel switch).
+  // The only ops routes that answer while it is off.
+  enabled: () => apiClient.get('/api/ops/enabled'),
+  setEnabled: (enabled) => apiClient.put('/api/ops/enabled', { enabled }),
+
   settings: () => apiClient.get('/api/ops/settings'),
   // A Deal Hub setting — choosing pipelines changes nothing in GHL.
   saveSettings: (body) => apiClient.put('/api/ops/settings', body),

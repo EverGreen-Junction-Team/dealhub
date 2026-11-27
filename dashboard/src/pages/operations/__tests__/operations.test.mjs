@@ -14,15 +14,36 @@ const job = read('../JobPage.jsx')
 const api = read('../../../api/operations.js')
 const decisions = read('../opsDecisions.js')
 
-test('hidden unless VITE_FEATURE_OPERATIONS is exactly "true"', () => {
+const control = read('../../tabs/ControlCentreTab.jsx')
+const section = read('../../control/OperationsSection.jsx')
+
+test('TWO switches: the build flag AND this sub-account\'s switch', () => {
   assert.match(shell, /const OPERATIONS_ENABLED = import\.meta\.env\.VITE_FEATURE_OPERATIONS === 'true'/)
-  assert.match(home, /const OPERATIONS_ENABLED = import\.meta\.env\.VITE_FEATURE_OPERATIONS === 'true'/)
-  assert.match(shell, /OPERATIONS_ENABLED && OPS_IDS\.has\(activeTab\) && \(\s*<OperationsTab/)
-  assert.match(home, /\.\.\.\(OPERATIONS_ENABLED\s*\n?\s*\? \[\{/)
+  assert.match(shell, /const opsOn = OPERATIONS_ENABLED && opsEnabled === true/)
+  // Not asked at all when the build does not have the feature.
+  assert.match(shell, /useState\(OPERATIONS_ENABLED \? null : false\)/)
+  assert.match(shell, /if \(!OPERATIONS_ENABLED\) return undefined/)
+  assert.match(shell, /opsOn && OPS_IDS\.has\(activeTab\) && \(\s*<OperationsTab/)
+  assert.match(shell, /operationsOn=\{opsOn\}/)
+  assert.match(home, /const groupsFor = \(operationsOn\) => GROUPS\.filter\(\(g\) => !g\.operations \|\| operationsOn\)/)
+  assert.ok(!/VITE_FEATURE_OPERATIONS/.test(home), 'Home takes the combined answer from the shell')
+})
+
+test('an operations screen in a sub-account without it goes Home, once known', () => {
+  assert.match(shell, /if \(opsEnabled === false && OPS_IDS\.has\(activeTab\)\) setActiveTab\('home'\)/)
+})
+
+test('the Control panel switch: only in builds with the feature, and the menu follows at once', () => {
+  assert.match(control, /\{OPERATIONS_ENABLED && <OperationsSection \/>\}/)
+  assert.match(section, /await opsAPI\.setEnabled\(next\)/)
+  assert.match(section, /window\.dispatchEvent\(new CustomEvent\(OPS_ENABLED_EVENT, \{ detail: r\.enabled \}\)\)/)
+  assert.match(shell, /window\.addEventListener\(OPS_ENABLED_EVENT, onChange\)/)
+  // From the API module, not the shell — the shell imports the Control panel.
+  assert.ok(!/from '\.\.\/DealHubShell'/.test(section))
 })
 
 test('two menus: an Operations hub pill on the sales menu, the ops items on ops screens', () => {
-  assert.match(shell, /\(OPERATIONS_ENABLED && OPS_IDS\.has\(activeTab\) \? OPS_MENU : SALES_MENU\)\.map/)
+  assert.match(shell, /\(opsOn && OPS_IDS\.has\(activeTab\) \? OPS_MENU : \(opsOn \? SALES_MENU_WITH_OPS : VISIBLE_TABS\)\)\.map/)
   assert.match(shell, /\{ id: 'opsPipeline', label: 'Operations hub', icon: 'engineering' \}/)
   // Deal hub stays on the ops menu, to switch back.
   assert.match(shell, /const OPS_MENU = \[\s*\.\.\.TABS\.filter\(\(t\) => t\.id === 'home' \|\| t\.id === 'hub'\)/)

@@ -3,6 +3,11 @@ import { controlAPI } from '../../api/control'
 import MeddicMappingSection from '../control/MeddicMappingSection'
 import SkillsSection from '../control/SkillsSection'
 import AppearanceSection from '../control/AppearanceSection'
+import OperationsSection from '../control/OperationsSection'
+
+// The Operations Hub's per-sub-account switch only exists in builds that have
+// the feature at all — same build flag DealHubShell reads.
+const OPERATIONS_ENABLED = import.meta.env.VITE_FEATURE_OPERATIONS === 'true'
 import SectionCard, { PrimaryButton, GhostButton } from '../control/SectionCard'
 import SyncButton from '../shared/SyncButton'
 import { Bar, SkeletonStyles, formatDate, Panel } from '../shared/ListChrome'
@@ -109,6 +114,7 @@ export default function ControlCentreTab() {
       <SkillsSection />
 
       <MeddicMappingSection fields={data.meddicFields || []} />
+      {OPERATIONS_ENABLED && <OperationsSection />}
       {/* Last of the configuration sections: it is maintenance rather than
           something to set up, and nobody comes to this page to press it
           first. */}

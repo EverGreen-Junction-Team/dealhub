@@ -116,11 +116,19 @@ not shown yet.
 ### Slice 1 — status (26 Nov 2026)
 
 **Built, tested and pushed.** Server: `14770c6`. Dashboard: the commit after
-it. Migration **146** must be run on the server.
+it. Migrations **146** and **147** must be run on the server.
 
-- **Turn it on:** set `VITE_FEATURE_OPERATIONS=true` in Vercel and redeploy;
-  without it nothing operations-related shows. Then **Operations hub → Set
-  up** maps the two pipelines (a Deal Hub setting; nothing changes in GHL).
+- **Turn it on — two switches, both needed:**
+  1. **Build:** `VITE_FEATURE_OPERATIONS=true` in Vercel, then redeploy.
+     Without it nothing operations-related exists in the app.
+  2. **Per sub-account:** Control panel → **Operations Hub** switch (migration
+     147, `ops_settings.enabled`, off by default). Only sub-accounts switched
+     on see the menu and Home section, and the server refuses every
+     `/api/ops` route except the switch itself (`403 ops_disabled`) while it
+     is off. Turning it off keeps everything already entered.
+
+  Then **Operations hub → Set up** maps the two pipelines (a Deal Hub
+  setting; nothing changes in GHL).
 - **Tested:** 16 unit tests (`server/src/services/__tests__/operations.test.mjs`),
   8 wiring tests (`dashboard/src/pages/operations/__tests__/operations.test.mjs`),
   a 26-check end-to-end run of every route on Postgres 17 with GHL mocked,

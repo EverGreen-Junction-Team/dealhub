@@ -177,3 +177,23 @@ test('every ops table is location-scoped with RLS', () => {
     assert.match(sql, new RegExp(`CREATE POLICY tenant_iso ON ${t}\\s+USING \\(location_id = current_setting\\('app.location_id', true\\)\\)`), t);
   }
 });
+
+// ── Per-sub-account switch (migration 147) ───────────────────────────
+test('off by default, per sub-account', () => {
+  const sql = readFileSync(new URL('../../../migrations/147_ops_location_flag.sql', import.meta.url), 'utf8');
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS enabled\s+BOOLEAN NOT NULL DEFAULT false/);
+});
+
+test('every ops route except the switch is behind the guard', () => {
+  const route = readFileSync(new URL('../../routes/operations.js', import.meta.url), 'utf8');
+  const guard = route.indexOf('// Everything below needs the sub-account switched on.');
+  assert.ok(guard > 0, 'guard missing');
+  assert.ok(route.indexOf("operationsRouter.get('/enabled'") < guard);
+  assert.ok(route.indexOf("operationsRouter.put('/enabled'") < guard);
+  // The first feature route comes after it.
+  assert.ok(route.indexOf("operationsRouter.get('/settings'") > guard);
+  assert.match(route, /reason: 'ops_disabled'/);
+  // The pipeline mapping upsert must not reset the switch.
+  const settingsPut = route.slice(route.indexOf("operationsRouter.put('/settings'"), route.indexOf("operationsRouter.get('/decisions'"));
+  assert.ok(!/enabled/.test(settingsPut.replace(/is_active = true/g, '')), 'PUT /settings must not touch enabled');
+});

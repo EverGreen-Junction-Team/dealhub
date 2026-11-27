@@ -34,6 +34,67 @@ import { taskStore } from '../services/opsTaskStore.js';
 export const operationsRouter = express.Router();
 operationsRouter.use(requireSession);
 
+// ── Per-sub-account switch (migration 147) ────────────────────────────
+//
+// The build flag decides whether Operations exists at all; this decides
+// whether THIS sub-account has it. Off until someone turns it on in the
+// Control panel. The two routes below are the only ones that answer while
+// it is off — everything after the guard refuses with 'ops_disabled'.
+
+async function isEnabled(locationId) {
+  return withTenant(locationId, async (client) => {
+    const { rows: [r] } = await client.query(
+      'SELECT enabled FROM ops_settings WHERE location_id = $1', [locationId]
+    );
+    return r?.enabled === true;
+  });
+}
+
+operationsRouter.get('/enabled', async (req, res, next) => {
+  try {
+    res.json({ enabled: await isEnabled(req.locationId) });
+  } catch (err) {
+    logger.error({ err, locationId: req.locationId }, 'GET /api/ops/enabled failed');
+    next(err);
+  }
+});
+
+operationsRouter.put('/enabled', async (req, res, next) => {
+  const locationId = req.locationId;
+  const enabled = req.body?.enabled;
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled is true or false', field: 'enabled' });
+  }
+  try {
+    await withTenant(locationId, (client) => client.query(
+      `INSERT INTO ops_settings (location_id, enabled, enabled_by, enabled_at, updated_at)
+       VALUES ($1, $2, $3, now(), now())
+       ON CONFLICT (location_id) DO UPDATE
+         SET enabled = EXCLUDED.enabled, enabled_by = EXCLUDED.enabled_by,
+             enabled_at = now(), updated_at = now()`,
+      [locationId, enabled, req.session?.userId || null]
+    ));
+    logger.info({ locationId, enabled, by: req.session?.userId || null }, 'ops: sub-account switch changed');
+    res.json({ enabled });
+  } catch (err) {
+    logger.error({ err, locationId }, 'PUT /api/ops/enabled failed');
+    next(err);
+  }
+});
+
+// Everything below needs the sub-account switched on.
+operationsRouter.use(async (req, res, next) => {
+  try {
+    if (await isEnabled(req.locationId)) return next();
+    return res.status(403).json({
+      error: 'The Operations Hub is not switched on for this sub-account — turn it on in the Control panel.',
+      reason: 'ops_disabled'
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // 'projects' / 'remedials' in a path → 'project' / 'remedial'.
 const KIND_BY_PATH = { projects: 'project', remedials: 'remedial' };
 const TABLE = { project: 'projects', remedial: 'remedials' };

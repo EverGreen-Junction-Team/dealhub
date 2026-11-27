@@ -9,6 +9,7 @@ import ContactsTab from './tabs/ContactsTab'
 import TasksTab from './tabs/TasksTab'
 import CalendarTab from './tabs/CalendarTab'
 import OperationsTab from './tabs/OperationsTab'
+import { opsAPI, OPS_ENABLED_EVENT } from '../api/operations'
 import NotesTab from './tabs/NotesTab'
 import ControlCentreTab from './tabs/ControlCentreTab'
 import HomeTab from './tabs/HomeTab'
@@ -123,11 +124,13 @@ const OPS_IDS = new Set([...OPS_TABS.map((t) => t.id), 'opsSetup'])
 for (const t of [...OPS_TABS, { id: 'opsSetup', label: 'Operations set up', icon: 'tune' }]) {
   TABS.push({ ...t, label: t.id === 'opsPipeline' ? 'Operations hub' : t.label })
 }
-const SALES_MENU = OPERATIONS_ENABLED
-  ? VISIBLE_TABS.flatMap((t) => (t.id === 'hub'
-    ? [t, { id: 'opsPipeline', label: 'Operations hub', icon: 'engineering' }]
-    : [t]))
-  : VISIBLE_TABS
+// TWO SWITCHES. The build flag above decides whether Operations exists at
+// all; the sub-account switch (Control panel → Operations Hub, stored by the
+// server, migration 147) decides whether THIS sub-account has it. Both must
+// be on — see `opsOn` in the component. The server enforces the second one.
+const SALES_MENU_WITH_OPS = VISIBLE_TABS.flatMap((t) => (t.id === 'hub'
+  ? [t, { id: 'opsPipeline', label: 'Operations hub', icon: 'engineering' }]
+  : [t]))
 const OPS_MENU = [
   ...TABS.filter((t) => t.id === 'home' || t.id === 'hub'),
   ...OPS_TABS,
@@ -215,6 +218,26 @@ export default function DealHubShell() {
     return was
   })
   const [selectedDealId, setSelectedDealId] = useState(() => restored?.dealId || null)
+
+  // Is the Operations Hub switched on for this sub-account? null = not known
+  // yet. Only asked when the build has the feature at all; the Control panel
+  // announces a change with OPS_ENABLED_EVENT so the menu follows at once.
+  const [opsEnabled, setOpsEnabled] = useState(OPERATIONS_ENABLED ? null : false)
+  useEffect(() => {
+    if (!OPERATIONS_ENABLED) return undefined
+    let live = true
+    opsAPI.enabled().then((r) => { if (live) setOpsEnabled(r?.enabled === true) }).catch(() => { if (live) setOpsEnabled(false) })
+    const onChange = (e) => setOpsEnabled(e.detail === true)
+    window.addEventListener(OPS_ENABLED_EVENT, onChange)
+    return () => { live = false; window.removeEventListener(OPS_ENABLED_EVENT, onChange) }
+  }, [])
+  const opsOn = OPERATIONS_ENABLED && opsEnabled === true
+  // Restored onto an operations screen in a sub-account that does not have
+  // it (switched off since, or another sub-account): Home, not a blank page.
+  // Only once the answer is known — null means still asking.
+  useEffect(() => {
+    if (opsEnabled === false && OPS_IDS.has(activeTab)) setActiveTab('home')
+  }, [opsEnabled, activeTab])
   // Location-wide totals for the top-nav pill counters. One fetch on mount.
   // Matches what each tab actually shows (Deals 343 = every open opp, etc).
   const [counts, setCounts] = useState(null)
@@ -473,7 +496,7 @@ export default function DealHubShell() {
             NAME any more, so the binding went with the markup. */}
         {/* Tab chips */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {(OPERATIONS_ENABLED && OPS_IDS.has(activeTab) ? OPS_MENU : SALES_MENU).map((t) => {
+          {(opsOn && OPS_IDS.has(activeTab) ? OPS_MENU : (opsOn ? SALES_MENU_WITH_OPS : VISIBLE_TABS)).map((t) => {
             const active = activeTab === t.id
             // Location-wide count on each section chip. Deal-hub + Control
             // centre chips don't have a meaningful total, so we skip them.
@@ -539,7 +562,7 @@ export default function DealHubShell() {
       {/* Tab content */}
       <main>
         {activeTab === 'home' && (
-          <HomeTab counts={counts} onOpenTab={(tab) => navigate({ tab })} />
+          <HomeTab counts={counts} operationsOn={opsOn} onOpenTab={(tab) => navigate({ tab })} />
         )}
         {activeTab === 'hub' && (
           <DealHubTab
@@ -621,7 +644,7 @@ export default function DealHubShell() {
         {CALENDAR_ENABLED && activeTab === 'calendar' && (
           <CalendarTab onOpenDeal={openDeal} />
         )}
-        {OPERATIONS_ENABLED && OPS_IDS.has(activeTab) && (
+        {opsOn && OPS_IDS.has(activeTab) && (
           <OperationsTab view={activeTab} onNavigate={(tab) => navigate({ tab })} />
         )}
         {activeTab === 'notes' && (

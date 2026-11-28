@@ -53,32 +53,6 @@ export function FiltersButton({ applied, onClick, title }) {
   )
 }
 
-// CONTACT, IN THE TOOLBAR — Tasks and Notes.
-//
-// The drawer below has always filtered by contact, but nobody opened it to
-// find that out. This puts the same filter one click away beside Assignee /
-// Author. It writes the SAME key (filters.contactId), so the toolbar box and
-// the drawer always agree, and a new contact clears a deal picked for someone
-// else — the drawer's rule. Searches the server: a location has thousands of
-// contacts.
-export function ContactFilter({ filters = {}, onChange, width = 230 }) {
-  return (
-    <span style={{ display: 'inline-flex', width }}>
-      <ContactPicker
-        placeholder="Anyone — type a name"
-        height={34}
-        value={filters.contactId || null}
-        onChange={(id) => onChange((f) => {
-          const next = { ...f, contactId: id || undefined }
-          if (id !== f.contactId) delete next.dealId
-          if (!next.contactId) delete next.contactId
-          return next
-        })}
-      />
-    </span>
-  )
-}
-
 export default function WorkFilters({ filters = {}, onChange, noun = 'tasks' }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(filters)

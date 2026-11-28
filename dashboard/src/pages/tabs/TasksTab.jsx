@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 const { RangePicker } = DatePicker
 import { htmlToText } from '../../utils/sanitiseHtml'
 import ViewSwitch from '../shared/ViewSwitch'
-import WorkFilters, { ContactFilter } from '../shared/WorkFilters'
+import WorkFilters from '../shared/WorkFilters'
 import { tasksAPI } from '../../api/tasks'
 import { usePagedList, useInfiniteScroll } from '../../hooks/usePagedList'
 import { useTabState } from '../../hooks/useTabState'
@@ -352,11 +352,6 @@ export default function TasksTab({ onOpenDeal, onOpenContact, onOpenBusiness }) 
             {/* `bare`: the label is stacked above by LabelledControl, so
                 this must not draw its own beside the select. */}
             <OwnerFilter value={owner} onChange={setOwner} width={190} bare />
-          </LabelledControl>
-
-          {/* CONTACT — the tasks about one person; see ContactFilter. */}
-          <LabelledControl label="Contact">
-            <ContactFilter filters={filters} onChange={setFilters} />
           </LabelledControl>
 
           <LabelledControl label="Due">

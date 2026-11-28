@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { htmlToText } from '../../utils/sanitiseHtml'
 import ViewSwitch from '../shared/ViewSwitch'
-import WorkFilters, { ContactFilter } from '../shared/WorkFilters'
+import WorkFilters from '../shared/WorkFilters'
 import { useTabState } from '../../hooks/useTabState'
 import { useAuth } from '../../context/AuthContext'
 import { OwnerFilter, SortSelect, defaultOwner, resolveOwner } from '../shared/ListFilters'
@@ -261,10 +261,6 @@ export default function NotesTab({ onOpenDeal, onOpenContact, onOpenBusiness }) 
               width={190}
               bare
             />
-          </LabelledControl>
-          {/* CONTACT — the notes about one person; see ContactFilter. */}
-          <LabelledControl label="Contact">
-            <ContactFilter filters={filters} onChange={setFilters} />
           </LabelledControl>
           <LabelledControl label="Sort">
             <SortSelect
